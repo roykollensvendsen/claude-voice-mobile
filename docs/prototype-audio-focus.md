@@ -119,6 +119,18 @@ sound about equally loud. Still open from that round:
   the phone's volume buttons move media, not the call volume. The book may
   also take another route or sound worse.
 
+In a later try that round, the book played as a call stopped by itself after
+three minutes. The log shows the moment: the book's sound dropped off
+Android's list of playing sounds while Claude's stayed. But the player
+reported nothing: no pause, no error, no end, and it still counted itself as
+playing. The file had not run out (it is about an hour long). Something below
+the player stopped its sound output, and the log could not see what. A guess
+is that Android or the phone maker stops call sound from an app that is not
+the one holding the call. That is not shown. The app now logs every 15 s
+what the player believes and whether Android still lists its sound. It also
+logs each time the sound output opens, closes, runs dry or fails, and any
+download error, so the next stop will show where it came from.
+
 So the test screen now has an "Auto" choice, the likely rule for the real
 app: the book plays as ordinary media, and switches to playing as a call when
 the phone goes into call mode, and back when it leaves it. The log notes each
