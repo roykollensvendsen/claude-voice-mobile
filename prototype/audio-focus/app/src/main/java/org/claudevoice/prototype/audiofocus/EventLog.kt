@@ -19,8 +19,12 @@ object EventLog {
     private var file: File? = null
     private val listeners = mutableListOf<(String) -> Unit>()
 
-    fun file(context: Context): File =
-        File(context.getExternalFilesDir(null) ?: context.filesDir, FILE)
+    /** The shared folder `adb pull` reaches, or the app's own if that cannot be written. */
+    fun file(context: Context): File {
+        val shared = context.getExternalFilesDir(null)?.let { File(it, FILE) }
+        val writable = shared != null && runCatching { shared.appendText("") }.isSuccess
+        return if (writable) shared!! else File(context.filesDir, FILE)
+    }
 
     @Synchronized
     fun begin(context: Context, run: Int, mode: Mode) {
