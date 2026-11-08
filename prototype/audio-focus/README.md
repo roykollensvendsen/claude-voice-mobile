@@ -30,7 +30,8 @@ Three modes, chosen on the screen:
 The level while Claude talks is a slider from 10 % to 400 %, starting at
 40 %. Above 100 % the app boosts its own sound with Android's loudness
 enhancer. The book can also play as media, a call, accessibility or an
-assistant, each on its own volume; "Vis volum" opens the volume panel for the
+assistant, each on its own volume, or "Auto": media outside a call and a
+call while the phone is in one; "Vis volum" opens the volume panel for the
 chosen kind, which is otherwise out of reach during a call.
 
 ## Build and test

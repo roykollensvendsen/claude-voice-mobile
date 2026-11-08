@@ -49,4 +49,21 @@ class SoundTypeTest {
             0f,
         )
     }
+
+    // Round 9: as media the book drowned under Claude even boosted; as a call it sat level with
+    // Claude. Outside a call it should stay an ordinary podcast.
+    @Test
+    fun auto_plays_as_media_outside_a_call_and_as_a_call_inside_one() {
+        assertEquals(SoundType.MEDIA, SoundType.AUTO.playsAs(AudioManager.MODE_NORMAL))
+        assertEquals(SoundType.CALL, SoundType.AUTO.playsAs(AudioManager.MODE_IN_COMMUNICATION))
+        assertEquals(SoundType.CALL, SoundType.AUTO.playsAs(AudioManager.MODE_IN_CALL))
+    }
+
+    @Test
+    fun a_fixed_sound_type_plays_as_itself_in_every_mode() {
+        for (type in listOf(SoundType.MEDIA, SoundType.CALL, SoundType.ACCESSIBILITY, SoundType.ASSISTANT)) {
+            assertEquals(type, type.playsAs(AudioManager.MODE_NORMAL))
+            assertEquals(type, type.playsAs(AudioManager.MODE_IN_COMMUNICATION))
+        }
+    }
 }
