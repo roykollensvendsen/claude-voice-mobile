@@ -43,6 +43,10 @@ class MainActivity : Activity() {
         val watch = RadioButton(this).apply { text = "Spilleren tar ikke lyden, demper seg selv"; id = View.generateViewId() }
         val mode = RadioGroup(this).apply { addView(self); addView(system); addView(watch); check(self.id) }
         val url = EditText(this).apply { hint = "Valgfri lenke til en podkast (tomt = testtone)"; isSingleLine = true }
+        val podcast = Button(this).apply {
+            text = "Bruk opplest bok (LibriVox)"
+            setOnClickListener { url.setText(SPOKEN_PODCAST) }
+        }
 
         fun button(label: String, onClick: () -> Unit) =
             Button(this).apply { text = label; setOnClickListener { onClick() } }
@@ -92,9 +96,11 @@ class MainActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(32, 48, 32, 16)
+            addView(TextView(this@MainActivity).apply { text = "Oppsett (trykk for å velge):" })
             addView(run)
             addView(mode)
             addView(url)
+            addView(podcast)
             addView(row(start, stop))
             addView(TextView(this@MainActivity).apply { text = "Hva hørte du?" })
             addView(row(heard("dempet"), heard("pauset"), heard("full styrke")))
@@ -103,10 +109,23 @@ class MainActivity : Activity() {
             addView(row(share, clear))
             addView(scroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         }
+        // From Android 15 the screen is drawn under the status bar; keep the controls clear of it.
+        if (Build.VERSION.SDK_INT >= 30) {
+            root.setOnApplyWindowInsetsListener { view, insets ->
+                val bars = insets.getInsets(android.view.WindowInsets.Type.systemBars())
+                view.setPadding(32, bars.top + 16, 32, bars.bottom + 16)
+                insets
+            }
+        }
         setContentView(root)
 
         EventLog.file(this).takeIf { it.exists() }?.readLines()?.takeLast(200)?.forEach(::append)
         EventLog.listen(onLine)
+    }
+
+    companion object {
+        /** Public domain, read aloud: LibriVox, The Adventures of Sherlock Holmes, chapter 1. */
+        const val SPOKEN_PODCAST = "https://archive.org/download/adventures_holmes/adventureholmes_01_doyle_64kb.mp3"
     }
 
     private fun append(line: String) {
