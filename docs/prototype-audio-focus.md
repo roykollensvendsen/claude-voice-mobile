@@ -62,11 +62,26 @@ resumes.
 
 ## Findings
 
-Measured on Roy's phone, one round so far.
+Measured on Roy's phone, three rounds so far, all with the test tone.
 
-| Run | Mode | Order | What happened |
-|---|---|---|---|
-| 1, phone speaker | player ducks itself | Claude's voice mode first, then the music | Claude's voice mode dropped at once; the music played on at full volume until stopped |
+| Round | Output | Mode | Order | What happened |
+|---|---|---|---|---|
+| 1 | phone speaker | player ducks itself | Claude first, then the music | Claude's voice mode dropped at once; the music played on at full volume until stopped |
+| 2 | phone speaker | takes no focus | Claude first, then the music | the call held and both sides heard clearly, but the music stayed at full volume the whole time |
+| 3 | Bluetooth headset | takes no focus | Claude first, then the music | the call held and Claude heard Roy; the music was ducked from its start to the end of the call, also in silences, and both sounded quite good in the headset |
+
+Round 3 is the case that matters most: Roy's main use is jogging with a
+Bluetooth headset, a podcast playing, talking to Claude. It passed with the
+test tone. It still has to be run with spoken audio, which is harder for the
+echo cancelling, and in the other order.
+
+Rounds 2 and 3 differ in what the Claude app did, as far as the app could see.
+Through the headset, Claude's voice mode put the phone in a call mode or played
+as a call, and the watching player ducked for the whole conversation. On the
+phone speaker, neither happened, so it did not duck. The player now also ducks
+while any other app records from the microphone, because a voice assistant
+always listens and this app never does. Which signal the Claude app gave in
+each round is a guess until the logs are read.
 
 What this shows: a player that asks Android for the speaker the ordinary way
 (permanent media focus) cuts off Claude's voice mode if it starts while Claude
