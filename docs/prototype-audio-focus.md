@@ -72,6 +72,9 @@ Measured on Roy's phone, three rounds so far, all with the test tone.
 
 | 4, 5 | Bluetooth headset | player ducks itself, by mistake | Claude first, then the spoken book | Claude's call dropped the moment the book started, both times |
 
+| 5, continued | Bluetooth headset | player ducks itself | the book playing, then Claude started again | the call held, Claude heard Roy, and the book ducked itself the moment Claude asked for focus for a while |
+| 6 | Bluetooth headset | takes no focus | the tone first, then Claude | the tone ducked from the moment the phone went into call mode, but Claude did not hear Roy |
+
 Rounds 4 and 5 were meant for the mode that takes no focus. After a reinstall
 the app had gone back to the first mode, which asks for focus the ordinary way.
 The log shows the phone leaving its call mode within a second of that request:
@@ -82,6 +85,17 @@ The log also shows what the Claude app does. When it takes the sound back, it
 asks for focus for a while (a transient request). Through a Bluetooth headset
 it plays and listens as a phone call. On the phone speaker it plays as
 ordinary media and listens as speech recognition.
+
+So far the order decides it. If the music starts while Claude is already
+talking, a player that asks for focus ends Claude's call (rounds 1, 4 and 5),
+and a player that asks for none leaves the call alone (rounds 2 and 3). If
+the music starts first and Claude second, both kinds of player get out of
+Claude's way: the one holding focus is told to pause for a while and ducks
+instead (round 5, continued), and the one holding none ducks when the phone
+goes into call mode (round 6). For the real app that points at one rule: ask
+for focus only when no call or assistant is active, and never pause, only
+duck. Whether Claude hears Roy over ducked music is not settled: yes in round
+5, no in round 6, one try each.
 
 Round 3 is the case that matters most: Roy's main use is jogging with a
 Bluetooth headset, a podcast playing, talking to Claude. It passed with the
