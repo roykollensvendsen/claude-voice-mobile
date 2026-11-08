@@ -75,9 +75,42 @@ Measured on Roy's phone, three rounds so far, all with the test tone.
 | 5, continued | Bluetooth headset | player ducks itself | the book playing, then Claude started again | the call held, Claude heard Roy, and the book ducked itself the moment Claude asked for focus for a while |
 | 6 | Bluetooth headset | takes no focus | the tone first, then Claude | the tone ducked from the moment the phone went into call mode, but Claude did not hear Roy |
 | 7 | Bluetooth headset | takes no focus | Claude first, then the spoken book | the call held; the book ducked, but at a fifth of its volume it was too quiet to follow |
+| 8 | Bluetooth headset | takes no focus | Claude first, then the spoken book | the call held and Claude was clear, but the book was far too quiet even at 100 %; with the phone turned fully up the book could be followed, but Claude was far too loud |
 
 After round 7 the ducked level became a setting on the screen, from 10 % to
 100 %, starting at 40 %. The real app needs the same setting.
+
+Round 8 shows the cut is not the app's. The log has the player at full volume
+(1.00) while the phone was in its call mode, and the book was still far too
+quiet. Turning the phone up raised Claude and the book together, so the
+problem is the balance between them, not the overall volume. During a
+Bluetooth call the headset switches to its call link, and Android plays media
+down that link held to about the call's own volume. That cap is how Android's
+volume code reads; it has not been measured on this phone. The LibriVox
+recording may also be quiet to begin with.
+
+Two things to try came out of it, both now on the test screen:
+
+- **A boost.** The setting now goes from 10 % to 400 %. Above 100 % the app
+  adds gain on its own sound with Android's loudness enhancer (200 % is about
+  +6 dB, 400 % about +12 dB), which also lifts a quiet recording. This changes
+  only the book, so it moves the balance.
+- **Another kind of sound.** The book can play as media (as before), as a
+  call, as accessibility or as an assistant. Played as a call it sits on the
+  same volume as Claude, so the phone's volume buttons move both alike and the
+  setting alone sets the balance. Whether it disturbs Claude's call or the
+  echo cancelling is the open question. A "Vis volum" button opens Android's
+  volume panel for the kind of sound chosen, because during a call the volume
+  buttons only move the call.
+
+The log now also records the phone's volume steps for media, the call and
+accessibility at the start and on each change of call mode.
+
+Whether the call cap can be avoided altogether is not in the app's hands:
+Claude's app chooses the headset's call link, and on that link Android sends
+everything through at call quality. Escaping it would need Claude to use the
+headset's music link and the phone's microphone, which is the Claude app's
+choice.
 
 Rounds 4 and 5 were meant for the mode that takes no focus. After a reinstall
 the app had gone back to the first mode, which asks for focus the ordinary way.
