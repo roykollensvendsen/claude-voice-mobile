@@ -8,12 +8,12 @@ issues, labelled by role.
 |---|---|---|---|
 | Hub (`claude-voice-work`) | set up this repository; ADR-CV-007 proposed in claude-voice | — | ADR-CV-007, and starting the two sessions below |
 | Architect (`claude-voice-mobile-architect`) | not started | Roy's yes | — |
-| Android developer (`claude-voice-mobile-android`) | not started | Roy's yes | — |
+| Android developer (`claude-voice-mobile-android`) | audio-focus prototype built and tested on an emulator | Roy's yes to install it | #10 |
 
 ## Waiting on Roy (one list)
 
 1. Accept or change ADR-CV-007 in claude-voice.
 2. Say whether to start the architect and Android developer sessions.
-3. Say yes to building the audio-focus prototype.
+3. Say yes to installing the audio-focus prototype on his phone ([#10](https://github.com/roykollensvendsen/claude-voice-mobile/issues/10)).
 
-*Last updated 2026-11-08 by claude-voice-work.*
+*Last updated 2026-11-08 by claude-voice-mobile-android.*
