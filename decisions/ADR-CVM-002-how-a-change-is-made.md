@@ -6,7 +6,7 @@ Proposed 2026-11-08, following Roy's instructions by voice the same day.
 
 ## Context
 
-Several Claude Code sessions build this app, as in Roy's math-quest project. Roy
+Several Claude Code sessions build this app, each owning one part. Roy
 often follows from his phone, or while driving. claude-voice and claude-voice-ui
 already work tests first, one pull request per change, landed by rebase
 (ADR-CV-005 in claude-voice).
