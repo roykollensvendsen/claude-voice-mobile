@@ -16,3 +16,9 @@ src/*/_version.py
 coverage.xml
 htmlcov/
 scripts/.mutate-recovery.json
+
+# Gradle and Android build output, and the path to this machine's Android SDK.
+.gradle/
+build/
+local.properties
+.kotlin/
