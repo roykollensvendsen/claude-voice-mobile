@@ -74,6 +74,10 @@ Measured on Roy's phone, three rounds so far, all with the test tone.
 
 | 5, continued | Bluetooth headset | player ducks itself | the book playing, then Claude started again | the call held, Claude heard Roy, and the book ducked itself the moment Claude asked for focus for a while |
 | 6 | Bluetooth headset | takes no focus | the tone first, then Claude | the tone ducked from the moment the phone went into call mode, but Claude did not hear Roy |
+| 7 | Bluetooth headset | takes no focus | Claude first, then the spoken book | the call held; the book ducked, but at a fifth of its volume it was too quiet to follow |
+
+After round 7 the ducked level became a setting on the screen, from 10 % to
+100 %, starting at 40 %. The real app needs the same setting.
 
 Rounds 4 and 5 were meant for the mode that takes no focus. After a reinstall
 the app had gone back to the first mode, which asks for focus the ordinary way.
