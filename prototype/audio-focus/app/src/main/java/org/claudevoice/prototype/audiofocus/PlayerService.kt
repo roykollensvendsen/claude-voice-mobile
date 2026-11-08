@@ -39,6 +39,8 @@ class PlayerService : MediaSessionService() {
     private var mode = Mode.SELF_DUCK
     private var playingUsages: Set<Int> = emptySet()
     private var othersRecording = false
+    private var duck = FocusPolicy.DEFAULT_DUCK
+    private var lastFocusChange: Int? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -67,15 +69,19 @@ class PlayerService : MediaSessionService() {
                 run = intent.getIntExtra(EXTRA_RUN, 1),
                 mode = Mode.fromSaved(intent.getStringExtra(EXTRA_MODE)),
                 url = intent.getStringExtra(EXTRA_URL).orEmpty().trim(),
+                duck = FocusPolicy.duckLevel(intent.getIntExtra(EXTRA_DUCK_PERCENT, 40)),
             )
             ACTION_STOP -> stop()
+            ACTION_SET_DUCK -> setDuck(FocusPolicy.duckLevel(intent.getIntExtra(EXTRA_DUCK_PERCENT, 40)))
         }
         return START_NOT_STICKY
     }
 
-    private fun start(run: Int, mode: Mode, url: String) {
+    private fun start(run: Int, mode: Mode, url: String, duck: Float) {
         abandonFocus()
         this.mode = mode
+        this.duck = duck
+        lastFocusChange = null
         playingUsages = audio.activePlaybackConfigurations.map { it.audioAttributes.usage }.toSet()
         othersRecording = audio.activeRecordingConfigurations.isNotEmpty()
         EventLog.begin(this, run, mode)
@@ -89,6 +95,7 @@ class PlayerService : MediaSessionService() {
                 "audioMode" to AudioNames.mode(audio.mode),
                 "alreadyPlaying" to playingUsages.joinToString(",") { AudioNames.usage(it) }.ifEmpty { "none" },
                 "alreadyRecording" to othersRecording.toString(),
+                "duck" to String.format(Locale.ROOT, "%.2f", duck),
             ),
         )
         player.setMediaItem(MediaItem.fromUri(if (url.isEmpty()) Uri.fromFile(testTone()) else Uri.parse(url)))
@@ -129,7 +136,8 @@ class PlayerService : MediaSessionService() {
     }
 
     private fun onFocusChange(mode: Mode, change: Int) {
-        val reaction = FocusPolicy.react(mode, change)
+        lastFocusChange = change
+        val reaction = FocusPolicy.react(mode, change, duck)
         player.volume = reaction.volume
         EventLog.add(
             "focus",
@@ -146,7 +154,7 @@ class PlayerService : MediaSessionService() {
     /** In the watching mode: duck while an assistant or a call plays, full volume otherwise. */
     private fun followWhatPlays(why: String) {
         if (mode != Mode.WATCH) return
-        val volume = FocusPolicy.watchVolume(playingUsages, audio.mode, othersRecording)
+        val volume = FocusPolicy.watchVolume(playingUsages, audio.mode, othersRecording, duck)
         if (volume == player.volume && why != "start") return
         player.volume = volume
         EventLog.add(
@@ -157,6 +165,17 @@ class PlayerService : MediaSessionService() {
                 "audioMode" to AudioNames.mode(audio.mode),
             ),
         )
+    }
+
+    /** A new duck level from the slider, applied at once if the player is ducked now. */
+    private fun setDuck(level: Float) {
+        duck = level
+        EventLog.add("duck-level", mapOf("duck" to String.format(Locale.ROOT, "%.2f", level)))
+        if (mode == Mode.WATCH) {
+            followWhatPlays("duck-level")
+        } else {
+            lastFocusChange?.let { player.volume = FocusPolicy.react(mode, it, duck).volume }
+        }
     }
 
     private fun stop() {
@@ -263,5 +282,7 @@ class PlayerService : MediaSessionService() {
         const val EXTRA_RUN = "run"
         const val EXTRA_MODE = "mode"
         const val EXTRA_URL = "url"
+        const val ACTION_SET_DUCK = "org.claudevoice.prototype.audiofocus.SET_DUCK"
+        const val EXTRA_DUCK_PERCENT = "duckPercent"
     }
 }

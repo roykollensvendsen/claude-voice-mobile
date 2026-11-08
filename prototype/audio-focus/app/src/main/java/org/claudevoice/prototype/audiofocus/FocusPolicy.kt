@@ -34,7 +34,12 @@ data class Reaction(val volume: Float, val pause: Boolean, val note: String)
  * what Android asks for and what Roy hears, so a request to pause is logged, not obeyed.
  */
 object FocusPolicy {
-    const val DUCKED_VOLUME = 0.2f
+    /** How loud the player plays while ducked, unless the tester chooses otherwise. */
+    const val DEFAULT_DUCK = 0.4f
+    const val DUCKED_VOLUME = DEFAULT_DUCK
+
+    /** A slider's percent as a volume, kept between 10 % and 100 %. */
+    fun duckLevel(percent: Int): Float = percent.coerceIn(10, 100) / 100f
 
     fun willPauseWhenDucked(mode: Mode): Boolean = mode == Mode.SELF_DUCK
 
@@ -52,10 +57,14 @@ object FocusPolicy {
      * a voice assistant always listens), plays an assistant's voice or a call, or the phone is
      * in a call mode.
      */
-    fun watchVolume(playingUsages: Set<Int>, audioMode: Int, othersRecording: Boolean): Float =
-        if (othersRecording || audioMode in callModes || playingUsages.any { it in talking }) DUCKED_VOLUME else 1f
+    fun watchVolume(
+        playingUsages: Set<Int>,
+        audioMode: Int,
+        othersRecording: Boolean,
+        duck: Float = DEFAULT_DUCK,
+    ): Float = if (othersRecording || audioMode in callModes || playingUsages.any { it in talking }) duck else 1f
 
-    fun react(mode: Mode, change: Int): Reaction {
+    fun react(mode: Mode, change: Int, duck: Float = DEFAULT_DUCK): Reaction {
         if (change == AudioManager.AUDIOFOCUS_GAIN) {
             return Reaction(1f, pause = false, note = "focus back; full volume")
         }
@@ -66,7 +75,7 @@ object FocusPolicy {
             else -> "unexpected change ${name(change)}"
         }
         return when (mode) {
-            Mode.SELF_DUCK -> Reaction(DUCKED_VOLUME, pause = false, note = "$asked; ducked itself")
+            Mode.SELF_DUCK -> Reaction(duck, pause = false, note = "$asked; ducked itself")
             Mode.SYSTEM_DUCK -> Reaction(1f, pause = false, note = "$asked; playing on, any duck is Android's")
             Mode.WATCH -> Reaction(1f, pause = false, note = "$asked; but this mode holds no focus")
         }

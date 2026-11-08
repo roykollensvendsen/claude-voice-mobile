@@ -127,3 +127,28 @@ class DefaultModeTest {
         assertEquals(Mode.DEFAULT, Mode.fromSaved("nonsense"))
     }
 }
+
+class DuckLevelTest {
+    // Round 7: at 0.2 the spoken book was too quiet to follow while Claude talked.
+    @Test
+    fun the_default_duck_level_keeps_speech_followable() {
+        assertEquals(0.4f, FocusPolicy.DEFAULT_DUCK, 0f)
+    }
+
+    @Test
+    fun the_chosen_duck_level_is_what_the_player_turns_down_to() {
+        assertEquals(
+            0.6f,
+            FocusPolicy.watchVolume(emptySet(), AudioManager.MODE_IN_COMMUNICATION, othersRecording = false, duck = 0.6f),
+            0f,
+        )
+        assertEquals(0.6f, FocusPolicy.react(Mode.SELF_DUCK, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT, duck = 0.6f).volume, 0f)
+    }
+
+    @Test
+    fun a_duck_level_is_kept_between_ten_and_a_hundred_percent() {
+        assertEquals(0.1f, FocusPolicy.duckLevel(0), 0f)
+        assertEquals(0.4f, FocusPolicy.duckLevel(40), 0f)
+        assertEquals(1f, FocusPolicy.duckLevel(150), 0f)
+    }
+}
