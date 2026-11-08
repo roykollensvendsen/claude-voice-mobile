@@ -78,7 +78,7 @@ class MainActivity : Activity() {
         fun heard(what: String) = button(what) { EventLog.add("heard", mapOf("what" to what)) }
 
         val share = button("Del loggen") {
-            val text = EventLog.file(this).takeIf { it.exists() }?.readText().orEmpty()
+            val text = runCatching { EventLog.file(this).takeIf { it.exists() }?.readText() }.getOrNull().orEmpty()
             startActivity(
                 Intent.createChooser(
                     Intent(Intent.ACTION_SEND).setType("text/plain")
@@ -119,7 +119,9 @@ class MainActivity : Activity() {
         }
         setContentView(root)
 
-        EventLog.file(this).takeIf { it.exists() }?.readLines()?.takeLast(200)?.forEach(::append)
+        // A log the app cannot read (left by an earlier install) must not stop the screen opening.
+        runCatching { EventLog.file(this).takeIf { it.exists() }?.readLines()?.takeLast(200) }
+            .getOrNull()?.forEach(::append)
         EventLog.listen(onLine)
     }
 
