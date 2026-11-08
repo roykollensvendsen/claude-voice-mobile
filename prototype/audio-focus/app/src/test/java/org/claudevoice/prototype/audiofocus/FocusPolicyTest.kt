@@ -1,5 +1,6 @@
 package org.claudevoice.prototype.audiofocus
 
+import android.media.AudioAttributes
 import android.media.AudioManager
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -62,5 +63,40 @@ class FocusPolicyTest {
         assertEquals("LOSS_TRANSIENT_CAN_DUCK", FocusPolicy.name(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK))
         assertEquals("GAIN", FocusPolicy.name(AudioManager.AUDIOFOCUS_GAIN))
         assertEquals("UNKNOWN(42)", FocusPolicy.name(42))
+    }
+}
+
+class WatchPolicyTest {
+    private val media = AudioAttributes.USAGE_MEDIA
+
+    @Test
+    fun the_watching_player_never_asks_for_focus() {
+        assertFalse(FocusPolicy.requestsFocus(Mode.WATCH))
+        assertTrue(FocusPolicy.requestsFocus(Mode.SELF_DUCK))
+        assertTrue(FocusPolicy.requestsFocus(Mode.SYSTEM_DUCK))
+    }
+
+    @Test
+    fun the_watching_player_ducks_while_an_assistant_or_a_call_is_playing() {
+        for (other in listOf(AudioAttributes.USAGE_ASSISTANT, AudioAttributes.USAGE_VOICE_COMMUNICATION)) {
+            assertEquals(
+                FocusPolicy.DUCKED_VOLUME,
+                FocusPolicy.watchVolume(setOf(media, other), AudioManager.MODE_NORMAL),
+                0f,
+            )
+        }
+    }
+
+    @Test
+    fun the_watching_player_ducks_while_the_phone_is_in_a_call_mode() {
+        for (mode in listOf(AudioManager.MODE_IN_COMMUNICATION, AudioManager.MODE_IN_CALL)) {
+            assertEquals(FocusPolicy.DUCKED_VOLUME, FocusPolicy.watchVolume(setOf(media), mode), 0f)
+        }
+    }
+
+    @Test
+    fun the_watching_player_plays_at_full_volume_when_only_media_plays() {
+        assertEquals(1f, FocusPolicy.watchVolume(setOf(media), AudioManager.MODE_NORMAL), 0f)
+        assertEquals(1f, FocusPolicy.watchVolume(emptySet(), AudioManager.MODE_NORMAL), 0f)
     }
 }

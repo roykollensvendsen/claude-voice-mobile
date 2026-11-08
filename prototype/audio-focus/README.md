@@ -25,6 +25,7 @@ Two modes, chosen on the screen:
 |---|---|---|---|
 | Ducks itself | asks Android not to duck it | lowers its own volume to 0.2 | lowers its own volume to 0.2 |
 | Android ducks | lets Android duck it | does nothing; Android may duck | does nothing; plays on |
+| Takes no focus | never asks for focus, so takes nothing from Claude | lowers its own volume to 0.2 while an assistant's voice or a call plays, or the phone is in a call mode | — |
 
 ## Build and test
 

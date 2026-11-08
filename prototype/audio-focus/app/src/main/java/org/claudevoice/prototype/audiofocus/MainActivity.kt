@@ -40,7 +40,8 @@ class MainActivity : Activity() {
         }
         val self = RadioButton(this).apply { text = "Spilleren demper seg selv"; id = View.generateViewId() }
         val system = RadioButton(this).apply { text = "Android demper"; id = View.generateViewId() }
-        val mode = RadioGroup(this).apply { addView(self); addView(system); check(self.id) }
+        val watch = RadioButton(this).apply { text = "Spilleren tar ikke lyden, demper seg selv"; id = View.generateViewId() }
+        val mode = RadioGroup(this).apply { addView(self); addView(system); addView(watch); check(self.id) }
         val url = EditText(this).apply { hint = "Valgfri lenke til en podkast (tomt = testtone)"; isSingleLine = true }
 
         fun button(label: String, onClick: () -> Unit) =
@@ -56,7 +57,14 @@ class MainActivity : Activity() {
                 Intent(this, PlayerService::class.java)
                     .setAction(PlayerService.ACTION_START)
                     .putExtra(PlayerService.EXTRA_RUN, run.selectedItemPosition + 1)
-                    .putExtra(PlayerService.EXTRA_MODE, if (mode.checkedRadioButtonId == self.id) Mode.SELF_DUCK.name else Mode.SYSTEM_DUCK.name)
+                    .putExtra(
+                        PlayerService.EXTRA_MODE,
+                        when (mode.checkedRadioButtonId) {
+                            self.id -> Mode.SELF_DUCK.name
+                            system.id -> Mode.SYSTEM_DUCK.name
+                            else -> Mode.WATCH.name
+                        },
+                    )
                     .putExtra(PlayerService.EXTRA_URL, url.text.toString()),
             )
         }
@@ -91,6 +99,7 @@ class MainActivity : Activity() {
             addView(TextView(this@MainActivity).apply { text = "Hva hørte du?" })
             addView(row(heard("dempet"), heard("pauset"), heard("full styrke")))
             addView(row(heard("tilbake"), heard("Claude hørte meg ikke"), heard("Claude var utydelig")))
+            addView(row(heard("Claudes samtale falt ut"), heard("Claude startet ikke")))
             addView(row(share, clear))
             addView(scroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         }
