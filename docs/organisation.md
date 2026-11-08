@@ -17,10 +17,11 @@ so.
 
 ## The rules the architect owns
 
-- **The protocol has a version**, written at the top of `docs/protocol.md` and in
-  every schema. Nothing is built on a version until it is frozen. A frozen
+- **The protocol has a version**, written at the top of
+  [`docs/agent-protocol.md` in claude-voice](https://github.com/roykollensvendsen/claude-voice/blob/main/docs/agent-protocol.md)
+  and in every schema. Nothing is built on a version until it is frozen. A frozen
   version is never edited; a change is a new version.
-- **The layers**, enforced in CI once the first module exists:
+- **The layers**, enforced in CI by `./gradlew checkLayers`:
   - the core never depends on a plugin;
   - no plugin depends on another plugin;
   - a plugin depends only on the core's plugin interface.
