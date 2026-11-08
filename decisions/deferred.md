@@ -15,4 +15,3 @@ read whenever a decision record is written and when a phase ends.
 | The Android gates in CI (Gradle build, Kotlin lint, unit and instrumented tests) | The first Kotlin code, the audio-focus prototype | A gate over no code checks nothing, and would claim a standard the repository does not yet hold |
 | The layer rules in CI | The first Gradle module besides the app | There are no modules for a rule to be about |
 | The role skills, `mobile-architecture` and `mobile-android` | The session that owns each one is started | A skill is written by the role that uses it, from what it has learned |
-| Branch protection, if the forge refuses it on a private repository | The repository is made public, or the account allows it | The forge refuses it on a free private repository; until then CONTRIBUTING says pull requests are the practice, not a lock |
