@@ -76,6 +76,7 @@ Measured on Roy's phone, three rounds so far, all with the test tone.
 | 6 | Bluetooth headset | takes no focus | the tone first, then Claude | the tone ducked from the moment the phone went into call mode, but Claude did not hear Roy |
 | 7 | Bluetooth headset | takes no focus | Claude first, then the spoken book | the call held; the book ducked, but at a fifth of its volume it was too quiet to follow |
 | 8 | Bluetooth headset | takes no focus | Claude first, then the spoken book | the call held and Claude was clear, but the book was far too quiet even at 100 %; with the phone turned fully up the book could be followed, but Claude was far too loud |
+| 9 | Bluetooth headset | takes no focus | Claude first, then the spoken book | played as media, Claude still drowned the book even boosted to 400 %; played as a call at 100 %, the book and Claude were about equally loud and both could be followed. As a call the book took a few seconds to start, and Claude's call may have dropped and come back once around pressing Start |
 
 After round 7 the ducked level became a setting on the screen, from 10 % to
 100 %, starting at 40 %. The real app needs the same setting.
@@ -105,6 +106,24 @@ Two things to try came out of it, both now on the test screen:
 
 The log now also records the phone's volume steps for media, the call and
 accessibility at the start and on each change of call mode.
+
+Round 9 settles the balance: **playing the book as a call works, a boost
+does not.** As media, Android's cut during the call is too deep for a boost to
+make up. As a call, the book and Claude share one volume and one route, and
+sound about equally loud. Still open from that round:
+
+- whether the one dropped and restored call came from pressing Start while
+  playing as a call; the log will show if the phone left call mode;
+- the few seconds of silence before the book started as a call;
+- how the book sounds as a call with no Claude call running. Outside a call,
+  the phone's volume buttons move media, not the call volume. The book may
+  also take another route or sound worse.
+
+So the test screen now has an "Auto" choice, the likely rule for the real
+app: the book plays as ordinary media, and switches to playing as a call when
+the phone goes into call mode, and back when it leaves it. The log notes each
+switch. The next round tries Auto with Claude starting and stopping during the
+book, and the book on its own as a call.
 
 Whether the call cap can be avoided altogether is not in the app's hands:
 Claude's app chooses the headset's call link, and on that link Android sends
