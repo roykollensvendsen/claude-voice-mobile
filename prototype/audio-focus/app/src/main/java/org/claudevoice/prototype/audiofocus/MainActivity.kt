@@ -50,9 +50,13 @@ class MainActivity : Activity() {
         }
         val url = EditText(this).apply { hint = "Valgfri lenke til en podkast (tomt = testtone)"; isSingleLine = true }
         val duckLabel = TextView(this)
-        fun showDuck(percent: Int) { duckLabel.text = "Styrke mens Claude snakker: ${percent.coerceIn(10, 100)} %" }
+        fun showDuck(percent: Int) {
+            val p = percent.coerceIn(FocusPolicy.MIN_PERCENT, FocusPolicy.MAX_PERCENT)
+            duckLabel.text = "Styrke mens Claude snakker: $p %" + if (p > 100) " (forsterket)" else ""
+        }
         val duckBar = SeekBar(this).apply {
-            max = 100
+            min = FocusPolicy.MIN_PERCENT
+            max = FocusPolicy.MAX_PERCENT
             progress = prefs.getInt("duckPercent", 40)
             showDuck(progress)
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -68,6 +72,22 @@ class MainActivity : Activity() {
                 }
             })
         }
+        val savedType = SoundType.fromSaved(prefs.getString("soundType", null))
+        val typeLabels = mapOf(
+            SoundType.MEDIA to "Media (som nå)",
+            SoundType.CALL to "Samtale (samme volum som Claude)",
+            SoundType.ACCESSIBILITY to "Tilgjengelighet",
+            SoundType.ASSISTANT to "Assistent",
+        )
+        val soundType = Spinner(this).apply {
+            adapter = ArrayAdapter(
+                this@MainActivity,
+                android.R.layout.simple_spinner_dropdown_item,
+                SoundType.entries.map { typeLabels.getValue(it) },
+            )
+            setSelection(savedType.ordinal)
+        }
+        fun chosenType() = SoundType.entries[soundType.selectedItemPosition]
         val podcast = Button(this).apply {
             text = "Bruk opplest bok (LibriVox)"
             setOnClickListener { url.setText(SPOKEN_PODCAST) }
@@ -87,15 +107,19 @@ class MainActivity : Activity() {
                 system.id -> Mode.SYSTEM_DUCK
                 else -> Mode.WATCH
             }
-            prefs.edit().putString("mode", chosen.name).apply()
+            prefs.edit().putString("mode", chosen.name).putString("soundType", chosenType().name).apply()
             startService(
                 Intent(this, PlayerService::class.java)
                     .setAction(PlayerService.ACTION_START)
                     .putExtra(PlayerService.EXTRA_RUN, run.selectedItemPosition + 1)
                     .putExtra(PlayerService.EXTRA_MODE, chosen.name)
                     .putExtra(PlayerService.EXTRA_URL, url.text.toString())
-                    .putExtra(PlayerService.EXTRA_DUCK_PERCENT, duckBar.progress),
+                    .putExtra(PlayerService.EXTRA_DUCK_PERCENT, duckBar.progress)
+                    .putExtra(PlayerService.EXTRA_SOUND_TYPE, chosenType().name),
             )
+        }
+        val showVolume = button("Vis volum") {
+            startService(Intent(this, PlayerService::class.java).setAction(PlayerService.ACTION_SHOW_VOLUME))
         }
         val stop = button("Stopp") {
             startService(Intent(this, PlayerService::class.java).setAction(PlayerService.ACTION_STOP))
@@ -128,7 +152,9 @@ class MainActivity : Activity() {
             addView(podcast)
             addView(duckLabel)
             addView(duckBar)
-            addView(row(start, stop))
+            addView(TextView(this@MainActivity).apply { text = "Spill boka som (gjelder ved Start):" })
+            addView(soundType)
+            addView(row(start, stop, showVolume))
             addView(TextView(this@MainActivity).apply { text = "Hva hørte du?" })
             addView(row(heard("dempet"), heard("pauset"), heard("full styrke")))
             addView(row(heard("tilbake"), heard("Claude hørte meg ikke"), heard("Claude var utydelig")))

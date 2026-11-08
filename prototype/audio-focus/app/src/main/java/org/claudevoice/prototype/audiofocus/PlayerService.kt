@@ -9,6 +9,7 @@ import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.AudioPlaybackConfiguration
 import android.media.AudioRecordingConfiguration
+import android.media.audiofx.LoudnessEnhancer
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
@@ -25,8 +26,8 @@ import java.io.File
 import java.util.Locale
 
 /**
- * Plays the test sound as a media-playback service and holds media audio focus itself, in
- * both modes, so every focus change reaches this code and is logged. Media3's own focus
+ * Plays the test sound as a media-playback service. In the modes that take the sound it
+ * holds audio focus itself, so every focus change reaches this code and is logged. Media3's own focus
  * handling is off, because it pauses on a transient loss and that would hide what Android
  * asked for.
  */
@@ -41,18 +42,15 @@ class PlayerService : MediaSessionService() {
     private var othersRecording = false
     private var duck = FocusPolicy.DEFAULT_DUCK
     private var lastFocusChange: Int? = null
+    private var soundType = SoundType.MEDIA
+    private var level = 1f
+    private var enhancer: LoudnessEnhancer? = null
 
     override fun onCreate() {
         super.onCreate()
         audio = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         player = ExoPlayer.Builder(this)
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setUsage(C.USAGE_MEDIA)
-                    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
-                    .build(),
-                /* handleAudioFocus = */ false,
-            )
+            .setAudioAttributes(attributesFor(SoundType.MEDIA), /* handleAudioFocus = */ false)
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
         player.addListener(playerListener)
@@ -70,17 +68,21 @@ class PlayerService : MediaSessionService() {
                 mode = Mode.fromSaved(intent.getStringExtra(EXTRA_MODE)),
                 url = intent.getStringExtra(EXTRA_URL).orEmpty().trim(),
                 duck = FocusPolicy.duckLevel(intent.getIntExtra(EXTRA_DUCK_PERCENT, 40)),
+                soundType = SoundType.fromSaved(intent.getStringExtra(EXTRA_SOUND_TYPE)),
             )
             ACTION_STOP -> stop()
             ACTION_SET_DUCK -> setDuck(FocusPolicy.duckLevel(intent.getIntExtra(EXTRA_DUCK_PERCENT, 40)))
+            ACTION_SHOW_VOLUME -> showVolume()
         }
         return START_NOT_STICKY
     }
 
-    private fun start(run: Int, mode: Mode, url: String, duck: Float) {
+    private fun start(run: Int, mode: Mode, url: String, duck: Float, soundType: SoundType) {
         abandonFocus()
         this.mode = mode
         this.duck = duck
+        this.soundType = soundType
+        player.setAudioAttributes(attributesFor(soundType), /* handleAudioFocus = */ false)
         lastFocusChange = null
         playingUsages = audio.activePlaybackConfigurations.map { it.audioAttributes.usage }.toSet()
         othersRecording = audio.activeRecordingConfigurations.isNotEmpty()
@@ -96,11 +98,13 @@ class PlayerService : MediaSessionService() {
                 "alreadyPlaying" to playingUsages.joinToString(",") { AudioNames.usage(it) }.ifEmpty { "none" },
                 "alreadyRecording" to othersRecording.toString(),
                 "duck" to String.format(Locale.ROOT, "%.2f", duck),
+                "soundType" to soundType.label,
             ),
         )
+        logVolumes("start")
         player.setMediaItem(MediaItem.fromUri(if (url.isEmpty()) Uri.fromFile(testTone()) else Uri.parse(url)))
         player.repeatMode = Player.REPEAT_MODE_ONE
-        player.volume = 1f
+        setLevel(1f)
         player.prepare()
 
         if (!FocusPolicy.requestsFocus(mode)) {
@@ -110,8 +114,8 @@ class PlayerService : MediaSessionService() {
             return
         }
         val attrs = FrameworkAttributes.Builder()
-            .setUsage(FrameworkAttributes.USAGE_MEDIA)
-            .setContentType(FrameworkAttributes.CONTENT_TYPE_MUSIC)
+            .setUsage(soundType.usage)
+            .setContentType(soundType.contentType)
             .build()
         val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
             .setAudioAttributes(attrs)
@@ -138,7 +142,7 @@ class PlayerService : MediaSessionService() {
     private fun onFocusChange(mode: Mode, change: Int) {
         lastFocusChange = change
         val reaction = FocusPolicy.react(mode, change, duck)
-        player.volume = reaction.volume
+        setLevel(reaction.volume)
         EventLog.add(
             "focus",
             mapOf(
@@ -154,9 +158,9 @@ class PlayerService : MediaSessionService() {
     /** In the watching mode: duck while an assistant or a call plays, full volume otherwise. */
     private fun followWhatPlays(why: String) {
         if (mode != Mode.WATCH) return
-        val volume = FocusPolicy.watchVolume(playingUsages, audio.mode, othersRecording, duck)
-        if (volume == player.volume && why != "start") return
-        player.volume = volume
+        val volume = FocusPolicy.watchVolume(playingUsages, audio.mode, othersRecording, duck, soundType.usage)
+        if (volume == level && why != "start") return
+        setLevel(volume)
         EventLog.add(
             "watch",
             mapOf(
@@ -174,8 +178,55 @@ class PlayerService : MediaSessionService() {
         if (mode == Mode.WATCH) {
             followWhatPlays("duck-level")
         } else {
-            lastFocusChange?.let { player.volume = FocusPolicy.react(mode, it, duck).volume }
+            lastFocusChange?.let { setLevel(FocusPolicy.react(mode, it, duck).volume) }
         }
+    }
+
+    /** Sets a level: up to 1 is the player's volume, above 1 a boost on its audio session. */
+    private fun setLevel(level: Float) {
+        this.level = level
+        val loudness = FocusPolicy.loudness(level)
+        player.volume = loudness.volume
+        val result = runCatching {
+            val e = enhancer ?: LoudnessEnhancer(player.audioSessionId).also { enhancer = it }
+            e.setTargetGain(loudness.boostMillibels)
+            e.enabled = loudness.boostMillibels > 0
+        }
+        if (loudness.boostMillibels > 0 || result.isFailure) {
+            EventLog.add(
+                "boost",
+                mapOf(
+                    "millibels" to loudness.boostMillibels.toString(),
+                    "result" to (result.exceptionOrNull()?.let { "failed: ${it.javaClass.simpleName}" } ?: "on"),
+                ),
+            )
+        }
+    }
+
+    private fun attributesFor(type: SoundType): AudioAttributes = AudioAttributes.Builder()
+        .setUsage(type.usage)
+        .setContentType(type.contentType)
+        .build()
+
+    /** Opens Android's own volume panel for the stream the book plays on, during a call too. */
+    private fun showVolume() {
+        audio.adjustStreamVolume(soundType.stream, AudioManager.ADJUST_SAME, AudioManager.FLAG_SHOW_UI)
+        logVolumes("show-volume")
+    }
+
+    /** The phone's own volume steps for media, the call and accessibility, as numbers. */
+    private fun logVolumes(why: String) {
+        fun step(stream: Int) = "${audio.getStreamVolume(stream)}/${audio.getStreamMaxVolume(stream)}"
+        EventLog.add(
+            "volumes",
+            mapOf(
+                "why" to why,
+                "media" to step(AudioManager.STREAM_MUSIC),
+                "call" to step(AudioManager.STREAM_VOICE_CALL),
+                "accessibility" to step(AudioManager.STREAM_ACCESSIBILITY),
+                "audioMode" to AudioNames.mode(audio.mode),
+            ),
+        )
     }
 
     private fun stop() {
@@ -246,6 +297,7 @@ class PlayerService : MediaSessionService() {
         if (Build.VERSION.SDK_INT >= 31) {
             audio.addOnModeChangedListener(mainExecutor) {
                 EventLog.add("audio-mode", mapOf("mode" to AudioNames.mode(it)))
+                logVolumes("audio-mode")
                 followWhatPlays("audio-mode")
             }
             audio.addOnCommunicationDeviceChangedListener(mainExecutor) {
@@ -271,6 +323,7 @@ class PlayerService : MediaSessionService() {
 
     override fun onDestroy() {
         abandonFocus()
+        enhancer?.release()
         session.release()
         player.release()
         super.onDestroy()
@@ -284,5 +337,7 @@ class PlayerService : MediaSessionService() {
         const val EXTRA_URL = "url"
         const val ACTION_SET_DUCK = "org.claudevoice.prototype.audiofocus.SET_DUCK"
         const val EXTRA_DUCK_PERCENT = "duckPercent"
+        const val EXTRA_SOUND_TYPE = "soundType"
+        const val ACTION_SHOW_VOLUME = "org.claudevoice.prototype.audiofocus.SHOW_VOLUME"
     }
 }
