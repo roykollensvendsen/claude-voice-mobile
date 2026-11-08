@@ -70,6 +70,19 @@ Measured on Roy's phone, three rounds so far, all with the test tone.
 | 2 | phone speaker | takes no focus | Claude first, then the music | the call held and both sides heard clearly, but the music stayed at full volume the whole time |
 | 3 | Bluetooth headset | takes no focus | Claude first, then the music | the call held and Claude heard Roy; the music was ducked from its start to the end of the call, also in silences, and both sounded quite good in the headset |
 
+| 4, 5 | Bluetooth headset | player ducks itself, by mistake | Claude first, then the spoken book | Claude's call dropped the moment the book started, both times |
+
+Rounds 4 and 5 were meant for the mode that takes no focus. After a reinstall
+the app had gone back to the first mode, which asks for focus the ordinary way.
+The log shows the phone leaving its call mode within a second of that request:
+the same failure as round 1, not a fault of the spoken book. The safe mode is
+now the default and is remembered.
+
+The log also shows what the Claude app does. When it takes the sound back, it
+asks for focus for a while (a transient request). Through a Bluetooth headset
+it plays and listens as a phone call. On the phone speaker it plays as
+ordinary media and listens as speech recognition.
+
 Round 3 is the case that matters most: Roy's main use is jogging with a
 Bluetooth headset, a podcast playing, talking to Claude. It passed with the
 test tone. It still has to be run with spoken audio, which is harder for the
