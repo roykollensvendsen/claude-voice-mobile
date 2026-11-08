@@ -38,6 +38,7 @@ class PlayerService : MediaSessionService() {
     private var focusRequest: AudioFocusRequest? = null
     private var mode = Mode.SELF_DUCK
     private var playingUsages: Set<Int> = emptySet()
+    private var othersRecording = false
 
     override fun onCreate() {
         super.onCreate()
@@ -76,6 +77,7 @@ class PlayerService : MediaSessionService() {
         abandonFocus()
         this.mode = mode
         playingUsages = audio.activePlaybackConfigurations.map { it.audioAttributes.usage }.toSet()
+        othersRecording = audio.activeRecordingConfigurations.isNotEmpty()
         EventLog.begin(this, run, mode)
         EventLog.add(
             "start",
@@ -86,6 +88,7 @@ class PlayerService : MediaSessionService() {
                 "outputs" to outputs(),
                 "audioMode" to AudioNames.mode(audio.mode),
                 "alreadyPlaying" to playingUsages.joinToString(",") { AudioNames.usage(it) }.ifEmpty { "none" },
+                "alreadyRecording" to othersRecording.toString(),
             ),
         )
         player.setMediaItem(MediaItem.fromUri(if (url.isEmpty()) Uri.fromFile(testTone()) else Uri.parse(url)))
@@ -143,7 +146,7 @@ class PlayerService : MediaSessionService() {
     /** In the watching mode: duck while an assistant or a call plays, full volume otherwise. */
     private fun followWhatPlays(why: String) {
         if (mode != Mode.WATCH) return
-        val volume = FocusPolicy.watchVolume(playingUsages, audio.mode)
+        val volume = FocusPolicy.watchVolume(playingUsages, audio.mode, othersRecording)
         if (volume == player.volume && why != "start") return
         player.volume = volume
         EventLog.add(
@@ -201,6 +204,7 @@ class PlayerService : MediaSessionService() {
         }, main)
         audio.registerAudioRecordingCallback(object : AudioManager.AudioRecordingCallback() {
             override fun onRecordingConfigChanged(configs: MutableList<AudioRecordingConfiguration>) {
+                othersRecording = configs.isNotEmpty()
                 EventLog.add(
                     "recorders",
                     mapOf(
@@ -209,6 +213,7 @@ class PlayerService : MediaSessionService() {
                         }.ifEmpty { "none" },
                     ),
                 )
+                followWhatPlays("recorders")
             }
         }, main)
         audio.registerAudioDeviceCallback(object : AudioDeviceCallback() {
