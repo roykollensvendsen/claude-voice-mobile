@@ -19,6 +19,7 @@ class ToneWavTest {
         assertEquals(16, le.getShort(34).toInt())
         assertEquals(2 * 8000 * 2, le.getInt(40))
         assertEquals(44 + 2 * 8000 * 2, wav.size)
+        assertEquals(wav.size.toLong(), ToneWav.size(seconds = 2, sampleRate = 8000))
     }
 
     @Test
