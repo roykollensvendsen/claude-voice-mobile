@@ -32,8 +32,9 @@ question.
 
 ## The test
 
-Each run: start the prototype playing, then use the Claude app's voice mode for
-two minutes. Ask a question, let it answer at length, interrupt it once.
+Each run is done in both orders: start the prototype playing, then use the
+Claude app's voice mode for two minutes; and start voice mode first, then the
+prototype. Ask a question, let it answer at length, interrupt it once.
 
 | Run | Output | Microphone |
 |---|---|---|
@@ -49,8 +50,9 @@ For each run, write down:
 - whether Claude heard Roy clearly, and was heard clearly;
 - the focus changes the prototype logged.
 
-Two variants of the player are run each time: one handling focus itself (lower
-the volume on a duck), and one leaving the duck to Android.
+Three variants of the player are run each time: one handling focus itself
+(lower the volume on a duck), one leaving the duck to Android, and one that
+never asks for focus and lowers itself while Claude's voice plays.
 
 ## What counts as passing
 
@@ -60,8 +62,23 @@ resumes.
 
 ## Findings
 
-Not yet measured. The emulator only shows that the app plays, holds media focus
-and logs; it has no Claude app, so it answers nothing here.
+Measured on Roy's phone, one round so far.
+
+| Run | Mode | Order | What happened |
+|---|---|---|---|
+| 1, phone speaker | player ducks itself | Claude's voice mode first, then the music | Claude's voice mode dropped at once; the music played on at full volume until stopped |
+
+What this shows: a player that asks Android for the speaker the ordinary way
+(permanent media focus) cuts off Claude's voice mode if it starts while Claude
+is talking. The likely cause is that Android passes that request on to the
+Claude app as a permanent loss of focus, and the Claude app ends its
+conversation. This is a guess until the logged focus changes are read.
+
+That matters for the real app, because "play my podcast" will often be said to
+Claude while its voice mode is on. A third mode was added for it: the player
+never asks for focus, so it takes nothing from Claude, and lowers itself while
+an assistant's voice or a call is playing. The test now runs both orders:
+music first, then Claude; and Claude first, then the music.
 
 ## If it fails
 
