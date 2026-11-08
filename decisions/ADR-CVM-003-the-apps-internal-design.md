@@ -21,12 +21,18 @@ chose a native Android app.
     foreground service of the microphone type.
   - From Android 14, each foreground service declares what it is for: location,
     microphone, camera, media playback or phone call.
+- **Sound is shared through audio focus.** An app asks for focus to play. When
+  another app asks too, Android tells the first to stop or to *duck*: play on,
+  quieter. Whether the Claude app's voice mode lets music duck is not documented.
+  It is the riskiest assumption here.
 ## Options considered
 
 - **One module holding everything.** Not taken: nothing would stop one phone
   function reaching into another, or the core growing a feature.
 - **A core module and one module per plugin, in Kotlin, with the dependency rules
   checked in CI.** **Chosen.**
+- **Pausing music while Claude talks.** Not taken: Roy asked for music and
+  Claude's voice to run together.
 ## Decision
 
 **A core, and plugins around it, as Gradle modules.**
@@ -52,6 +58,17 @@ logging, the list of people who may be called straight away and the camera are
 changed in the app's own screens. No tool the app offers to the hub writes them.
 A test proves each.
 
+**Playback runs beside Claude's voice, never instead of it.**
+
+- `playback` plays podcasts and music from the hub's Audiobookshelf and Navidrome
+  plugins, through Media3 as a media-playback service.
+- When another app takes audio focus to talk or listen, it ducks and comes back.
+  It never pauses for Claude.
+- **This is tested first**, before anything else is built. The prototype
+  plan says how: with and without a headset, wired and Bluetooth, with the
+  player ducking itself and with Android doing it. If the Claude app does not let
+  music duck, this record is reopened.
+
 **Built in this order:**
 
 1. The audio-focus prototype, measured, its findings written down.
@@ -66,6 +83,8 @@ A test proves each.
 - **Android's notification shows Roy what the app is using**, at every moment.
 - **Worse:** Gradle modules and a foreground service are more structure than a
   first app needs. They are chosen because the rules they enforce are the point.
+- **Worse:** if the Claude app does not let music duck, this app cannot fix that
+  alone.
 
 ## Related
 
