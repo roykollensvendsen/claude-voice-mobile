@@ -14,6 +14,8 @@ object ToneWav {
     private const val NOTE_SECONDS = 0.4
     private const val AMPLITUDE = 0.35
 
+    fun size(seconds: Int, sampleRate: Int = 22_050): Long = 44L + seconds.toLong() * sampleRate * 2
+
     fun make(seconds: Int, sampleRate: Int = 22_050): ByteArray {
         val samples = seconds * sampleRate
         val dataBytes = samples * 2

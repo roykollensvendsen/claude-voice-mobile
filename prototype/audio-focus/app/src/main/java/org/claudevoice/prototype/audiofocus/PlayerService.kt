@@ -142,8 +142,14 @@ class PlayerService : MediaSessionService() {
     }
 
     private fun testTone(): File {
+        val seconds = 60
         val f = File(cacheDir, "test-tone-v1.wav")
-        if (!f.exists()) f.writeBytes(ToneWav.make(seconds = 60))
+        if (f.length() != ToneWav.size(seconds)) {
+            // Written beside it and renamed, so a run killed mid-write leaves no broken file.
+            val part = File(cacheDir, "test-tone-v1.wav.part")
+            part.writeBytes(ToneWav.make(seconds))
+            part.renameTo(f)
+        }
         return f
     }
 
