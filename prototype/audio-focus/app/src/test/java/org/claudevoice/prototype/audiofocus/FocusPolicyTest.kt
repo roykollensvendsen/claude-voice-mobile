@@ -146,9 +146,24 @@ class DuckLevelTest {
     }
 
     @Test
-    fun a_duck_level_is_kept_between_ten_and_a_hundred_percent() {
+    fun a_duck_level_is_kept_between_ten_and_four_hundred_percent() {
         assertEquals(0.1f, FocusPolicy.duckLevel(0), 0f)
         assertEquals(0.4f, FocusPolicy.duckLevel(40), 0f)
-        assertEquals(1f, FocusPolicy.duckLevel(150), 0f)
+        assertEquals(1.5f, FocusPolicy.duckLevel(150), 0f)
+        assertEquals(4f, FocusPolicy.duckLevel(900), 0f)
+    }
+
+    // Round 8: over Bluetooth in a call the book was far too quiet even at 100 %, and turning
+    // the phone up made Claude too loud as well, so the book must go louder than the call.
+    @Test
+    fun a_level_up_to_a_hundred_percent_only_turns_the_player_down() {
+        assertEquals(Loudness(0.4f, 0), FocusPolicy.loudness(0.4f))
+        assertEquals(Loudness(1f, 0), FocusPolicy.loudness(1f))
+    }
+
+    @Test
+    fun a_level_above_a_hundred_percent_is_a_boost_in_millibels() {
+        assertEquals(Loudness(1f, 602), FocusPolicy.loudness(2f))
+        assertEquals(Loudness(1f, 1204), FocusPolicy.loudness(4f))
     }
 }

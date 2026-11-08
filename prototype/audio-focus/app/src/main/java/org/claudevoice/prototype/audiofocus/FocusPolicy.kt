@@ -26,6 +26,12 @@ enum class Mode(val label: String) {
     }
 }
 
+/**
+ * How a level becomes sound: the player's own volume, which cannot go above 1, and a boost
+ * in millibels on top of it, for levels above 100 %.
+ */
+data class Loudness(val volume: Float, val boostMillibels: Int)
+
 /** What the player does with its volume after a focus change, and what it notes. */
 data class Reaction(val volume: Float, val pause: Boolean, val note: String)
 
@@ -38,8 +44,19 @@ object FocusPolicy {
     const val DEFAULT_DUCK = 0.4f
     const val DUCKED_VOLUME = DEFAULT_DUCK
 
-    /** A slider's percent as a volume, kept between 10 % and 100 %. */
-    fun duckLevel(percent: Int): Float = percent.coerceIn(10, 100) / 100f
+    const val MIN_PERCENT = 10
+    const val MAX_PERCENT = 400
+
+    /** A slider's percent as a level, kept between 10 % and 400 %; above 100 % is a boost. */
+    fun duckLevel(percent: Int): Float = percent.coerceIn(MIN_PERCENT, MAX_PERCENT) / 100f
+
+    /** A level split into the player's volume and a boost: 200 % is full volume plus 6 dB. */
+    fun loudness(level: Float): Loudness =
+        if (level <= 1f) {
+            Loudness(level, 0)
+        } else {
+            Loudness(1f, Math.round(2000.0 * Math.log10(level.toDouble())).toInt())
+        }
 
     fun willPauseWhenDucked(mode: Mode): Boolean = mode == Mode.SELF_DUCK
 
@@ -55,14 +72,20 @@ object FocusPolicy {
     /**
      * The watching player's volume: ducked while another app records (this app never does, and
      * a voice assistant always listens), plays an assistant's voice or a call, or the phone is
-     * in a call mode.
+     * in a call mode. A usage the player itself plays as is ignored.
      */
     fun watchVolume(
         playingUsages: Set<Int>,
         audioMode: Int,
         othersRecording: Boolean,
         duck: Float = DEFAULT_DUCK,
-    ): Float = if (othersRecording || audioMode in callModes || playingUsages.any { it in talking }) duck else 1f
+        ownUsage: Int = AudioAttributes.USAGE_MEDIA,
+    ): Float {
+        // Android does not say which app a player belongs to, so this player's own kind of
+        // sound cannot count as someone else talking.
+        val othersTalking = playingUsages.any { it in talking && it != ownUsage }
+        return if (othersRecording || audioMode in callModes || othersTalking) duck else 1f
+    }
 
     fun react(mode: Mode, change: Int, duck: Float = DEFAULT_DUCK): Reaction {
         if (change == AudioManager.AUDIOFOCUS_GAIN) {

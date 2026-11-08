@@ -19,13 +19,19 @@ media audio focus itself and never pauses. Every event goes to logcat (tag
 - headsets connecting and disconnecting;
 - what the tester heard, from the buttons on the screen.
 
-Two modes, chosen on the screen:
+Three modes, chosen on the screen:
 
 | Mode | The player | On a "duck" request | On a "pause" request |
 |---|---|---|---|
-| Ducks itself | asks Android not to duck it | lowers its own volume to 0.2 | lowers its own volume to 0.2 |
+| Ducks itself | asks Android not to duck it | lowers itself to the chosen level | lowers itself to the chosen level |
 | Android ducks | lets Android duck it | does nothing; Android may duck | does nothing; plays on |
-| Takes no focus | never asks for focus, so takes nothing from Claude | lowers its own volume to 0.2 while an assistant's voice or a call plays, or the phone is in a call mode | — |
+| Takes no focus | never asks for focus, so takes nothing from Claude | lowers itself to the chosen level while an assistant's voice or a call plays, or the phone is in a call mode | — |
+
+The level while Claude talks is a slider from 10 % to 400 %, starting at
+40 %. Above 100 % the app boosts its own sound with Android's loudness
+enhancer. The book can also play as media, a call, accessibility or an
+assistant, each on its own volume; "Vis volum" opens the volume panel for the
+chosen kind, which is otherwise out of reach during a call.
 
 ## Build and test
 
