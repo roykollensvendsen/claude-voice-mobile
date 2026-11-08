@@ -27,7 +27,15 @@ uv run ruff check . && uv run ruff format --check .
 uv run mypy src
 uv run pytest -q --cov
 committed --no-merge-commit origin/main..HEAD
+./gradlew check
 ```
+
+`./gradlew check` is the app's gate. It needs JDK 17 (`JAVA_HOME`) and the Android
+SDK (`ANDROID_HOME`, or `sdk.dir` in an untracked `local.properties`). Among other
+things it runs `checkLayers`, which fails the build when a module depends on one
+it may not reach: the core on a plugin, a plugin on anything but `plugin-api`, or
+one plugin on another. The rules are in `build-logic/src/main/kotlin/LayerRules.kt`,
+and a new module is refused until it is placed in a layer there.
 
 Run them after the last edit, not before it. A file edited after the format
 gate ran will fail in continuous integration, which is the cheapest possible
