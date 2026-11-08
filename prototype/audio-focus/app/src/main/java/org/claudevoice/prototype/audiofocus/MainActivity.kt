@@ -78,6 +78,7 @@ class MainActivity : Activity() {
             SoundType.CALL to "Samtale (samme volum som Claude)",
             SoundType.ACCESSIBILITY to "Tilgjengelighet",
             SoundType.ASSISTANT to "Assistent",
+            SoundType.AUTO to "Auto: media, samtale under en samtale",
         )
         val soundType = Spinner(this).apply {
             adapter = ArrayAdapter(

@@ -19,7 +19,20 @@ enum class SoundType(val label: String, val usage: Int, val contentType: Int, va
         AudioManager.STREAM_ACCESSIBILITY,
     ),
     ASSISTANT("assistant", AudioAttributes.USAGE_ASSISTANT, AudioAttributes.CONTENT_TYPE_SPEECH, AudioManager.STREAM_MUSIC),
+
+    /** Media outside a call, a call while the phone is in one: see [playsAs]. */
+    AUTO("auto", AudioAttributes.USAGE_MEDIA, AudioAttributes.CONTENT_TYPE_MUSIC, AudioManager.STREAM_MUSIC),
     ;
+
+    /**
+     * The kind of sound actually played in the phone's audio mode. As media the book drowned
+     * under Claude's call even boosted; as a call it sat level with Claude (round 9).
+     */
+    fun playsAs(audioMode: Int): SoundType = when {
+        this != AUTO -> this
+        audioMode == AudioManager.MODE_IN_CALL || audioMode == AudioManager.MODE_IN_COMMUNICATION -> CALL
+        else -> MEDIA
+    }
 
     companion object {
         fun fromSaved(name: String?): SoundType = entries.firstOrNull { it.name == name } ?: MEDIA

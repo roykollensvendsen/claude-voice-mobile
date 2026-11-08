@@ -43,6 +43,8 @@ class PlayerService : MediaSessionService() {
     private var duck = FocusPolicy.DEFAULT_DUCK
     private var lastFocusChange: Int? = null
     private var soundType = SoundType.MEDIA
+    /** What the player plays as now: the choice itself, or for "auto" media or a call. */
+    private var playingAs = SoundType.MEDIA
     private var level = 1f
     private var enhancer: LoudnessEnhancer? = null
 
@@ -82,7 +84,8 @@ class PlayerService : MediaSessionService() {
         this.mode = mode
         this.duck = duck
         this.soundType = soundType
-        player.setAudioAttributes(attributesFor(soundType), /* handleAudioFocus = */ false)
+        playingAs = soundType.playsAs(audio.mode)
+        player.setAudioAttributes(attributesFor(playingAs), /* handleAudioFocus = */ false)
         lastFocusChange = null
         playingUsages = audio.activePlaybackConfigurations.map { it.audioAttributes.usage }.toSet()
         othersRecording = audio.activeRecordingConfigurations.isNotEmpty()
@@ -99,6 +102,7 @@ class PlayerService : MediaSessionService() {
                 "alreadyRecording" to othersRecording.toString(),
                 "duck" to String.format(Locale.ROOT, "%.2f", duck),
                 "soundType" to soundType.label,
+                "playsAs" to playingAs.label,
             ),
         )
         logVolumes("start")
@@ -114,8 +118,8 @@ class PlayerService : MediaSessionService() {
             return
         }
         val attrs = FrameworkAttributes.Builder()
-            .setUsage(soundType.usage)
-            .setContentType(soundType.contentType)
+            .setUsage(playingAs.usage)
+            .setContentType(playingAs.contentType)
             .build()
         val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
             .setAudioAttributes(attrs)
@@ -158,7 +162,7 @@ class PlayerService : MediaSessionService() {
     /** In the watching mode: duck while an assistant or a call plays, full volume otherwise. */
     private fun followWhatPlays(why: String) {
         if (mode != Mode.WATCH) return
-        val volume = FocusPolicy.watchVolume(playingUsages, audio.mode, othersRecording, duck, soundType.usage)
+        val volume = FocusPolicy.watchVolume(playingUsages, audio.mode, othersRecording, duck, playingAs.usage)
         if (volume == level && why != "start") return
         setLevel(volume)
         EventLog.add(
@@ -203,6 +207,15 @@ class PlayerService : MediaSessionService() {
         }
     }
 
+    /** For "auto": plays as a call while the phone is in one, as media otherwise. */
+    private fun switchSoundIfNeeded(audioMode: Int) {
+        val next = soundType.playsAs(audioMode)
+        if (next == playingAs) return
+        EventLog.add("sound-type", mapOf("from" to playingAs.label, "to" to next.label))
+        playingAs = next
+        player.setAudioAttributes(attributesFor(next), /* handleAudioFocus = */ false)
+    }
+
     private fun attributesFor(type: SoundType): AudioAttributes = AudioAttributes.Builder()
         .setUsage(type.usage)
         .setContentType(type.contentType)
@@ -210,7 +223,7 @@ class PlayerService : MediaSessionService() {
 
     /** Opens Android's own volume panel for the stream the book plays on, during a call too. */
     private fun showVolume() {
-        audio.adjustStreamVolume(soundType.stream, AudioManager.ADJUST_SAME, AudioManager.FLAG_SHOW_UI)
+        audio.adjustStreamVolume(playingAs.stream, AudioManager.ADJUST_SAME, AudioManager.FLAG_SHOW_UI)
         logVolumes("show-volume")
     }
 
@@ -298,6 +311,7 @@ class PlayerService : MediaSessionService() {
             audio.addOnModeChangedListener(mainExecutor) {
                 EventLog.add("audio-mode", mapOf("mode" to AudioNames.mode(it)))
                 logVolumes("audio-mode")
+                switchSoundIfNeeded(it)
                 followWhatPlays("audio-mode")
             }
             audio.addOnCommunicationDeviceChangedListener(mainExecutor) {
