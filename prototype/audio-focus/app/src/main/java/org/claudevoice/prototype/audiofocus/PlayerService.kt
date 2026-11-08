@@ -20,6 +20,11 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.analytics.AnalyticsListener
+import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.source.LoadEventInfo
+import androidx.media3.exoplayer.source.MediaLoadData
+import java.io.IOException
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import java.io.File
@@ -56,6 +61,7 @@ class PlayerService : MediaSessionService() {
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .build()
         player.addListener(playerListener)
+        player.addAnalyticsListener(soundOutputListener)
         session = MediaSession.Builder(this, player).build()
         watchTheRestOfTheAudioSystem()
     }
@@ -81,6 +87,8 @@ class PlayerService : MediaSessionService() {
 
     private fun start(run: Int, mode: Mode, url: String, duck: Float, soundType: SoundType) {
         abandonFocus()
+        main.removeCallbacks(heartbeat)
+        main.postDelayed(heartbeat, 15_000)
         this.mode = mode
         this.duck = duck
         this.soundType = soundType
@@ -242,7 +250,63 @@ class PlayerService : MediaSessionService() {
         )
     }
 
+    /**
+     * Every 15 s while started: what the player believes, and whether Android still lists a
+     * sound of the player's kind as playing. Round 9 lost the book with no event at all.
+     */
+    private val heartbeat = object : Runnable {
+        override fun run() {
+            val listed = audio.activePlaybackConfigurations.count { it.audioAttributes.usage == playingAs.usage }
+            EventLog.add(
+                "heartbeat",
+                mapOf(
+                    "isPlaying" to player.isPlaying.toString(),
+                    "state" to stateName(player.playbackState),
+                    "positionS" to (player.currentPosition / 1000).toString(),
+                    "bufferedS" to (player.totalBufferedDuration / 1000).toString(),
+                    "listedAs${playingAs.label}" to listed.toString(),
+                    "audioMode" to AudioNames.mode(audio.mode),
+                ),
+            )
+            main.postDelayed(this, 15_000)
+        }
+    }
+
+    private fun stateName(state: Int) = when (state) {
+        Player.STATE_IDLE -> "idle"
+        Player.STATE_BUFFERING -> "buffering"
+        Player.STATE_READY -> "ready"
+        Player.STATE_ENDED -> "ended"
+        else -> "unknown($state)"
+    }
+
+    /** The sound output under the player: tracks made and released, gaps, and failures. */
+    private val soundOutputListener = object : AnalyticsListener {
+        override fun onAudioTrackInitialized(time: AnalyticsListener.EventTime, config: AudioSink.AudioTrackConfig) {
+            EventLog.add("sound-output", mapOf("what" to "opened", "rate" to config.sampleRate.toString()))
+        }
+        override fun onAudioTrackReleased(time: AnalyticsListener.EventTime, config: AudioSink.AudioTrackConfig) {
+            EventLog.add("sound-output", mapOf("what" to "released"))
+        }
+        override fun onAudioUnderrun(time: AnalyticsListener.EventTime, bufferSize: Int, bufferSizeMs: Long, elapsedSinceLastFeedMs: Long) {
+            EventLog.add("sound-output", mapOf("what" to "ran dry", "sinceLastFeedMs" to elapsedSinceLastFeedMs.toString()))
+        }
+        override fun onAudioSinkError(time: AnalyticsListener.EventTime, error: Exception) {
+            EventLog.add("sound-output", mapOf("what" to "error", "error" to "${error.javaClass.simpleName}: ${error.message}"))
+        }
+        override fun onLoadError(
+            time: AnalyticsListener.EventTime,
+            info: LoadEventInfo,
+            data: MediaLoadData,
+            error: IOException,
+            wasCanceled: Boolean,
+        ) {
+            EventLog.add("download", mapOf("what" to "error", "error" to "${error.javaClass.simpleName}: ${error.message}"))
+        }
+    }
+
     private fun stop() {
+        main.removeCallbacks(heartbeat)
         EventLog.add("stop")
         abandonFocus()
         player.stop()
@@ -330,12 +394,17 @@ class PlayerService : MediaSessionService() {
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
             EventLog.add("player-play-when-ready", mapOf("value" to playWhenReady.toString(), "reason" to reason.toString()))
         }
+        override fun onPlaybackStateChanged(state: Int) {
+            EventLog.add("player-state", mapOf("state" to stateName(state)))
+        }
         override fun onPlayerError(error: PlaybackException) {
             EventLog.add("player-error", mapOf("error" to error.errorCodeName))
         }
     }
 
     override fun onDestroy() {
+        EventLog.add("service-ended")
+        main.removeCallbacks(heartbeat)
         abandonFocus()
         enhancer?.release()
         session.release()
