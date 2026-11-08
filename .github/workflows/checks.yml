@@ -95,3 +95,19 @@ jobs:
         run: uv run pytest -q -p no:cacheprovider --strict-markers --cov
       # - name: The project's own check
       #   run: uv run <command>
+
+  # The app: its layer rules, the rules' own tests, and every module's tests and lint.
+  # The runner image already holds the Android SDK and points ANDROID_HOME at it.
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20          # a cold Gradle cache takes about five minutes
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: "17"     # the version agreed for the app; Gradle runs on it too
+      # Caches Gradle's downloads, and refuses a wrapper jar Gradle did not publish.
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - name: The app's gate
+        run: ./gradlew check --console=plain
