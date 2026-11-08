@@ -62,14 +62,14 @@ way to learn that the gates are not a ritual performed once.
 5. **Open one pull request per change**, with the template's checklist
    answered. The template is the mechanism for the rules no script can measure.
 
-`main` is protected: a pull request is required, every status check has to pass,
-force pushes and deletions are refused, history stays linear, and none of it is
-waived for administrators. That is a repository setting rather than a test,
-because a test that proves it would need a credential to pass and would fail for
-the wrong reasons. It is the one rule here enforced by something the suite
-cannot see. `python scripts/forge.py roykollensvendsen/claude-voice-mobile` in the `start-repo` skill is what
-applies it, and it says plainly when the forge refuses — branch protection needs
-a public repository or a paid plan.
+`main` is not locked, and this guide does not pretend it is. GitHub refuses
+branch protection on a private repository without a paid plan. So the rule that
+every change goes through a pull request, with its checks green, is kept by
+practice and enforced by nothing. What the forge does enforce is that a pull
+request can land only by rebase. `python scripts/forge.py
+roykollensvendsen/claude-voice-mobile` in the `start-repo` skill sets both, and
+will lock `main` once the repository is public or the plan allows it;
+[`decisions/deferred.md`](decisions/deferred.md) holds that trigger.
 
 A pull request lands by rebase, and by nothing else. Every commit on a branch
 therefore arrives on `main` individually, so write each one to stand alone:
