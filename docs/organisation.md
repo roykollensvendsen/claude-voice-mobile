@@ -1,7 +1,7 @@
 # How the work is organised
 
-The app is built by a few Claude Code sessions, each owning one part, as in
-Roy's math-quest project but smaller. Roy is asked only about real choices.
+The app is built by a few Claude Code sessions, each owning one part. Roy is
+asked only about real choices.
 
 ## The sessions
 
