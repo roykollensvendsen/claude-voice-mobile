@@ -31,6 +31,7 @@ decision nobody writes down.
 |---|---|---|
 | [ADR-CVM-001](ADR-CVM-001-a-native-android-app-speaking-the-hubs-protocol.md) | A native Android app, speaking the protocol claude-voice specifies | Proposed |
 | [ADR-CVM-002](ADR-CVM-002-how-a-change-is-made.md) | How a change is made: owned parts, tests first, merged when green | Proposed |
+| [ADR-CVM-003](ADR-CVM-003-the-apps-internal-design.md) | The app's internal design: a core with plugin modules, one foreground service | Proposed |
 
 What is deliberately left undone, and what would make each worth doing, is
 [`deferred.md`](deferred.md). A thing left undone with no trigger is a thing
