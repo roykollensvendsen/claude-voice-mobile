@@ -39,9 +39,13 @@ object FocusPolicy {
     )
     private val callModes = setOf(AudioManager.MODE_IN_CALL, AudioManager.MODE_IN_COMMUNICATION)
 
-    /** The watching player's volume, from the usages now playing and the phone's audio mode. */
-    fun watchVolume(playingUsages: Set<Int>, audioMode: Int): Float =
-        if (audioMode in callModes || playingUsages.any { it in talking }) DUCKED_VOLUME else 1f
+    /**
+     * The watching player's volume: ducked while another app records (this app never does, and
+     * a voice assistant always listens), plays an assistant's voice or a call, or the phone is
+     * in a call mode.
+     */
+    fun watchVolume(playingUsages: Set<Int>, audioMode: Int, othersRecording: Boolean): Float =
+        if (othersRecording || audioMode in callModes || playingUsages.any { it in talking }) DUCKED_VOLUME else 1f
 
     fun react(mode: Mode, change: Int): Reaction {
         if (change == AudioManager.AUDIOFOCUS_GAIN) {

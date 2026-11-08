@@ -81,7 +81,7 @@ class WatchPolicyTest {
         for (other in listOf(AudioAttributes.USAGE_ASSISTANT, AudioAttributes.USAGE_VOICE_COMMUNICATION)) {
             assertEquals(
                 FocusPolicy.DUCKED_VOLUME,
-                FocusPolicy.watchVolume(setOf(media, other), AudioManager.MODE_NORMAL),
+                FocusPolicy.watchVolume(setOf(media, other), AudioManager.MODE_NORMAL, othersRecording = false),
                 0f,
             )
         }
@@ -90,13 +90,24 @@ class WatchPolicyTest {
     @Test
     fun the_watching_player_ducks_while_the_phone_is_in_a_call_mode() {
         for (mode in listOf(AudioManager.MODE_IN_COMMUNICATION, AudioManager.MODE_IN_CALL)) {
-            assertEquals(FocusPolicy.DUCKED_VOLUME, FocusPolicy.watchVolume(setOf(media), mode), 0f)
+            assertEquals(FocusPolicy.DUCKED_VOLUME, FocusPolicy.watchVolume(setOf(media), mode, othersRecording = false), 0f)
         }
     }
 
     @Test
     fun the_watching_player_plays_at_full_volume_when_only_media_plays() {
-        assertEquals(1f, FocusPolicy.watchVolume(setOf(media), AudioManager.MODE_NORMAL), 0f)
-        assertEquals(1f, FocusPolicy.watchVolume(emptySet(), AudioManager.MODE_NORMAL), 0f)
+        assertEquals(1f, FocusPolicy.watchVolume(setOf(media), AudioManager.MODE_NORMAL, othersRecording = false), 0f)
+        assertEquals(1f, FocusPolicy.watchVolume(emptySet(), AudioManager.MODE_NORMAL, othersRecording = false), 0f)
+    }
+
+    // Round 2 on the phone: Claude's voice mode played as plain media in a normal audio mode,
+    // so nothing above fired. It does always listen, and this app never records.
+    @Test
+    fun the_watching_player_ducks_while_another_app_listens_to_the_microphone() {
+        assertEquals(
+            FocusPolicy.DUCKED_VOLUME,
+            FocusPolicy.watchVolume(setOf(media), AudioManager.MODE_NORMAL, othersRecording = true),
+            0f,
+        )
     }
 }
