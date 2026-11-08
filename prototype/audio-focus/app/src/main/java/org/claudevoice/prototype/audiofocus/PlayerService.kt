@@ -36,6 +36,8 @@ class PlayerService : MediaSessionService() {
     private lateinit var audio: AudioManager
     private val main = Handler(Looper.getMainLooper())
     private var focusRequest: AudioFocusRequest? = null
+    private var mode = Mode.SELF_DUCK
+    private var playingUsages: Set<Int> = emptySet()
 
     override fun onCreate() {
         super.onCreate()
@@ -72,6 +74,8 @@ class PlayerService : MediaSessionService() {
 
     private fun start(run: Int, mode: Mode, url: String) {
         abandonFocus()
+        this.mode = mode
+        playingUsages = audio.activePlaybackConfigurations.map { it.audioAttributes.usage }.toSet()
         EventLog.begin(this, run, mode)
         EventLog.add(
             "start",
@@ -81,6 +85,7 @@ class PlayerService : MediaSessionService() {
                 "source" to (url.ifEmpty { "test tone" }),
                 "outputs" to outputs(),
                 "audioMode" to AudioNames.mode(audio.mode),
+                "alreadyPlaying" to playingUsages.joinToString(",") { AudioNames.usage(it) }.ifEmpty { "none" },
             ),
         )
         player.setMediaItem(MediaItem.fromUri(if (url.isEmpty()) Uri.fromFile(testTone()) else Uri.parse(url)))
@@ -88,6 +93,12 @@ class PlayerService : MediaSessionService() {
         player.volume = 1f
         player.prepare()
 
+        if (!FocusPolicy.requestsFocus(mode)) {
+            EventLog.add("focus-request", mapOf("result" to "none; this mode never asks for focus"))
+            followWhatPlays("start")
+            player.play()
+            return
+        }
         val attrs = FrameworkAttributes.Builder()
             .setUsage(FrameworkAttributes.USAGE_MEDIA)
             .setContentType(FrameworkAttributes.CONTENT_TYPE_MUSIC)
@@ -129,6 +140,22 @@ class PlayerService : MediaSessionService() {
         )
     }
 
+    /** In the watching mode: duck while an assistant or a call plays, full volume otherwise. */
+    private fun followWhatPlays(why: String) {
+        if (mode != Mode.WATCH) return
+        val volume = FocusPolicy.watchVolume(playingUsages, audio.mode)
+        if (volume == player.volume && why != "start") return
+        player.volume = volume
+        EventLog.add(
+            "watch",
+            mapOf(
+                "why" to why,
+                "volume" to String.format(Locale.ROOT, "%.2f", volume),
+                "audioMode" to AudioNames.mode(audio.mode),
+            ),
+        )
+    }
+
     private fun stop() {
         EventLog.add("stop")
         abandonFocus()
@@ -160,6 +187,7 @@ class PlayerService : MediaSessionService() {
     private fun watchTheRestOfTheAudioSystem() {
         audio.registerAudioPlaybackCallback(object : AudioManager.AudioPlaybackCallback() {
             override fun onPlaybackConfigChanged(configs: MutableList<AudioPlaybackConfiguration>) {
+                playingUsages = configs.map { it.audioAttributes.usage }.toSet()
                 EventLog.add(
                     "players",
                     mapOf(
@@ -168,6 +196,7 @@ class PlayerService : MediaSessionService() {
                         }.ifEmpty { "none" },
                     ),
                 )
+                followWhatPlays("players")
             }
         }, main)
         audio.registerAudioRecordingCallback(object : AudioManager.AudioRecordingCallback() {
@@ -191,7 +220,10 @@ class PlayerService : MediaSessionService() {
             }
         }, main)
         if (Build.VERSION.SDK_INT >= 31) {
-            audio.addOnModeChangedListener(mainExecutor) { EventLog.add("audio-mode", mapOf("mode" to AudioNames.mode(it))) }
+            audio.addOnModeChangedListener(mainExecutor) {
+                EventLog.add("audio-mode", mapOf("mode" to AudioNames.mode(it)))
+                followWhatPlays("audio-mode")
+            }
             audio.addOnCommunicationDeviceChangedListener(mainExecutor) {
                 EventLog.add("communication-device", mapOf("device" to AudioNames.device(it)))
             }

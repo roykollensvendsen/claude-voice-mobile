@@ -1,5 +1,6 @@
 package org.claudevoice.prototype.audiofocus
 
+import android.media.AudioAttributes
 import android.media.AudioManager
 
 /** Who lowers the music when another app takes the sound. */
@@ -9,6 +10,12 @@ enum class Mode(val label: String) {
 
     /** The player does nothing, and leaves any ducking to Android. */
     SYSTEM_DUCK("system"),
+
+    /**
+     * The player never asks for focus, so it can take nothing from another app. It ducks
+     * itself while another app plays an assistant's voice or a call, or the phone is in a call.
+     */
+    WATCH("watch"),
 }
 
 /** What the player does with its volume after a focus change, and what it notes. */
@@ -23,6 +30,19 @@ object FocusPolicy {
 
     fun willPauseWhenDucked(mode: Mode): Boolean = mode == Mode.SELF_DUCK
 
+    fun requestsFocus(mode: Mode): Boolean = mode != Mode.WATCH
+
+    private val talking = setOf(
+        AudioAttributes.USAGE_ASSISTANT,
+        AudioAttributes.USAGE_VOICE_COMMUNICATION,
+        AudioAttributes.USAGE_VOICE_COMMUNICATION_SIGNALLING,
+    )
+    private val callModes = setOf(AudioManager.MODE_IN_CALL, AudioManager.MODE_IN_COMMUNICATION)
+
+    /** The watching player's volume, from the usages now playing and the phone's audio mode. */
+    fun watchVolume(playingUsages: Set<Int>, audioMode: Int): Float =
+        if (audioMode in callModes || playingUsages.any { it in talking }) DUCKED_VOLUME else 1f
+
     fun react(mode: Mode, change: Int): Reaction {
         if (change == AudioManager.AUDIOFOCUS_GAIN) {
             return Reaction(1f, pause = false, note = "focus back; full volume")
@@ -36,6 +56,7 @@ object FocusPolicy {
         return when (mode) {
             Mode.SELF_DUCK -> Reaction(DUCKED_VOLUME, pause = false, note = "$asked; ducked itself")
             Mode.SYSTEM_DUCK -> Reaction(1f, pause = false, note = "$asked; playing on, any duck is Android's")
+            Mode.WATCH -> Reaction(1f, pause = false, note = "$asked; but this mode holds no focus")
         }
     }
 
