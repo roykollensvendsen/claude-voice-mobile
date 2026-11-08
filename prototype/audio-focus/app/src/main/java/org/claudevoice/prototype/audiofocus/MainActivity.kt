@@ -13,6 +13,7 @@ import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.ScrollView
+import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
 
@@ -48,6 +49,25 @@ class MainActivity : Activity() {
             check(when (saved) { Mode.SELF_DUCK -> self.id; Mode.SYSTEM_DUCK -> system.id; Mode.WATCH -> watch.id })
         }
         val url = EditText(this).apply { hint = "Valgfri lenke til en podkast (tomt = testtone)"; isSingleLine = true }
+        val duckLabel = TextView(this)
+        fun showDuck(percent: Int) { duckLabel.text = "Styrke mens Claude snakker: ${percent.coerceIn(10, 100)} %" }
+        val duckBar = SeekBar(this).apply {
+            max = 100
+            progress = prefs.getInt("duckPercent", 40)
+            showDuck(progress)
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(bar: SeekBar, value: Int, fromUser: Boolean) = showDuck(value)
+                override fun onStartTrackingTouch(bar: SeekBar) = Unit
+                override fun onStopTrackingTouch(bar: SeekBar) {
+                    prefs.edit().putInt("duckPercent", bar.progress).apply()
+                    startService(
+                        Intent(this@MainActivity, PlayerService::class.java)
+                            .setAction(PlayerService.ACTION_SET_DUCK)
+                            .putExtra(PlayerService.EXTRA_DUCK_PERCENT, bar.progress),
+                    )
+                }
+            })
+        }
         val podcast = Button(this).apply {
             text = "Bruk opplest bok (LibriVox)"
             setOnClickListener { url.setText(SPOKEN_PODCAST) }
@@ -73,7 +93,8 @@ class MainActivity : Activity() {
                     .setAction(PlayerService.ACTION_START)
                     .putExtra(PlayerService.EXTRA_RUN, run.selectedItemPosition + 1)
                     .putExtra(PlayerService.EXTRA_MODE, chosen.name)
-                    .putExtra(PlayerService.EXTRA_URL, url.text.toString()),
+                    .putExtra(PlayerService.EXTRA_URL, url.text.toString())
+                    .putExtra(PlayerService.EXTRA_DUCK_PERCENT, duckBar.progress),
             )
         }
         val stop = button("Stopp") {
@@ -105,6 +126,8 @@ class MainActivity : Activity() {
             addView(mode)
             addView(url)
             addView(podcast)
+            addView(duckLabel)
+            addView(duckBar)
             addView(row(start, stop))
             addView(TextView(this@MainActivity).apply { text = "Hva hørte du?" })
             addView(row(heard("dempet"), heard("pauset"), heard("full styrke")))
