@@ -1,6 +1,6 @@
 # The first prototype: Claude's voice and music together
 
-*A plan. Nothing here is built until Roy says yes.*
+*Built in [`prototype/audio-focus/`](../prototype/audio-focus/README.md). Not yet measured on a phone.*
 
 ## The question
 
@@ -57,6 +57,11 @@ the volume on a duck), and one leaving the duck to Android.
 Every run ducks and comes back, without a pause, and the conversation with Claude
 is as clear as without music. A run that pauses is a fail, even if the music
 resumes.
+
+## Findings
+
+Not yet measured. The emulator only shows that the app plays, holds media focus
+and logs; it has no Claude app, so it answers nothing here.
 
 ## If it fails
 
