@@ -25,6 +25,9 @@ chose a native Android app.
   another app asks too, Android tells the first to stop or to *duck*: play on,
   quieter. Whether the Claude app's voice mode lets music duck is not documented.
   It is the riskiest assumption here.
+- **Roy wants one app on the phone**, while the companion page stays in
+  claude-voice-ui, a browser window onto the hub from any device.
+
 ## Options considered
 
 - **One module holding everything.** Not taken: nothing would stop one phone
@@ -33,6 +36,9 @@ chose a native Android app.
   checked in CI.** **Chosen.**
 - **Pausing music while Claude talks.** Not taken: Roy asked for music and
   Claude's voice to run together.
+- **Copying the companion page into the app.** Not taken: two copies of the page
+  would drift. The app shows the hub's page in a web view instead.
+
 ## Decision
 
 **A core, and plugins around it, as Gradle modules.**
@@ -69,6 +75,18 @@ A test proves each.
   player ducking itself and with Android doing it. If the Claude app does not let
   music duck, this record is reopened.
 
+**Phone calls go through Android's own dialler.**
+
+- `phone` places and ends ordinary calls through Android's Telecom service, with
+  the permission to place calls. Android's own call screen shows the call.
+- A number on the phone's own list is called straight away. Any other number
+  from the hub waits for Roy's spoken yes, as ADR-CV-007 sets.
+
+**The companion page shows inside the app.** A screen of the app opens the hub's
+page in a web view, signed in like the browser. The page's code stays in
+claude-voice-ui. The app adds only what a browser cannot: the service and the
+plugins.
+
 **Built in this order:**
 
 1. The audio-focus prototype, measured, its findings written down.
@@ -85,6 +103,8 @@ A test proves each.
   first app needs. They are chosen because the rules they enforce are the point.
 - **Worse:** if the Claude app does not let music duck, this app cannot fix that
   alone.
+- **Worse:** the page in a web view depends on the hub being reachable. Away from
+  the tailnet, the app shows nothing there.
 
 ## Related
 
