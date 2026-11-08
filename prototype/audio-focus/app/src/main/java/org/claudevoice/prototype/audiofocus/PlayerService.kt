@@ -65,7 +65,7 @@ class PlayerService : MediaSessionService() {
         when (intent?.action) {
             ACTION_START -> start(
                 run = intent.getIntExtra(EXTRA_RUN, 1),
-                mode = Mode.valueOf(intent.getStringExtra(EXTRA_MODE) ?: Mode.SELF_DUCK.name),
+                mode = Mode.fromSaved(intent.getStringExtra(EXTRA_MODE)),
                 url = intent.getStringExtra(EXTRA_URL).orEmpty().trim(),
             )
             ACTION_STOP -> stop()

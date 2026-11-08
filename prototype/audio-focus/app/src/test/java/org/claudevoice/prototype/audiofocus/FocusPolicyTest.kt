@@ -111,3 +111,19 @@ class WatchPolicyTest {
         )
     }
 }
+
+class DefaultModeTest {
+    // On the phone, a reinstall put the choice back on the first mode, which takes focus and
+    // ended Claude's call twice. The mode that takes nothing from Claude is the safe default.
+    @Test
+    fun the_mode_that_never_takes_the_sound_is_the_default() {
+        assertEquals(Mode.WATCH, Mode.DEFAULT)
+    }
+
+    @Test
+    fun a_saved_mode_is_read_back_and_anything_else_falls_back_to_the_default() {
+        assertEquals(Mode.SELF_DUCK, Mode.fromSaved("SELF_DUCK"))
+        assertEquals(Mode.DEFAULT, Mode.fromSaved(null))
+        assertEquals(Mode.DEFAULT, Mode.fromSaved("nonsense"))
+    }
+}
