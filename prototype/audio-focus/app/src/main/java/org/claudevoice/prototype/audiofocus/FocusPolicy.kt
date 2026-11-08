@@ -16,6 +16,14 @@ enum class Mode(val label: String) {
      * itself while another app plays an assistant's voice or a call, or the phone is in a call.
      */
     WATCH("watch"),
+    ;
+
+    companion object {
+        /** The mode that takes nothing from Claude: the others ended its call on the phone. */
+        val DEFAULT = WATCH
+
+        fun fromSaved(name: String?): Mode = entries.firstOrNull { it.name == name } ?: DEFAULT
+    }
 }
 
 /** What the player does with its volume after a focus change, and what it notes. */

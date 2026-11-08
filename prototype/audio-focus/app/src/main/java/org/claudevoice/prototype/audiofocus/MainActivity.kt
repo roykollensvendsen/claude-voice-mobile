@@ -38,10 +38,15 @@ class MainActivity : Activity() {
         val run = Spinner(this).apply {
             adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, runs)
         }
-        val self = RadioButton(this).apply { text = "Spilleren demper seg selv"; id = View.generateViewId() }
-        val system = RadioButton(this).apply { text = "Android demper"; id = View.generateViewId() }
         val watch = RadioButton(this).apply { text = "Spilleren tar ikke lyden, demper seg selv"; id = View.generateViewId() }
-        val mode = RadioGroup(this).apply { addView(self); addView(system); addView(watch); check(self.id) }
+        val self = RadioButton(this).apply { text = "Tar lyden, demper seg selv (kan bryte Claude)"; id = View.generateViewId() }
+        val system = RadioButton(this).apply { text = "Tar lyden, Android demper (kan bryte Claude)"; id = View.generateViewId() }
+        val prefs = getSharedPreferences("choices", MODE_PRIVATE)
+        val saved = Mode.fromSaved(prefs.getString("mode", null))
+        val mode = RadioGroup(this).apply {
+            addView(watch); addView(self); addView(system)
+            check(when (saved) { Mode.SELF_DUCK -> self.id; Mode.SYSTEM_DUCK -> system.id; Mode.WATCH -> watch.id })
+        }
         val url = EditText(this).apply { hint = "Valgfri lenke til en podkast (tomt = testtone)"; isSingleLine = true }
         val podcast = Button(this).apply {
             text = "Bruk opplest bok (LibriVox)"
@@ -57,18 +62,17 @@ class MainActivity : Activity() {
         }
 
         val start = button("Start") {
+            val chosen = when (mode.checkedRadioButtonId) {
+                self.id -> Mode.SELF_DUCK
+                system.id -> Mode.SYSTEM_DUCK
+                else -> Mode.WATCH
+            }
+            prefs.edit().putString("mode", chosen.name).apply()
             startService(
                 Intent(this, PlayerService::class.java)
                     .setAction(PlayerService.ACTION_START)
                     .putExtra(PlayerService.EXTRA_RUN, run.selectedItemPosition + 1)
-                    .putExtra(
-                        PlayerService.EXTRA_MODE,
-                        when (mode.checkedRadioButtonId) {
-                            self.id -> Mode.SELF_DUCK.name
-                            system.id -> Mode.SYSTEM_DUCK.name
-                            else -> Mode.WATCH.name
-                        },
-                    )
+                    .putExtra(PlayerService.EXTRA_MODE, chosen.name)
                     .putExtra(PlayerService.EXTRA_URL, url.text.toString()),
             )
         }
