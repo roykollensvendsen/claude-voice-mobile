@@ -1,7 +1,8 @@
 # Design note: controlling the earbuds by voice
 
-Proposed 2026-11-09 by the Android developer session. Nothing is built until
-Roy says yes, and the architect has placed it in ADR-CVM-003.
+Proposed 2026-11-09 by the Android developer session, and approved from the
+architecture side by the architect session with the conditions below. Nothing
+is built until Roy says yes, and the architect has placed it in ADR-CVM-003.
 
 ## What Roy wants
 
@@ -20,7 +21,10 @@ What the earbuds can be asked for:
 
 It becomes one more plugin, `earbuds`, beside `status`, `playback` and the
 rest. It follows the layer rules: it depends only on `plugin-api`, and no
-other plugin depends on it.
+other plugin depends on it. It is one module, an Android library like
+`status`, because the link to the earbuds needs Android's Bluetooth classes.
+The plugin owns that link itself. The core does not hand out Bluetooth,
+because the core holds no phone function.
 
 The hub reaches the phone the usual way. Roy speaks to the Claude app, Claude
 calls the hub, and the hub calls the plugin on the phone over the tailnet.
@@ -33,8 +37,11 @@ Proposed tools:
 | Tool | Takes | Answers |
 |---|---|---|
 | `earbuds_status` | nothing | connected or not, the model, the sound mode, the battery of each bud and the case |
-| `earbuds_set_sound_mode` | `noise_cancelling`, `transparency` or `normal` | the mode now set |
-| `earbuds_set_equalizer` | a preset name | the preset now set, or a refusal naming the presets there are |
+| `earbuds_set_sound_mode` | one of `noise_cancelling`, `transparency`, `normal` | the mode now set |
+| `earbuds_set_equalizer` | one of the P40i's preset names | the preset now set |
+
+Both inputs are a fixed list in the tool's schema. A new mode or preset then
+changes the plugin's fingerprint, and Roy approves the plugin again.
 
 A refusal says in plain words what to do: "the earbuds are not connected",
 "the Soundcore app is holding the earbuds, close it".
@@ -43,6 +50,24 @@ None of these settings are on the list the hub may never change (microphone,
 location logging, the direct-call list, the camera). Every change is undone
 by saying the opposite. So no spoken yes is needed per call, only the usual
 approval of the plugin once.
+
+The plugin declares that it uses none of the phone's sensitive functions.
+Transparency uses the earbuds' own microphones inside the earbuds. Nothing is
+recorded or sent. The plugin's instructions say so, so Roy sees why when he
+approves it.
+
+## Privacy and permissions
+
+- **Nothing that identifies the earbuds leaves the phone.** The plugin reports
+  the model as the earbuds give it, never the Bluetooth name (often set by the
+  owner, and it can hold a person's name) or the address. Neither goes in the
+  log or the tests.
+- **The serial number stays out of the tests.** OpenSCQ30's recorded bytes for
+  the P40i hold one in plain text. It is replaced with a made-up value before
+  the bytes become our tests.
+- **One permission.** The library declares Android's permission to connect to
+  Bluetooth devices. The app asks for it, never the plugin. Without it, the
+  plugin refuses in words.
 
 ## Talking to the earbuds
 
@@ -61,16 +86,24 @@ There are two ways to reuse it:
   hundreds of devices we do not need.
 - **Port the P40i part to Kotlin.** *Recommended.* That means the packet
   framing, the checksum, and the P40i's sound modes, equalizer and battery,
-  a small part of OpenSCQ30. The plugin stays a plain Kotlin module like
-  the others. OpenSCQ30's recorded example bytes become our tests. The cost
-  is that fixes upstream must be carried over by hand. A note in the module
-  says which OpenSCQ30 version it follows.
+  a small part of OpenSCQ30. The framing and checksum use no Android types,
+  so OpenSCQ30's recorded example bytes run as ordinary unit tests. The cost
+  is that fixes upstream must be carried over by hand. The port follows
+  OpenSCQ30 v2.13.0, commit `c730b832f8d409b215fcd7f59c07c8a624dea9aa`.
+
+**The link is opened only for a call and closed after it.** A call that gets
+no answer in time becomes a refusal said in words. This keeps the plugin
+inside the app's existing background service, and leaves the earbuds free
+for the Soundcore app in between. Holding the link open all the time would
+need another kind of background service. That is a new decision, not part of
+this one.
 
 ## Licence
 
 OpenSCQ30 is GPL-3.0-or-later, and so is this app. Porting its code here is
-allowed. The ported files keep its copyright notice, say they are derived from
-it, and stay under the GPL. Nothing else is required.
+allowed. Each ported file carries OpenSCQ30's copyright notice, a line naming
+the upstream file it is derived from, and the GPL header. Nothing else is
+required.
 
 ## What to measure first
 
@@ -99,4 +132,6 @@ Proposed: `earbuds` comes straight after `status`, as the first plugin built
 in step 3. It is small and does not depend on the playback work. It is also
 used on every run. It cannot come earlier, because nothing can reach the
 phone before step 2. Adding a plugin and changing the order is a change to
-ADR-CVM-003, so it is the architect's to write and Roy's to approve.
+ADR-CVM-003, so it is the architect's to write and Roy's to approve. The
+architect amends that record in place once Roy has answered; ADR-CV-007 does
+not change, because the plugin format is generic.
