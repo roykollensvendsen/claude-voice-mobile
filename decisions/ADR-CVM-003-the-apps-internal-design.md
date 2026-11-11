@@ -3,6 +3,8 @@
 ## Status
 
 Proposed 2026-11-08. Settled with Roy Kollen Svendsen by voice on 2026-11-08.
+Amended 2026-11-11: `earbuds` added, and built first among the plugins, if Roy
+says yes on #26.
 Nothing beyond [the audio-focus prototype](../docs/prototype-audio-focus.md) is
 built until he accepts this record.
 
@@ -47,9 +49,11 @@ chose a native Android app.
   approval and the log of every call. It holds no phone function.
 - `plugin-api`: the one interface a plugin implements: its name, its tools and
   their inputs, as the plugin format in claude-voice specifies.
-- `plugins/<name>`: one module each: `status` (with find-phone),
-  `notifications`, `location`, `phone`, `playback`, `call`, and later `camera`
-  and `sensors`.
+- `plugins/<name>`: one module each: `status` (with find-phone), `earbuds`
+  (the earbuds' sound mode, equalizer and battery), `notifications`,
+  `location`, `phone`, `playback`, `call`, and later `camera` and `sensors`.
+  A plugin that needs a link of its own, such as Bluetooth to the earbuds,
+  owns it and opens it only for a call; the core hands out no phone function.
 - `app`: the screens, the settings and the service.
 - **The layer rules, checked in CI:** the core never depends on a plugin; a plugin
   depends only on `plugin-api`; no plugin depends on another.
@@ -92,7 +96,9 @@ plugins.
 1. The audio-focus prototype, measured, its findings written down.
 2. `core`, `plugin-api` and `status`, with the layer rules in CI, on a frozen
    protocol version.
-3. Then each plugin in the order ADR-CV-007 lists, one pull request at a time.
+3. `earbuds`: small, used every day, and needing nothing from the playback
+   work. Its design is [`docs/design-earbuds.md`](../docs/design-earbuds.md).
+4. Then each plugin in the order ADR-CV-007 lists, one pull request at a time.
 
 ## Consequences
 
