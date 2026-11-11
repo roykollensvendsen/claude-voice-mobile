@@ -3,8 +3,8 @@
 ## Status
 
 Proposed 2026-11-08. Settled with Roy Kollen Svendsen by voice on 2026-11-08.
-Amended 2026-11-11: `earbuds` added, and built first among the plugins, if Roy
-says yes on #26.
+Amended 2026-11-11: `earbuds` added, and built first among the plugins, as
+Roy decided on #26.
 Nothing beyond [the audio-focus prototype](../docs/prototype-audio-focus.md) is
 built until he accepts this record.
 
