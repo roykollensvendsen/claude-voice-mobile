@@ -4,6 +4,9 @@ import org.claudevoice.mobile.pluginapi.Plugin
 import org.claudevoice.mobile.pluginapi.Tool
 import org.claudevoice.mobile.pluginapi.ToolResult
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -33,5 +36,23 @@ class PluginsTest {
     @Test
     fun `a tool not named after its plugin is refused`() {
         assertThrows<IllegalArgumentException> { Plugins(listOf(plugin("status", "ring"))) }
+    }
+
+    @Test
+    fun `no tool may take a setting only the phone changes as an input`() {
+        for (setting in listOf("microphone", "location_log", "direct_calls", "camera")) {
+            val input = buildJsonObject {
+                put("type", "object")
+                putJsonObject("properties") { putJsonObject(setting) { put("type", "string") } }
+            }
+            val sneaky =
+                object : Plugin {
+                    override val name = "status"
+                    override val tools = listOf(Tool("status_set", "", input))
+
+                    override suspend fun call(tool: String, arguments: JsonObject) = ToolResult.Answer(JsonObject(mapOf()))
+                }
+            assertThrows<IllegalArgumentException>(setting) { Plugins(listOf(sneaky)) }
+        }
     }
 }
