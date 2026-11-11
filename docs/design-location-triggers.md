@@ -55,8 +55,12 @@ are set per trigger. It works with the phone in the car.
 - **A yes from the notification.** When the voice is not running, the phone
   could show the question as a notification with Yes and No. A tap is a live
   yes from Roy on his own phone. But protocol version 1 lets only the voice
-  confirm, so this would be a version 2 rule. The alternative is to ask only
-  by voice, and skip the question when the voice is not running.
+  confirm, so this would be a version 2 rule. A notification can be tapped on
+  a locked phone by anyone holding it. So the tap would count only once the
+  phone is unlocked, and never for a door or a lock.
+- **Recommended, by the hub session and the architect:** ask only by voice for
+  now. Skip the question when the voice is not running, until version 2 has
+  that rule.
 
 ## What it needs first
 
