@@ -35,32 +35,35 @@ in this skill makes a cell exempt by itself.
 
 ## 2. What this repository records today
 
-Almost nothing yet. The page reads a measure from one of two places: a
-`quality.json` in the clone, or a `levels.json` that main's checks keep as a
-build artifact named `quality-levels` (ADR-CV-009 in claude-voice). This
-repository has neither. So every cell except **Checks on main** reads "Nothing
-measured yet", and that is the honest answer, not a fault on the page.
+Almost nothing the page can read yet. The page reads a measure from one of two
+places: a `quality.json` in the clone, or a `levels.json` that main's checks
+keep as a build artifact named `quality-levels` (ADR-CV-009 in claude-voice).
+This repository has neither. So every cell except **Checks on main** reads
+"Nothing measured yet", and that is the honest answer, not a fault on the page.
 
-What the checks on main do run today, from `.github/workflows/checks.yml`:
+The repository has two halves, and the checks in `.github/workflows/checks.yml`
+treat them differently. The Python half is the tooling under `src/`, `scripts/`
+and `tests/`. The Kotlin half is the app: the Gradle modules `:core`,
+`:plugin-api`, `:app` and `:plugins:*`, with their layer rules in `build-logic/`.
 
-| Cell | Today |
-| --- | --- |
-| Test coverage | measured and printed by `pytest --cov`, with no limit and not kept |
-| Rules proven by a test | `scripts/mutate.py` exists; `scripts/mutations.toml` has no rows yet |
-| Most tangled function | ruff's `C901` is on (`select = ["ALL"]`), so above 10 already fails lint |
-| Lint and type errors | ruff and mypy run, and any error fails the checks |
-| Modules in their layers | not measured: no layers are written down |
-| Import cycles | not measured |
-| Copied code | not measured |
-| Time the tests take | not measured, and there is no time budget |
-| Checks on main | shown: the bridge asks GitHub for the latest run |
+| Cell | Python half | Kotlin half (the app) |
+| --- | --- | --- |
+| Test coverage | printed by `pytest --cov`, no limit, not kept | not measured: no coverage tool in the build |
+| Rules proven by a test | `scripts/mutate.py` runs; `scripts/mutations.toml` has no rows yet | not measured: `mutate.py` reads only `# RULE:` lines in `src/*.py` |
+| Most tangled function | ruff's `C901` is on (`select = ["ALL"]`), so above 10 fails lint | not measured: no Kotlin complexity tool |
+| Lint and type errors | ruff and mypy; any error fails the checks | the compiler and Android lint, inside `./gradlew check` |
+| Modules in their layers | not measured | `checkLayers` fails the build on a breach, but keeps no count |
+| Import cycles | not measured | Gradle refuses a cycle between modules |
+| Copied code | not measured | not measured |
+| Time the tests take | not measured, no time budget | not measured, no time budget |
+| Checks on main | shown: the bridge asks GitHub for the latest run | the same run |
 
 There is no `scripts/ratchet.py` here, nothing that refuses a measure made
 worse than main. Making the page show this repository is its own pull request:
 a step in the checks that writes `levels.json` with the fields `MEASURES` reads,
-and keeps it as `quality-levels`. Copy the bridge's own workflow and ratchet for
-that, not this page. The app is to be Kotlin, so the tools that measure it will
-change when the first Kotlin code lands.
+and keeps it as `quality-levels`. Copy the shape of the bridge's own workflow
+for that, not this page. Which tool measures the Kotlin half (coverage,
+complexity, copied code) is a choice to write down under `decisions/` first.
 
 ## 3. Measure it locally
 
@@ -77,7 +80,8 @@ uv run python scripts/mutate.py                # each rule switched off in turn
 uv run python scripts/mutate.py --write evidence/tests/rule-mutations.md   # the same, kept as evidence
 ```
 
-For every function's complexity score, not only the ones over ruff's limit:
+For every Python function's complexity score, not only the ones over ruff's
+limit:
 
 <!-- not run: lists every function with its score, and exits 1 on purpose -->
 ```
@@ -85,6 +89,17 @@ uv run ruff check --select C901 --config 'lint.mccabe.max-complexity = 0' --outp
 ```
 
 Each line reads `` `name` is too complex (N > 0) ``; the highest N is the cell.
+
+The app's gate is one Gradle command. It needs JDK 17 in `JAVA_HOME` and the
+Android SDK in `ANDROID_HOME` (or `sdk.dir` in an untracked `local.properties`).
+It runs the layer rules, their own tests, and every module's tests and lint.
+A cold cache takes some minutes, so run it in the background too.
+
+<!-- not run: needs JDK 17 and the Android SDK, and takes minutes on a cold cache -->
+```
+./gradlew check --console=plain                # the app's whole gate, as CI runs it
+./gradlew checkLayers                          # only the layer rules
+```
 
 ## 4. Fix the worst cell, test-first
 
@@ -127,14 +142,15 @@ has to change, the pull request says why.
 
 A nested function counts on its own, not towards the function around it. So
 hiding branches in a closure is not a fix the page will reward; give the helper
-a name at module level. Here ruff already refuses anything above 10, which is
-stricter than the page.
+a name at module level. In the Python half ruff already refuses anything above
+10, which is stricter than the page.
 
-**An import out of its layer, or a cycle.** No layers are written down here
-yet. When they are, a module may use, when it loads, only modules in layers
-below its own. Move the shared code down into a lower module that both can use,
-or pass the thing in as an argument. Do not hide the import inside a function to
-dodge the count. A new module gets its layer in the same pull request.
+**An import out of its layer, or a cycle.** In the app the layers are
+ADR-CVM-003's, written in `build-logic/src/main/kotlin/LayerRules.kt`. The core
+never depends on a plugin, a plugin depends only on `:plugin-api`, and no plugin
+depends on another. Move the shared code down into a module both may use, or
+pass the thing in through the plugin interface. A new module is refused until it
+has a layer there, in the same pull request. The Python half has no layers yet.
 
 **Copied code at 3 % or more.** A block counts when six or more lines in a row
 appear more than once, ignoring indentation. Put the block in one function both
