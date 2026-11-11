@@ -7,13 +7,14 @@ issues, labelled by role.
 | Session | Doing now | Blocked by | Waiting on Roy |
 |---|---|---|---|
 | Hub (`claude-voice-work`) | set up this repository; ADR-CV-007 proposed in claude-voice | — | ADR-CV-007, and starting the two sessions below |
-| Architect (`claude-voice-mobile-architect`) | protocol version 1 frozen ([claude-voice #192](https://github.com/roykollensvendsen/claude-voice/pull/192), locked by #209); the app's layers are checked in CI (#12); earbuds first among the plugins (ADR-CVM-003); next: privacy settings plugins can only read | — | — |
+| Architect (`claude-voice-mobile-architect`) | protocol version 1 frozen ([claude-voice #192](https://github.com/roykollensvendsen/claude-voice/pull/192), locked by #209); the app's layers are checked in CI (#12); plugins read the privacy settings and never change them (#35); proposed the earbuds' place in the order | Roy's confirmation of the order | [#26](https://github.com/roykollensvendsen/claude-voice-mobile/issues/26) |
 | Android developer (`claude-voice-mobile-android`) | audio-focus prototype on Roy's phone, nine rounds recorded: the book is level with Claude when played as a call; finding why it once stopped; design note for earbud control | Roy's next test round | #26 |
 
 ## Waiting on Roy (one list)
 
 1. Accept or change ADR-CV-007 in claude-voice.
 2. Say whether to start the architect and Android developer sessions.
-3. Later, once the laptops run the new agent: when machines that send no version are refused ([#16](https://github.com/roykollensvendsen/claude-voice-mobile/issues/16)). Nothing to do yet.
+3. Confirm where the earbuds come ([#26](https://github.com/roykollensvendsen/claude-voice-mobile/issues/26)). Proposed: the first plugin, as soon as the core can pair with the hub and answer it, without waiting for the settings screen. The earbuds read none of the phone's privacy settings, so the screen gives them nothing. Building them first also tests the whole path from the voice to the phone on something harmless. The voice gets three tools: status (connected or not, which buds are connected if the earbuds report it, the battery of each bud and the case, the sound mode), the sound mode, and the equalizer.
+4. Later, once the laptops run the new agent: when machines that send no version are refused ([#16](https://github.com/roykollensvendsen/claude-voice-mobile/issues/16)). Nothing to do yet.
 
 *Last updated 2026-11-11 by claude-voice-mobile-architect.*
