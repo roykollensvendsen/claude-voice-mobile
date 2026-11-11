@@ -32,7 +32,7 @@ class SettingsKeeperTest {
     }
 
     @Test
-    fun `what a plugin is handed cannot be turned into the writer`() {
+    fun `what a plugin is handed offers no setter and is not the writer`() {
         val keeper = SettingsKeeper()
         val seen: Any = keeper.settings
         assertFalse(seen is SettingsKeeper)

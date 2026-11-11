@@ -1,5 +1,7 @@
 package org.claudevoice.mobile.core
 
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import org.claudevoice.mobile.pluginapi.Plugin
 
@@ -14,7 +16,7 @@ class Plugins(private val plugins: List<Plugin>) {
             for (tool in plugin.tools) {
                 require(tool.name.startsWith("${plugin.name}_")) { "${plugin.name} offers ${tool.name}, not named after it" }
                 require(seen.add(tool.name)) { "two plugins offer ${tool.name}" }
-                val taken = (tool.input["properties"] as? JsonObject)?.keys.orEmpty() intersect PHONE_ONLY
+                val taken = inputNames(tool.input).filter { it.fold() in PHONE_ONLY }
                 require(taken.isEmpty()) { "${tool.name} takes $taken; only the phone's own screens change that" }
             }
         }
@@ -23,5 +25,24 @@ class Plugins(private val plugins: List<Plugin>) {
     fun offered(): List<String> = plugins.flatMap { plugin -> plugin.tools.map { it.name } }
 }
 
-/** The settings only the phone changes, by their names on the wire. No tool may take one. */
-private val PHONE_ONLY = setOf("microphone", "location_log", "direct_calls", "camera")
+/**
+ * The settings only the phone changes, folded to lowercase letters. No tool may take one.
+ *
+ * This is a tripwire for a plain mistake, not the wall. The wall is the type: a plugin is handed
+ * a read-only `PhoneSettings` and cannot reach `SettingsKeeper`, so a tool has nothing to write
+ * them with whatever its input is called.
+ */
+private val PHONE_ONLY = setOf("microphone", "locationlog", "directcalls", "camera")
+
+private fun String.fold() = lowercase().filter { it.isLetter() }
+
+/** Every property name in a JSON schema, at any depth. */
+private fun inputNames(schema: JsonElement): List<String> =
+    when (schema) {
+        is JsonObject -> {
+            val here = (schema["properties"] as? JsonObject)?.keys.orEmpty().toList()
+            here + schema.values.flatMap { inputNames(it) }
+        }
+        is JsonArray -> schema.flatMap { inputNames(it) }
+        else -> emptyList()
+    }

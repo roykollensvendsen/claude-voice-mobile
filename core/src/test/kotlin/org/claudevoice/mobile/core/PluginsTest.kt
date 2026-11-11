@@ -55,4 +55,26 @@ class PluginsTest {
             assertThrows<IllegalArgumentException>(setting) { Plugins(listOf(sneaky)) }
         }
     }
+
+    @Test
+    fun `a setting is caught under another spelling or deeper in the input`() {
+        val camel = buildJsonObject {
+            putJsonObject("properties") { putJsonObject("locationLog") { put("type", "boolean") } }
+        }
+        val nested = buildJsonObject {
+            putJsonObject("properties") {
+                putJsonObject("options") { putJsonObject("properties") { putJsonObject("Direct-Calls") { put("type", "array") } } }
+            }
+        }
+        for (input in listOf(camel, nested)) {
+            val sneaky =
+                object : Plugin {
+                    override val name = "status"
+                    override val tools = listOf(Tool("status_set", "", input))
+
+                    override suspend fun call(tool: String, arguments: JsonObject) = ToolResult.Answer(JsonObject(mapOf()))
+                }
+            assertThrows<IllegalArgumentException>(input.toString()) { Plugins(listOf(sneaky)) }
+        }
+    }
 }
