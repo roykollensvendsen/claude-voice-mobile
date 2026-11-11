@@ -7,7 +7,7 @@ issues, labelled by role.
 | Session | Doing now | Blocked by | Waiting on Roy |
 |---|---|---|---|
 | Hub (`claude-voice-work`) | set up this repository; ADR-CV-007 proposed in claude-voice | — | ADR-CV-007, and starting the two sessions below |
-| Architect (`claude-voice-mobile-architect`) | protocol version 1 frozen ([claude-voice #192](https://github.com/roykollensvendsen/claude-voice/pull/192), locked by #209); the app's layers are checked in CI (#12); plugins read the privacy settings and never change them (#35); proposed the earbuds' place in the order, and a microphone mute button | Roy's confirmation of both | [#26](https://github.com/roykollensvendsen/claude-voice-mobile/issues/26), and 4 below |
+| Architect (`claude-voice-mobile-architect`) | protocol version 1 frozen ([claude-voice #192](https://github.com/roykollensvendsen/claude-voice/pull/192), locked by #209); the app's layers are checked in CI (#12); plugins read the privacy settings and never change them (#35); proposals for the earbuds' place, a microphone mute and location triggers | Roy's answers | [#26](https://github.com/roykollensvendsen/claude-voice-mobile/issues/26), and 4 and 5 below |
 | Android developer (`claude-voice-mobile-android`) | audio-focus prototype on Roy's phone, nine rounds recorded: the book is level with Claude when played as a call; finding why it once stopped; design note for earbud control | Roy's next test round | #26 |
 
 ## Waiting on Roy (one list)
@@ -20,6 +20,7 @@ issues, labelled by role.
    - **What "truly stops" can mean:** in a call the app owns itself (the later `call` plugin), muting stops sending sound, and a test proves it. For the Claude app's voice mode, which is another app, the only way is Android's mute for the whole phone. Whether that really silences the Claude app is not documented, so it is measured first, like the audio-focus test. It needs your yes to install the test on your phone.
    - **The earbuds' own buttons:** later, only if they can be heard without taking over music control. That is also measured, with the earbuds work.
    - **Order:** the measurement first. Then the button and the notification together with the settings screen, after the earbuds. Saying yes changes ADR-CVM-003, which the architect writes.
-5. Later, once the laptops run the new agent: when machines that send no version are refused ([#16](https://github.com/roykollensvendsen/claude-voice-mobile/issues/16)). Nothing to do yet.
+5. Yes or no to location triggers ([design](docs/design-location-triggers.md)): near a saved place, the bridge asks, for example about the garage door, and acts only on your yes. Places stay on the phone, and only "arriving at place X" reaches the hub. It needs protocol version 2. One question for you: may a tap on Yes in the phone's notification count, when the voice is not running? Order: after the earbuds, the settings screen and the mute.
+6. Later, once the laptops run the new agent: when machines that send no version are refused ([#16](https://github.com/roykollensvendsen/claude-voice-mobile/issues/16)). Nothing to do yet.
 
 *Last updated 2026-11-11 by claude-voice-mobile-architect.*
