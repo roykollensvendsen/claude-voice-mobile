@@ -7,4 +7,5 @@
     <string name="tailnet_hub_silent">The phone is on the tailnet, but the hub isn\'t answering. Is the laptop on and awake?</string>
     <string name="tailnet_ok">The phone is on the tailnet.</string>
     <string name="open_tailscale">Open Tailscale</string>
+    <string name="no_browser">No app on this phone can open the download page. Install Tailscale from Google Play, or open this address in a browser: %1$s</string>
 </resources>

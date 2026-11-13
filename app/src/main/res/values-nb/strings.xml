@@ -7,4 +7,5 @@
     <string name="tailnet_hub_silent">Telefonen er på tailnettet, men huben svarer ikke. Er laptopen på og våken?</string>
     <string name="tailnet_ok">Telefonen er på tailnettet.</string>
     <string name="open_tailscale">Åpne Tailscale</string>
+    <string name="no_browser">Ingen app på telefonen kan åpne nedlastingssiden. Installer Tailscale fra Google Play, eller åpne denne adressen i en nettleser: %1$s</string>
 </resources>
