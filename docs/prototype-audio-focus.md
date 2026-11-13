@@ -1,6 +1,40 @@
 # The first prototype: Claude's voice and music together
 
-*Built in [`prototype/audio-focus/`](../prototype/audio-focus/README.md). Not yet measured on a phone.*
+*Built in [`prototype/audio-focus/`](../prototype/audio-focus/README.md). Measured on Roy's phone in nine rounds, November 2026.*
+
+## The answer
+
+**Music and podcasts can keep playing under Claude's voice. They duck, they do
+not pause, and the design stands.** ADR-CV-007 is not reopened.
+
+Over a Bluetooth headset, Roy's main case, three rules make it work. Each is
+needed:
+
+1. **Never ask Android for the sound while Claude's call is on.** A player
+   that asks the ordinary way ends Claude's call at once (rounds 1, 4 and 5).
+   A player that asks for nothing leaves the call alone (rounds 2, 3 and 7–9).
+2. **Duck by yourself, never pause.** The player lowers itself while another
+   app records or plays a call, or the phone is in call mode. Roy sets how much
+   (rounds 3 and 7).
+3. **Play as call sound while the call is on, as media otherwise.** As media,
+   Android holds the book far below Claude during a call, and no boost makes
+   up for it. As call sound, the book and Claude are about equally loud and
+   both can be followed (round 9).
+
+Still open; none of it changes the answer:
+
+- Once, the book played as call sound stopped by itself after three minutes,
+  with no reason the log could see. More logging is in the app. The real app
+  must notice a silent stop and start again.
+- Switching between media and call sound automatically ("Auto") is built but
+  not yet tried on the phone.
+- The phone speaker and the wired headset were tried only with the test tone
+  (rounds 1 and 2).
+- Whether Claude hears Roy over the ducked sound: yes in rounds 3 and 5, no
+  in round 6, and not yet checked with the book played as call sound.
+
+These are carried into the real app's `playback` plugin and tested there,
+rather than holding back the app.
 
 ## The question
 
