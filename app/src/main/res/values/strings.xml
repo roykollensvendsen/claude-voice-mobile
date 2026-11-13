@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="tailnet_checking">Checking the phone\'s network…</string>
+    <string name="tailnet_no_network">The phone has no network. Turn off airplane mode, or find Wi-Fi or mobile data.</string>
     <string name="tailnet_tailscale_off">Tailscale looks like it\'s off on this phone. Start it, and the hub can reach the phone again.</string>
     <string name="tailnet_other_vpn">Another VPN seems to be on. Tailscale can\'t run beside it. Turn that VPN off, and start Tailscale.</string>
     <string name="tailnet_hub_silent">The phone is on the tailnet, but the hub isn\'t answering. Is the laptop on and awake?</string>

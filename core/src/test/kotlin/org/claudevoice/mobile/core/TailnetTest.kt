@@ -52,8 +52,13 @@ class TailnetTest {
     }
 
     @Test
-    fun `no VPN at all means Tailscale is off`() {
-        assertEquals(TailnetState.TailscaleOff, Tailnet.state(emptyList(), hubAnswering = null))
+    fun `a network with no VPN means Tailscale is off`() {
+        assertEquals(TailnetState.TailscaleOff, Tailnet.state(listOf(cellular("192.0.2.10")), hubAnswering = null))
+    }
+
+    @Test
+    fun `no network at all is its own state, not Tailscale being off`() {
+        assertEquals(TailnetState.NoNetwork, Tailnet.state(emptyList(), hubAnswering = null))
     }
 
     @Test
