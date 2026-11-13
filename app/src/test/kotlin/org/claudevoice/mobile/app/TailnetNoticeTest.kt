@@ -31,7 +31,7 @@ class TailnetNoticeTest {
     }
 
     @Test
-    fun on_the_tailnet_says_the_hub_can_reach_the_phone() {
+    fun on_the_tailnet_says_only_that() {
         val notice = TailnetNotice.of(TailnetState.OnTailnet(address))
         assertEquals(R.string.tailnet_ok, notice.text)
         assertNull(notice.action)
