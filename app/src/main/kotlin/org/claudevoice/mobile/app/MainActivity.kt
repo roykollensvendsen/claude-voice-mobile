@@ -1,6 +1,7 @@
 package org.claudevoice.mobile.app
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -22,7 +23,15 @@ class MainActivity : Activity() {
         val open = Button(this).apply {
             setText(R.string.open_tailscale)
             visibility = View.GONE
-            setOnClickListener { startActivity(OpenTailscale.intent(this@MainActivity)) }
+            setOnClickListener {
+                try {
+                    startActivity(OpenTailscale.intent(this@MainActivity))
+                } catch (_: ActivityNotFoundException) {
+                    // No browser for the download page: say where to get Tailscale instead.
+                    message.text = getString(R.string.no_browser, TAILSCALE_DOWNLOAD)
+                    message.setTextIsSelectable(true)
+                }
+            }
         }
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
