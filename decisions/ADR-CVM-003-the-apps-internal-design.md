@@ -5,6 +5,8 @@
 Proposed 2026-11-08. Settled with Roy Kollen Svendsen by voice on 2026-11-08.
 Amended 2026-11-11: `earbuds` added, and built first among the plugins, as
 Roy decided on #26.
+Amended 2026-11-13: the listener's service type is special use,
+not data sync, because of Android 15's six-hour limit.
 Nothing beyond [the audio-focus prototype](../docs/prototype-audio-focus.md) is
 built until he accepts this record.
 
@@ -23,6 +25,11 @@ chose a native Android app.
     foreground service of the microphone type.
   - From Android 14, each foreground service declares what it is for: location,
     microphone, camera, media playback or phone call.
+  - From Android 15, for an app that targets it, a data-sync foreground service
+    may run at most six hours in any 24. After that Android stops it.
+  - Whether a foreground service keeps the network through Doze, or the app
+    must also be excused from battery optimisation, is measured with the
+    listener.
 - **Sound is shared through audio focus.** An app asks for focus to play. When
   another app asks too, Android tells the first to stop or to *duck*: play on,
   quieter. Whether the Claude app's voice mode lets music duck is not documented.
@@ -59,9 +66,27 @@ chose a native Android app.
   depends only on `plugin-api`; no plugin depends on another.
 
 **One foreground service, holding only the types in use.** It starts with the
-data-sync type for the tailnet listener. It adds location, microphone, camera,
-media playback or phone call only while a plugin needs it, and drops it after.
-Its notification is always shown, and says which of those are on.
+special-use type for the tailnet listener, described as "a listener for the
+owner's own assistant hub". The data-sync type was the first choice. Android 15
+stops it after six hours a day, and that would leave the phone deaf to the hub
+for the rest of the day. Special use has no time limit, and the app is
+installed by its owner, not through a store that would have to approve it. It
+adds location, microphone, camera, media playback or phone call only while a
+plugin needs it, and drops it after. Its notification is always shown, and says
+which of those are on.
+
+The manifest needs these pieces for it:
+
+- the permissions `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_SPECIAL_USE`,
+  and `POST_NOTIFICATIONS`, asked for at first start, so that the notification
+  can be shown;
+- on the service, `android:foregroundServiceType="specialUse"`, and the
+  property `android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE` holding the
+  description above;
+- for each later type, its own `FOREGROUND_SERVICE_<TYPE>` permission, and the
+  type added to the service's list. The manifest lists every type the service
+  may ever hold, and the service starts with only the ones in use. A plugin
+  that adds a type changes the manifest in the same pull request.
 
 **Settings that only the phone changes.** The microphone setting, location
 logging, the list of people who may be called straight away and the camera are
