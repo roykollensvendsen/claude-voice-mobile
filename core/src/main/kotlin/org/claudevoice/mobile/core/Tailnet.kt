@@ -13,7 +13,10 @@ data class SeenNetwork(val isVpn: Boolean, val addresses: List<InetAddress>)
  * and a button; the core gives the state, never the words.
  */
 sealed interface TailnetState {
-    /** On the tailnet, at [address], and the hub is answering or has not been asked yet. */
+    /**
+     * On the tailnet, at [address] (the IPv4 one when there is one), and the hub is answering
+     * or has not been asked yet.
+     */
     data class OnTailnet(val address: InetAddress) : TailnetState
 
     /** No VPN at all: Tailscale looks like it is off. */
@@ -47,7 +50,10 @@ object Tailnet {
     fun state(networks: List<SeenNetwork>, hubAnswering: Boolean?): TailnetState {
         val vpns = networks.filter { it.isVpn }
         if (vpns.isEmpty()) return TailnetState.TailscaleOff
-        val address = vpns.flatMap { it.addresses }.firstOrNull(::isTailnetAddress) ?: return TailnetState.OtherVpn
+        val tailnet = vpns.flatMap { it.addresses }.filter(::isTailnetAddress)
+        // Protocol v1 listens on the IPv4 address. An IPv6-only tailnet still counts as on, for
+        // the message, though the listener cannot serve version 1 there.
+        val address = tailnet.firstOrNull { it is Inet4Address } ?: tailnet.firstOrNull() ?: return TailnetState.OtherVpn
         return if (hubAnswering == false) TailnetState.HubNotAnswering(address) else TailnetState.OnTailnet(address)
     }
 
