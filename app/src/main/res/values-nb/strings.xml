@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="tailnet_checking">Sjekker telefonens nett …</string>
+    <string name="tailnet_no_network">Telefonen har ikke nett. Skru av flymodus, eller finn wifi eller mobildata.</string>
     <string name="tailnet_tailscale_off">Tailscale ser ut til å være av på denne telefonen. Start den, så når huben telefonen igjen.</string>
     <string name="tailnet_other_vpn">En annen VPN ser ut til å være på. Tailscale kan ikke kjøre ved siden av. Skru av den VPN-en, og start Tailscale.</string>
     <string name="tailnet_hub_silent">Telefonen er på tailnettet, men huben svarer ikke. Er laptopen på og våken?</string>

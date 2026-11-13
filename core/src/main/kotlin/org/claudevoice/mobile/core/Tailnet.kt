@@ -19,7 +19,10 @@ sealed interface TailnetState {
      */
     data class OnTailnet(val address: InetAddress) : TailnetState
 
-    /** No VPN at all: Tailscale looks like it is off. */
+    /** No network at all, as in airplane mode. Nothing to say about Tailscale. */
+    data object NoNetwork : TailnetState
+
+    /** A network but no VPN: Tailscale looks like it is off. */
     data object TailscaleOff : TailnetState
 
     /** A VPN without a tailnet address. A guess: Android runs one VPN at a time. */
@@ -48,6 +51,7 @@ object Tailnet {
      * (null: not known yet). Addresses on any network other than the VPN are ignored.
      */
     fun state(networks: List<SeenNetwork>, hubAnswering: Boolean?): TailnetState {
+        if (networks.isEmpty()) return TailnetState.NoNetwork
         val vpns = networks.filter { it.isVpn }
         if (vpns.isEmpty()) return TailnetState.TailscaleOff
         val tailnet = vpns.flatMap { it.addresses }.filter(::isTailnetAddress)

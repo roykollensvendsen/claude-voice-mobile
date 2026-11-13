@@ -38,6 +38,13 @@ class TailnetNoticeTest {
     }
 
     @Test
+    fun no_network_says_so_with_no_button() {
+        val notice = TailnetNotice.of(TailnetState.NoNetwork)
+        assertEquals(R.string.tailnet_no_network, notice.text)
+        assertNull(notice.action)
+    }
+
+    @Test
     fun the_tailscale_button_opens_the_app_or_else_its_download_page() {
         assertEquals(OpenTailscale.App, OpenTailscale.choose(installed = true))
         assertEquals(OpenTailscale.DownloadPage(TAILSCALE_DOWNLOAD), OpenTailscale.choose(installed = false))
