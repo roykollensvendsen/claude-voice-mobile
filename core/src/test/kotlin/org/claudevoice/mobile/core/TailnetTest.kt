@@ -38,6 +38,13 @@ class TailnetTest {
         assertEquals(TailnetState.OnTailnet(ip("fd7a:115c:a1e0::5")), state)
     }
 
+    // Protocol v1 has the agent listen on its IPv4 tailnet address; the hub dials 100.x.
+    @Test
+    fun `the IPv4 tailnet address wins when the VPN has both`() {
+        val state = Tailnet.state(listOf(vpn("fd7a:115c:a1e0::5", "100.101.102.103")), hubAnswering = null)
+        assertEquals(TailnetState.OnTailnet(ip("100.101.102.103")), state)
+    }
+
     // Mobile carriers hand out 100.64 addresses too (carrier-grade NAT).
     @Test
     fun `a 100_64 address on the mobile network says nothing`() {
