@@ -12,6 +12,7 @@ enum class NoticeAction { OPEN_TAILSCALE }
 data class TailnetNotice(val text: Int, val action: NoticeAction?) {
     companion object {
         fun of(state: TailnetState): TailnetNotice = when (state) {
+            TailnetState.NoNetwork -> TailnetNotice(R.string.tailnet_no_network, null)
             TailnetState.TailscaleOff -> TailnetNotice(R.string.tailnet_tailscale_off, NoticeAction.OPEN_TAILSCALE)
             TailnetState.OtherVpn -> TailnetNotice(R.string.tailnet_other_vpn, NoticeAction.OPEN_TAILSCALE)
             is TailnetState.HubNotAnswering -> TailnetNotice(R.string.tailnet_hub_silent, null)

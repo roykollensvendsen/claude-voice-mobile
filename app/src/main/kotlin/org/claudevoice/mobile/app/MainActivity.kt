@@ -15,9 +15,13 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val message = TextView(this).apply { textSize = 18f }
+        val message = TextView(this).apply {
+            textSize = 18f
+            setText(R.string.tailnet_checking)
+        }
         val open = Button(this).apply {
             setText(R.string.open_tailscale)
+            visibility = View.GONE
             setOnClickListener { startActivity(OpenTailscale.intent(this@MainActivity)) }
         }
         val root = LinearLayout(this).apply {
