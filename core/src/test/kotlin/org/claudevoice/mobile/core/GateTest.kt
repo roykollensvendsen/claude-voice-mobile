@@ -131,4 +131,28 @@ class GateTest {
         assertEquals(null, r.code)
         assertEquals(null, r.headers["Claude-Voice-Protocol"])
     }
+
+    @Test
+    fun `on an IPv6 tailnet address the Host is the bracketed address, in any written form`() {
+        val v6 = Gate(own = InetAddress.getByName("fd7a:115c:a1e0::2"), port = 8812, machine = "phone-a", hub = paired)
+        fun host(value: String) =
+            request(headers = arrayOf("Host" to value, "Claude-Voice-Protocol" to "1", "Authorization" to "Bearer $key"))
+        assertEquals(GateDecision.Pass(version = 1), v6.check(host("[fd7a:115c:a1e0::2]:8812")))
+        assertEquals(GateDecision.Pass(version = 1), v6.check(host("[FD7A:115C:A1E0:0:0:0:0:2]:8812")))
+        assertEquals(403, refused(v6.check(host("fd7a:115c:a1e0::2:8812"))).status)
+        assertEquals(403, refused(v6.check(host("[fd7a:115c:a1e0::3]:8812"))).status)
+        assertEquals(403, refused(v6.check(host("[fd7a:115c:a1e0::2]:8813"))).status)
+    }
+
+    @Test
+    fun `a Host that is a name is refused without being looked up`() {
+        assertEquals(403, refused(gate().check(request(headers = arrayOf("Host" to "localhost:8812")))).status)
+    }
+
+    @Test
+    fun `a Host that is not a valid address is refused, not thrown`() {
+        val v6 = Gate(own = InetAddress.getByName("fd7a:115c:a1e0::2"), port = 8812, machine = "phone-a", hub = paired)
+        assertEquals(403, refused(v6.check(request(headers = arrayOf("Host" to "[:::]:8812")))).status)
+        assertEquals(403, refused(gate().check(request(headers = arrayOf("Host" to "100.64.0.256:8812")))).status)
+    }
 }

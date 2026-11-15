@@ -1,5 +1,6 @@
 package org.claudevoice.mobile.core
 
+import java.net.Inet6Address
 import java.net.InetAddress
 import java.security.MessageDigest
 
@@ -87,7 +88,7 @@ class Gate(
 
     /** The first check the request fails, in the order the protocol lists them, or null. */
     private fun refusal(request: GateRequest, version: Int): GateDecision.Refuse? = when {
-        request.header("Host") != "${own.hostAddress}:$port" ->
+        !isOwnHost(request.header("Host")) ->
             refuse(FORBIDDEN, version, "call this phone at its tailnet address and port", "unauthorized")
         request.header("Origin") != null ->
             refuse(FORBIDDEN, version, "a request from a web page is refused", "unauthorized")
@@ -95,6 +96,27 @@ class Gate(
             refuse(FORBIDDEN, version, "call from a machine on the tailnet", "not_on_tailnet")
         request.path == PAIR_PATH -> null
         else -> unauthorised(request)?.let { refuse(UNAUTHORIZED, version, it, "unauthorized").askingForKey() }
+    }
+
+    /**
+     * Whether [host] is this phone's address and port: `100.64.0.2:8812`, or for IPv6 the
+     * address in brackets, `[fd7a:115c:a1e0::2]:8812`, in any form it can be written. Only an
+     * address written out is read, so a name is never looked up.
+     */
+    private fun isOwnHost(host: String?): Boolean {
+        val match = host?.let { HOST.matchEntire(it) } ?: return false
+        val (v6, v4, givenPort) = match.destructured
+        val given = if (own is Inet6Address) v6Bytes(v6) else v4Bytes(v4)
+        return givenPort == "$port" && given != null && given.contentEquals(own.address)
+    }
+
+    /** An IPv6 address written out; one with a colon is never looked up as a name. */
+    private fun v6Bytes(text: String): ByteArray? =
+        if (':' !in text) null else runCatching { InetAddress.getByName(text) }.getOrNull()?.address
+
+    private fun v4Bytes(text: String): ByteArray? {
+        val parts = text.split(".").mapNotNull { it.toInt().takeIf { n -> n <= BYTE_MAX } }
+        return if (parts.size == IPV4_PARTS) ByteArray(IPV4_PARTS) { parts[it].toByte() } else null
     }
 
     /** Why the request is not the paired hub's, or null when it is. */
@@ -129,6 +151,9 @@ class Gate(
         const val VERSION_HEADER = "Claude-Voice-Protocol"
         const val PAIR_PATH = "/pair"
         private val SPOKEN = listOf(1)
+        private const val BYTE_MAX = 255
+        private const val IPV4_PARTS = 4
+        private val HOST = Regex("""(?:\[([0-9A-Fa-f:]+)]|(\d{1,3}(?:\.\d{1,3}){3})):(\d+)""")
         private const val BAD_REQUEST = 400
         private const val UNAUTHORIZED = 401
         private const val FORBIDDEN = 403
