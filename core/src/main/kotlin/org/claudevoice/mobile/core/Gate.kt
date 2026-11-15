@@ -115,7 +115,7 @@ class Gate(
         if (':' !in text) null else runCatching { InetAddress.getByName(text) }.getOrNull()?.address
 
     private fun v4Bytes(text: String): ByteArray? {
-        val parts = text.split(".").mapNotNull { it.toInt().takeIf { n -> n <= BYTE_MAX } }
+        val parts = text.split(".").mapNotNull { it.toIntOrNull()?.takeIf { n -> n <= BYTE_MAX } }
         return if (parts.size == IPV4_PARTS) ByteArray(IPV4_PARTS) { parts[it].toByte() } else null
     }
 
