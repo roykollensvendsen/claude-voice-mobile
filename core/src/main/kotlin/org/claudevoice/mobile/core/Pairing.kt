@@ -46,10 +46,12 @@ class Pairing(private val clock: () -> Instant, private val random: Random) {
 
     /** The hub's `POST /pair`, from [caller], whose tailnet name [nameOf] looks up. */
     fun pair(offered: String, caller: InetAddress, nameOf: (InetAddress) -> String?): PairResult {
-        val name = if (Tailnet.isTailnetAddress(caller)) nameOf(caller) else null
+        val onTailnet = Tailnet.isTailnetAddress(caller)
+        val name = if (onTailnet) nameOf(caller) else null
         val shown = code
         return when {
-            name == null -> PairResult.Refused(FORBIDDEN, "pair from a machine on the tailnet", "not_on_tailnet")
+            !onTailnet -> PairResult.Refused(FORBIDDEN, "pair from a machine on the tailnet", "not_on_tailnet")
+            name == null -> PairResult.Refused(FORBIDDEN, NO_NAME, "not_on_tailnet")
             shown == null || clock() >= until -> wrongCode()
             !MessageDigest.isEqual(offered.toByteArray(), shown.toByteArray()) -> wrongCode().also { tooMany() }
             else -> paired(name, caller)
@@ -74,6 +76,8 @@ class Pairing(private val clock: () -> Instant, private val random: Random) {
     companion object {
         /** Letters and digits that neither look nor sound like one another. */
         const val ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+        private const val NO_NAME = "the phone cannot find this machine's tailnet name; turn on MagicDNS " +
+            "in the Tailscale admin console, under DNS (login.tailscale.com/admin/dns), then pair again"
         private const val CODE_LENGTH = 8
         private const val KEY_BYTES = 32
         private const val MAX_WRONG = 5

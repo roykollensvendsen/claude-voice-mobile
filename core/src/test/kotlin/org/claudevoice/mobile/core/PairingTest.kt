@@ -116,6 +116,8 @@ class PairingTest {
         val code = pairing.newCode()
         val r = refused(pairing.pair(code, hub) { null })
         assertEquals("not_on_tailnet", r.code)
+        assertTrue(r.error.contains("turn on MagicDNS"), r.error)
+        assertTrue(r.error.contains("login.tailscale.com/admin/dns"), r.error)
         assertTrue(pair(code) is PairResult.Paired)
     }
 }
