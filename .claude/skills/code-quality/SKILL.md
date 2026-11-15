@@ -51,12 +51,12 @@ The repository has two halves. The Kotlin half is the app: the Gradle modules
 | Cell | Kotlin half (on the page) | Python half (not on the page) |
 | --- | --- | --- |
 | Test coverage | Kover, lines, merged over the four modules | printed by `pytest --cov`, not kept |
-| Rules proven by a test | Pitest's mutants caught, in `:core` only | `scripts/mutate.py`; `scripts/mutations.toml` has no rows yet |
+| Rules proven by a test | not measured: no rule rows yet; Pitest's mutants caught in `:core` go under their own key, `mutants` | `scripts/mutate.py`; `scripts/mutations.toml` has no rows yet |
 | Most tangled function | detekt's cyclomatic count, the highest in each file | ruff's `C901`, so above 10 fails lint |
 | Lint and type errors | detekt's findings and Android lint's errors; Kotlin compiler warnings as type errors | ruff and mypy fail the checks |
 | Modules in their layers | `checkLayers`, one per refused edge | not measured |
 | Import cycles | groups of packages importing each other | not measured |
-| Copied code | the bridge's measure: six lines in a row, indentation ignored | not measured |
+| Copied code | the bridge's measure (six lines in a row, indentation ignored), leaving out imports, the package line and lines of brackets only | not measured |
 | Time the tests take | the four test tasks, against `quality.json`'s budget | not measured |
 | Checks on main | the latest run, which the bridge asks GitHub for | the same run |
 

@@ -24,7 +24,7 @@ manager session, to put this repository on the bridge's code-health page.
   written by hand for each variant, and a merged report needs another. Kover merges JVM
   and Android modules with one line per module. Not taken.
 - **PMD's CPD for copied code.** CPD counts tokens, not lines. Its number would not be
-  the bridge's measure (six lines in a row, indentation ignored), so the two
+  close to the bridge's measure (six lines in a row, indentation ignored), so the two
   repositories would not compare. Not taken; the bridge's own algorithm is used,
   rewritten for `.kt` files.
 - **The Kotlin compiler's own complexity report.** There is none. Not taken.
@@ -38,10 +38,12 @@ pull request and every push to main. Main's run keeps the file as `quality-level
 The tools:
 
 - line coverage: Kover, merged over `:core`, `:plugin-api`, `:app` and `:plugins:status`;
-- mutations: Pitest with its JUnit 5 plugin, on `:core`;
+- mutants caught: Pitest with its JUnit 5 plugin, on `:core`, under its own key
+  `mutants`;
 - complexity: detekt's cyclomatic count, with the highest in each file;
 - lint: detekt's findings plus Android lint's errors;
-- copied code: the bridge's own line-based measure.
+- copied code: the bridge's own line-based measure, leaving out lines that say nothing
+  on their own (imports, the package line, lines of brackets only).
 
 None of these tools is part of the gate (`./gradlew check`), and nothing they measure is
 committed. `quality.json` holds only the test-time budget. Comparing a pull request
@@ -49,9 +51,13 @@ with main and refusing it when it makes a measure worse (the ratchet) is a later
 
 ## Consequences
 
-- `mutation` measures less than in claude-voice. Pitest does not run Android unit tests,
-  and `:plugin-api` has no tests of its own, so only `:core` is mutated. The page's
-  "rules proven by a test" cell for this repository means "mutants in the core caught".
+- There is no `mutation` key. In claude-voice it counts rules proven by a test, and the
+  page reads it as "N of M rules", green only at 100 %. This repository has no rule
+  rows yet. Pitest's mutants are another measure, so they go under `mutants`, which
+  the page needs a label for. Pitest does not run Android unit tests, and `:plugin-api`
+  has no tests of its own, so only `:core` is mutated.
+- Copied code is a little lower here than claude-voice's measure would give, because
+  Kotlin's closing brackets and import lists would otherwise count as copied.
 - `type_errors` counts Kotlin compiler warnings, because a type error makes the build
   red and a red tree is not measured.
 - Worse: three more Gradle plugins, Kover, detekt and Pitest, must be kept current, and

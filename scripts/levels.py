@@ -8,8 +8,12 @@ committed. `quality.json` holds only the test-time budget, a limit set by hand.
 
 Two keys are measured more narrowly than in claude-voice:
 
-- `mutation` covers :core only. Pitest cannot run Android unit tests, and :plugin-api
-  has no tests of its own yet.
+- `mutants` replaces `mutation`. In claude-voice `mutation` counts rules proven by a
+  test, and this repository has no rule rows yet; `mutants` is Pitest's mutants caught,
+  in :core only, because Pitest cannot run Android unit tests and :plugin-api has no
+  tests of its own yet.
+- `duplication` leaves out lines that say nothing on their own: imports, the package
+  line, and lines of brackets only.
 - `type_errors` counts Kotlin compiler warnings, because a build with a type error is
   red and never measured.
 
@@ -31,6 +35,8 @@ ROOT = Path(__file__).resolve().parent.parent
 MODULES = ("core", "plugin-api", "app", "plugins/status")
 PREFIX = "org.claudevoice.mobile"
 BLOCK = 6  # lines in a row that count as a copied block, as in claude-voice
+# Lines that say nothing on their own, left out of the copied-code measure.
+NOISE = re.compile(r"^(?:import |package )|^[{}()\[\];,.]+$")
 COMPLEXITY_RULE = "detekt.CyclomaticComplexMethod"
 COMPLEXITY = re.compile(r"\(complexity: (\d+)\)")
 # Where each test task above writes its results; other variants' results are left out.
@@ -54,7 +60,7 @@ def coverage(report: Path) -> float:
     return round(100 * covered / (missed + covered), 2) if missed + covered else 0.0
 
 
-def mutation(report: Path) -> dict[str, int]:
+def mutants(report: Path) -> dict[str, int]:
     """Mutants the tests caught, of all made, from Pitest's XML report."""
     mutants = _parse(report).findall("mutation")
     return {"killed": sum(m.get("detected") == "true" for m in mutants), "total": len(mutants)}
@@ -117,16 +123,20 @@ def _sources(folders: list[Path]) -> list[Path]:
     return sorted(p for f in folders for p in f.rglob("*.kt"))
 
 
+def _meaningful(path: Path) -> list[str]:
+    """The file's lines with indentation collapsed, leaving out blank lines and NOISE."""
+    lines = (" ".join(line.split()) for line in path.read_text(encoding="utf-8").splitlines())
+    return [line for line in lines if line and not NOISE.search(line)]
+
+
 def duplication(folders: list[Path]) -> float:
-    """The share of non-blank source lines, in percent, in a repeated block.
+    """The share of lines, in percent, in a repeated block.
 
     A block is BLOCK or more lines in a row appearing more than once, within a file or across
-    files, ignoring indentation: the same measure as claude-voice's.
+    files, ignoring indentation: claude-voice's measure, except that lines saying nothing on
+    their own (NOISE) are left out first.
     """
-    files = {
-        p: [" ".join(line.split()) for line in p.read_text(encoding="utf-8").splitlines() if line.strip()]
-        for p in _sources(folders)
-    }
+    files = {p: _meaningful(p) for p in _sources(folders)}
     where: dict[tuple[str, ...], list[tuple[Path, int]]] = {}
     for path, lines in files.items():
         for i in range(len(lines) - BLOCK + 1):
@@ -210,6 +220,21 @@ def _must(run: subprocess.CompletedProcess[str], what: str) -> subprocess.Comple
     return run
 
 
+KEYS = (
+    "coverage",
+    "mutants",
+    "tests",
+    "lint_errors",
+    "type_errors",
+    "cycles",
+    "layer_violations",
+    "duplication",
+    "complexity",
+    "test_seconds",
+    "test_budget",
+)
+
+
 def measure() -> dict[str, object]:
     """Every measure, from the tree as it is."""
     compiled = _must(_gradle("--rerun-tasks", "compileTestKotlin", "compileDebugUnitTestKotlin"), "Compiling")
@@ -221,9 +246,9 @@ def measure() -> dict[str, object]:
     sources = [ROOT / m / "src" / "main" for m in MODULES]
     detekt = ROOT / "build" / "reports" / "detekt" / "detekt.xml"
     lint = [ROOT / m / "build" / "reports" / "lint-results-debug.xml" for m in MODULES]
-    return {
+    levels = {
         "coverage": coverage(ROOT / "build" / "reports" / "kover" / "report.xml"),
-        "mutation": mutation(ROOT / "core" / "build" / "reports" / "pitest" / "mutations.xml"),
+        "mutants": mutants(ROOT / "core" / "build" / "reports" / "pitest" / "mutations.xml"),
         "tests": passed_tests([ROOT / m / "build" / "test-results" / t for m, t in RESULTS]),
         "lint_errors": detekt_findings(detekt) + android_lint_errors(lint),
         "type_errors": compiler_warnings(compiled.stdout + compiled.stderr),
@@ -234,6 +259,8 @@ def measure() -> dict[str, object]:
         "test_seconds": seconds,
         "test_budget": None,
     }
+    assert tuple(levels) == KEYS  # noqa: S101 - the keys the bridge is told about
+    return levels
 
 
 def main() -> None:
