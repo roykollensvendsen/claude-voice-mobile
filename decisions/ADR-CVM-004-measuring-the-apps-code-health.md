@@ -38,7 +38,7 @@ pull request and every push to main. Main's run keeps the file as `quality-level
 The tools:
 
 - line coverage: Kover, merged over `:core`, `:plugin-api`, `:app` and `:plugins:status`;
-- mutants caught: Pitest with its JUnit 5 plugin, on `:core`, under its own key
+- mutants caught: Pitest with its JUnit 5 plugin, on `:core` and `:plugin-api`, under its own key
   `mutants`;
 - complexity: detekt's cyclomatic count, with the highest in each file;
 - lint: detekt's findings plus Android lint's errors;
@@ -54,8 +54,8 @@ with main and refusing it when it makes a measure worse (the ratchet) is a later
 - There is no `mutation` key. In claude-voice it counts rules proven by a test, and the
   page reads it as "N of M rules", green only at 100 %. This repository has no rule
   rows yet. Pitest's mutants are another measure, so they go under `mutants`, which
-  the page needs a label for. Pitest does not run Android unit tests, and `:plugin-api`
-  has no tests of its own, so only `:core` is mutated.
+  the page needs a label for. Pitest does not run Android unit tests, so only `:core`
+  and `:plugin-api` are mutated.
 - Copied code is a little lower here than claude-voice's measure would give, because
   Kotlin's closing brackets and import lists would otherwise count as copied.
 - `type_errors` counts Kotlin compiler warnings, because a type error makes the build

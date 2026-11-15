@@ -51,7 +51,7 @@ The repository has two halves. The Kotlin half is the app: the Gradle modules
 | Cell | Kotlin half (on the page) | Python half (not on the page) |
 | --- | --- | --- |
 | Test coverage | Kover, lines, merged over the four modules | printed by `pytest --cov`, not kept |
-| Rules proven by a test | not measured: no rule rows yet; Pitest's mutants caught in `:core` go under their own key, `mutants` | `scripts/mutate.py`; `scripts/mutations.toml` has no rows yet |
+| Rules proven by a test | not measured: no rule rows yet; Pitest's mutants caught in `:core` and `:plugin-api` go under their own key, `mutants` | `scripts/mutate.py`; `scripts/mutations.toml` has no rows yet |
 | Most tangled function | detekt's cyclomatic count, the highest in each file | ruff's `C901`, so above 10 fails lint |
 | Lint and type errors | detekt's findings and Android lint's errors; Kotlin compiler warnings as type errors | ruff and mypy fail the checks |
 | Modules in their layers | `checkLayers`, one per refused edge | not measured |
