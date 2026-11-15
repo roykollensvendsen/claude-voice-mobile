@@ -80,7 +80,10 @@ class Listening(private val port: Int, private val opener: ServerOpener) {
         at = address.address
         ListenStatus.Listening(address.address, port)
     } catch (e: IOException) {
-        ListenStatus.Stopped("could not listen on ${address.address.hostAddress}:$port: ${e.message}")
+        ListenStatus.Stopped(
+            "could not listen on ${address.address.hostAddress}:$port: ${e.message}; " +
+                "close the app using port $port, or restart the phone",
+        )
     }
 
     private fun close() {

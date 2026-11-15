@@ -18,6 +18,11 @@ class Answer(val status: Int, val body: ByteArray, val headers: Map<String, Stri
     }
 }
 
+/** Told just before an answer is written, so the server can start its write watchdog. */
+fun interface Writing {
+    fun started()
+}
+
 /** What answers a request that reached `/pair` or `/mcp` by `POST`, from [InetAddress]. */
 fun interface Handler {
     fun handle(request: ReadResult.Request, peer: InetAddress): Answer
@@ -30,12 +35,24 @@ fun interface Handler {
  * carries `Content-Length`, `Content-Type: application/json` and `Connection: close`.
  */
 class HttpExchange(private val reader: RequestReader, private val handler: Handler) {
-    fun run(input: InputStream, output: OutputStream, peer: InetAddress) {
-        val answer = when (val read = reader.read(input)) {
+    /**
+     * Read one request from [input], answer it on [output]. The head's time runs from
+     * [acceptedAt]; [writing] is told just before the answer is written, to start a watchdog.
+     */
+    fun run(
+        input: InputStream,
+        output: OutputStream,
+        peer: InetAddress,
+        acceptedAt: Long? = null,
+        writing: Writing? = null,
+    ) {
+        val read = if (acceptedAt == null) reader.read(input) else reader.read(input, acceptedAt)
+        val answer = when (read) {
             ReadResult.Dropped -> return
             is ReadResult.Refused -> Answer.refusal(read.status, read.error)
             is ReadResult.Request -> route(read, peer)
         }
+        writing?.started()
         write(answer, output)
     }
 
@@ -46,7 +63,7 @@ class HttpExchange(private val reader: RequestReader, private val handler: Handl
     }
 
     private fun write(answer: Answer, output: OutputStream) {
-        val head = StringBuilder("HTTP/1.1 ${answer.status} ${REASONS[answer.status] ?: ""}".trimEnd()).append(CRLF)
+        val head = StringBuilder("HTTP/1.1 ${answer.status} ${reason(answer.status)}".trimEnd()).append(CRLF)
         val headers = answer.headers + mapOf(
             "Content-Type" to "application/json",
             "Content-Length" to "${answer.body.size}",
@@ -66,21 +83,22 @@ class HttpExchange(private val reader: RequestReader, private val handler: Handl
         const val NOT_FOUND = 404
         const val METHOD_NOT_ALLOWED = 405
 
-        @Suppress("MagicNumber")
-        val REASONS = mapOf(
-            200 to "OK",
-            400 to "Bad Request",
-            401 to "Unauthorized",
-            403 to "Forbidden",
-            404 to "Not Found",
-            405 to "Method Not Allowed",
-            411 to "Length Required",
-            413 to "Content Too Large",
-            414 to "URI Too Long",
-            417 to "Expectation Failed",
-            431 to "Request Header Fields Too Large",
-            500 to "Internal Server Error",
-            505 to "HTTP Version Not Supported",
-        )
+        @Suppress("MagicNumber", "CyclomaticComplexMethod")
+        fun reason(status: Int) = when (status) {
+            200 -> "OK"
+            400 -> "Bad Request"
+            401 -> "Unauthorized"
+            403 -> "Forbidden"
+            404 -> "Not Found"
+            405 -> "Method Not Allowed"
+            411 -> "Length Required"
+            413 -> "Content Too Large"
+            414 -> "URI Too Long"
+            417 -> "Expectation Failed"
+            431 -> "Request Header Fields Too Large"
+            500 -> "Internal Server Error"
+            505 -> "HTTP Version Not Supported"
+            else -> ""
+        }
     }
 }

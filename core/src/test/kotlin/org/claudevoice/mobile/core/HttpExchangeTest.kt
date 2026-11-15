@@ -96,4 +96,11 @@ class HttpExchangeTest {
         e.run(ByteArrayInputStream(request().toByteArray()), out, peer)
         assertTrue(out.toString().endsWith("""{"error":"not \"the\" hub\\"}"""), out.toString())
     }
+
+    @Test
+    fun `a lower-case post never reaches the gate, even with no length`() {
+        val text = answer("post /mcp HTTP/1.1\r\nHost: h\r\n\r\n")
+        assertEquals("HTTP/1.1 405 Method Not Allowed", status(text))
+        assertTrue(handled.isEmpty())
+    }
 }
