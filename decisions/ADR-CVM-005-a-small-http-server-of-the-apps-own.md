@@ -41,20 +41,29 @@ starts and stops it.
 
 **It listens on the tailnet address alone.** It binds to the phone's IPv4
 tailnet address from `Tailnet.state`, never to every address. When that address
-goes away the socket is closed, and when it comes back the server binds again.
+goes away, the listening socket and every open connection are closed. When the
+address comes back, the server binds again.
+
+- **IPv4 only.** The gate also accepts the tailnet's IPv6 range, so binding IPv6
+  later changes no check, but the server listens on IPv4 alone for now.
+- **No TLS.** The tailnet's WireGuard tunnel encrypts and authenticates every
+  packet between the hub and the phone, so the server does not add TLS of its own.
 
 **One request per connection, and then it closes.**
 
 - The request line must end in `HTTP/1.1`. Anything else gets `505`.
+- The method is matched in exact case: `POST`, not `post`.
 - `POST` must carry exactly one `Content-Length`. Without it, the answer is `411`.
 - Each answer carries `Content-Length`, `Content-Type: application/json` and
   `Connection: close`, and the server closes the connection after it. It never
   answers as a stream of events.
 - A `GET` or `DELETE` on `/mcp` gets `405`, which the MCP transport allows.
+- A request with an `Expect` header gets `417`. The hub never sends one.
 
 **The target is passed to the gate byte for byte.** It is never decoded or
 normalised, and a query string is not split off. Only `/pair` and `/mcp`, exactly
-as written, reach a handler. Anything else gets `404`.
+as written, reach a handler. Anything else gets `404`, including an absolute
+target such as `http://phone-a/mcp` and the asterisk target `*`.
 
 **Limits, each with a test:**
 
@@ -67,6 +76,9 @@ as written, reach a handler. Anything else gets `404`.
 | Time to read the body | 10 s | close, with no answer |
 | Connections at once | 4 | a fifth is closed at once |
 
+The time limits read an injected monotonic clock, which is `System.nanoTime` in
+the app. A test moves the clock forward instead of waiting.
+
 **Hostile requests get a fixed refusal, and the connection is closed.** Each row
 below is a named test:
 
@@ -78,10 +90,14 @@ below is a named test:
 | A line ending in a bare LF, or a bare CR anywhere | `400` |
 | A header line that folds onto the next, or has space before its colon | `400` |
 | A header name that is not an RFC 9110 token | `400` |
+| A control byte in a header value, other than a tab | `400` |
 | A byte outside printable ASCII in the target | `400` |
 | A `Content-Length` that is not plain digits, or overflows | `400` |
 | A body shorter than its `Content-Length` when the peer stops | close, nothing handled |
 | A header sent a byte at a time past the time limit (slowloris) | close, nothing handled |
+
+A header counts as doubled whatever its case: `Content-Length` and
+`content-length` are the same header.
 
 Every refusal body is claude-voice's `error.json`. A refused request never
 reaches the gate, and never reaches a plugin.
@@ -92,6 +108,9 @@ bytes flipped, inserted, cut and repeated. It runs a few thousand cases in
 seconds. For every input the parser must do one of two things: give back a
 request within the limits, or give one of the fixed refusals. It must never throw
 anything else and never hang. A case it finds is added to the named set.
+
+Once a week a scheduled CI run does the same with a fresh seed and more cases. It
+prints the seed, so a failure can be run again exactly.
 
 ## Consequences
 
