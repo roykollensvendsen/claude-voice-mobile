@@ -1,0 +1,2 @@
+HttpServerTest > a silent client is closed at the head limit() FAILED
+7 tests completed, 1 failed

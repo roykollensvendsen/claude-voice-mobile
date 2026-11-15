@@ -92,6 +92,7 @@ class ListeningTest {
         val status = listening.status as ListenStatus.Stopped
         assertTrue(status.reason.contains("port taken"), status.reason)
         assertTrue(status.reason.contains("8812"), status.reason)
+        assertTrue(status.reason.contains("close the app using port 8812"), status.reason)
     }
 
     @Test
