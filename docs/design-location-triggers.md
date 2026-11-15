@@ -1,7 +1,8 @@
 # Design note: location triggers
 
 Proposed 2026-11-11 by the architect session. The bridge side is the hub
-session's. Nothing is built until Roy says yes.
+session's. **Decided 2026-11-15:** the owner said yes, with option a below,
+relayed by the hub session. It is built in the order at the end.
 
 ## What Roy wants
 
@@ -50,17 +51,22 @@ are set per trigger. It works with the phone in the car.
 - **In the car:** the question is spoken when the voice is running. It is
   never something to read and tap while driving.
 
-## Open for Roy
+## Decided: only a spoken yes
 
-- **A yes from the notification.** When the voice is not running, the phone
-  could show the question as a notification with Yes and No. A tap is a live
-  yes from Roy on his own phone. But protocol version 1 lets only the voice
-  confirm, so this would be a version 2 rule. A notification can be tapped on
-  a locked phone by anyone holding it. So the tap would count only once the
-  phone is unlocked, and never for a door or a lock.
-- **Recommended, by the hub session and the architect:** ask only by voice for
-  now. Skip the question when the voice is not running, until version 2 has
-  that rule.
+The owner chose option a on 2026-11-15:
+
+- **Near a saved place, the hub asks by voice,** for example "Open the garage
+  door?", and acts only on the owner's spoken yes.
+- **A tap on a notification never counts as a yes.** The phone shows no Yes
+  and No buttons for a trigger.
+- **When the voice is not running, nothing is asked.** The trigger is dropped,
+  and only the bridge's change log records it, on the hub's own machine. It
+  goes nowhere else.
+- **The places stay on the phone.** Only "arriving at place X" reaches the hub.
+
+The option not taken was a tap on the phone's notification counting as a yes,
+on an unlocked phone and never for a door or a lock. It would need a protocol
+version 2 rule. It is not planned. Asking again would need the owner's yes.
 
 ## What it needs first
 
@@ -75,4 +81,5 @@ are set per trigger. It works with the phone in the car.
 
 After the earbuds, the settings screen and the microphone mute, and after the
 `location` plugin. It is the first function that needs version 2. Saying yes
-adds it to ADR-CVM-003, which the architect writes.
+adds it to ADR-CVM-003, which the architect writes. The owner's yes is
+recorded there as an amendment.
