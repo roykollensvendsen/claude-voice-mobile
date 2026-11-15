@@ -46,16 +46,31 @@ merges it.
 | `used_bytes` | mobile bytes sent and received since the period began |
 | `quota_bytes` | the quota the owner entered |
 | `left_bytes` | the quota less the used bytes, never below zero |
-| `period_start`, `period_end` | the renewal day this month and the next, in the phone's time zone, as ISO 8601 dates |
+| `over_bytes` | the used bytes beyond the quota, or zero |
+| `period_start`, `period_end` | when this period began and when the next begins, as ISO 8601 times with their offset |
+| `as_of` | the end of the latest count Android holds, as an ISO 8601 time |
+| `partial` | true when the phone's count begins after `period_start` |
 | `source` | `estimate` |
 | `say` | for example "About 6.2 GB of 20 GB left, until 1 December. This is the phone's own count, so it is approximate." |
 
-The words always say "about", and that the count is the phone's own. The voice
-reads `say` as it is.
+The words always say "about", and that the count is the phone's own. Over the
+quota they say "about 1.3 GB over". When `partial` is true they say the count
+began later than the period, and from when. The voice reads `say` as it is.
+
+**A GB is 10^9 bytes**, as carriers bill, on the screen and in `say` alike. The
+words give one decimal.
+
+**The period.** It begins at 00:00 on the renewal day and ends at 00:00 on the
+next one. Both are in the time zone saved with the settings, the phone's zone
+when the owner saved them, so a trip abroad does not move the period. Saving
+the settings again saves the zone again.
 
 **The count.** It is `querySummaryForDevice` for mobile data, from the start of
 the period until now. The subscriber id is passed as null, which Android allows
-since version 10 and which counts every mobile network on the phone. It is not
+from version 10 (API 29) and which counts every mobile network on the phone.
+The app supports Android 8 and up, so on Android 8 and 9 the tool refuses and
+says it needs Android 10. The app's lowest version does not change for it.
+It is not
 exact, and the record says so plainly:
 
 - the carrier's own count is the one that is billed. It may lag behind the
@@ -66,12 +81,16 @@ exact, and the record says so plainly:
 - with two SIMs, it counts both;
 - it counts the data the phone shares as a hotspot, and roaming, whether or not
   the plan counts those;
+- a phone that is new, reset or has had its data cleared counts only from
+  then on. When its earliest count begins after `period_start`, the answer is
+  marked `partial`, and its words say so;
 - Android stores the count in buckets, so the latest use may show up late. How
   late is measured on the phone, before the words promise anything.
 
 **What the owner sets, once, on the phone.** The owner enters the
 quota in GB and the renewal day, 1 to 31, in the app's own screen. A day the
-month does not have means the month's last day. These are phone-only settings, like the ones in
+month does not have means the month's last day. These are phone-only
+settings, like the ones in
 ADR-CVM-003. The tool takes no input, so nothing the hub sends can change them,
 and a test proves that. Until they are set, the tool refuses, with words saying
 what to set and where.
@@ -80,6 +99,12 @@ what to set and where.
 which Android grants only in Settings, under usage access. The app's screen has
 a button that opens that page. When access is not given, the tool refuses with
 words saying where to give it. It never asks for any other permission.
+
+Usage access is given to the whole app, not to one plugin. What keeps the
+other plugins away from it is a structure test: only `plugins/mobiledata` may
+import `android.app.usage`, where `NetworkStatsManager` lives. The layer rules
+already keep plugins from using one another, so no other plugin can reach the
+count through this one.
 
 **A seam for the exact figure.** The plugin reads through one interface,
 `DataLeftSource`, which gives back the used, quota and left bytes, the period and
@@ -106,8 +131,9 @@ It is small, and it needs no Bluetooth or playback work.
   by enough to mislead, that is the trigger to look for an exact source again.
 - `NetworkStatsManager` is read through a small interface of the plugin's own,
   `MobileBytes`. So plain JVM tests with a fake count cover the arithmetic: a
-  renewal day on the 31st, a period across a new year, a time-zone change, use
-  above the quota, and access not given.
+  renewal day on the 31st; periods of 28, 29, 30 and 31 days; a period across a
+  new year; a time-zone change after the settings were saved; use above the
+  quota; a partial count; Android 9; and access not given.
 
 ## Related
 
