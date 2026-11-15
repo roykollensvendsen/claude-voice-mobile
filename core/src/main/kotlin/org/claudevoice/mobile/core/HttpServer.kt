@@ -115,11 +115,16 @@ class HttpServerOpener internal constructor(
     private val exchange: HttpExchange,
     private val clock: () -> Long,
     private val admit: (InetAddress) -> Boolean,
-    private val bind: (InetAddress, Int) -> ServerSocket,
+    private val bind: ((InetAddress, Int) -> ServerSocket)?,
 ) : ServerOpener {
     constructor(exchange: HttpExchange, clock: () -> Long, admit: (InetAddress) -> Boolean) :
-        this(exchange, clock, admit, { address, port -> ServerSocket(port, HttpServer.BACKLOG, address) })
+        this(exchange, clock, admit, null)
 
-    override fun open(address: BindAddress, port: Int): Server =
-        HttpServer(bind(address.address, port), exchange, clock, admit).also { it.start() }
+    override fun open(address: BindAddress, port: Int): Server {
+        val socket = bind?.invoke(address.address, port) ?: listenOn(address.address, port)
+        return HttpServer(socket, exchange, clock, admit).also { it.start() }
+    }
 }
+
+/** A listening socket on exactly [address] and [port], never the wildcard address. */
+internal fun listenOn(address: InetAddress, port: Int): ServerSocket = ServerSocket(port, HttpServer.BACKLOG, address)
