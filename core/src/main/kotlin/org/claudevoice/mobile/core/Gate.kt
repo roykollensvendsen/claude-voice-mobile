@@ -93,11 +93,16 @@ class Gate(
         val version = if (offered == null) 0 else agreed(offered)
         val slipsBack = version == 0 && highestSeen >= 1
         val refusal = if (version == null || slipsBack) unsupported() else refusal(request, version)
-        if (refusal == null && version != null && version > highestSeen) {
+        return refusal ?: GateDecision.Pass(spoke(checkNotNull(version)), routeOf(request.path))
+    }
+
+    /** The hub was answered in [version]: remember a rise, and tell whoever keeps it. */
+    private fun spoke(version: Int): Int {
+        if (version > highestSeen) {
             highestSeen = version
             onHigher?.invoke(version)
         }
-        return refusal ?: GateDecision.Pass(checkNotNull(version), routeOf(request.path))
+        return version
     }
 
     private fun unsupported(): GateDecision.Refuse {
@@ -127,15 +132,6 @@ class Gate(
         val (v6, v4, givenPort) = match.destructured
         val given = if (own is Inet6Address) v6Bytes(v6) else v4Bytes(v4)
         return givenPort == "$port" && given != null && given.contentEquals(own.address)
-    }
-
-    /** An IPv6 address written out; one with a colon is never looked up as a name. */
-    private fun v6Bytes(text: String): ByteArray? =
-        if (':' !in text) null else runCatching { InetAddress.getByName(text) }.getOrNull()?.address
-
-    private fun v4Bytes(text: String): ByteArray? {
-        val parts = text.split(".").mapNotNull { it.toIntOrNull()?.takeIf { n -> n <= BYTE_MAX } }
-        return if (parts.size == IPV4_PARTS) ByteArray(IPV4_PARTS) { parts[it].toByte() } else null
     }
 
     /** Why the request is not the paired hub's, or null when it is. */
@@ -171,11 +167,21 @@ class Gate(
         const val PAIR_PATH = "/pair"
         const val MCP_PATH = "/mcp"
         private val SPOKEN = listOf(1)
-        private const val BYTE_MAX = 255
-        private const val IPV4_PARTS = 4
         private val HOST = Regex("""(?:\[([0-9A-Fa-f:]+)]|(\d{1,3}(?:\.\d{1,3}){3})):(\d+)""")
         private const val BAD_REQUEST = 400
         private const val UNAUTHORIZED = 401
         private const val FORBIDDEN = 403
     }
 }
+
+/** An IPv6 address written out; one with a colon is never looked up as a name. */
+private fun v6Bytes(text: String): ByteArray? =
+    if (':' !in text) null else runCatching { InetAddress.getByName(text) }.getOrNull()?.address
+
+private fun v4Bytes(text: String): ByteArray? {
+    val parts = text.split(".").mapNotNull { it.toIntOrNull()?.takeIf { n -> n <= BYTE_MAX } }
+    return if (parts.size == IPV4_PARTS) ByteArray(IPV4_PARTS) { parts[it].toByte() } else null
+}
+
+private const val BYTE_MAX = 255
+private const val IPV4_PARTS = 4
