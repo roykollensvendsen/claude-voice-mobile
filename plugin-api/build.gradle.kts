@@ -24,5 +24,11 @@ pitest {
     junit5PluginVersion = libs.versions.pitest.junit5.get()
     targetClasses = listOf("org.claudevoice.mobile.pluginapi.*")
     outputFormats = listOf("XML")
+    // Data-only classes, whose every mutant is in code the compiler wrote; the list is
+    // guarded by tests/test_pitest_data_only.py.
+    excludedClasses = rootProject.file("config/pitest-data-only.txt").readLines()
+        .map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }
     timestampedReports = false
+    // Every class here is data-only today, so there may be no mutants at all.
+    failWhenNoMutations = false
 }

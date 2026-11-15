@@ -38,7 +38,9 @@ pull request and every push to main. Main's run keeps the file as `quality-level
 The tools:
 
 - line coverage: Kover, merged over `:core`, `:plugin-api`, `:app` and `:plugins:status`;
-- mutants caught: Pitest with its JUnit 5 plugin, on `:core` and `:plugin-api`, under its own key
+- mutants caught: Pitest with its JUnit 5 plugin, on `:core` and `:plugin-api`, leaving
+  out the data-only classes in `config/pitest-data-only.txt`, whose every mutant is in code
+  the compiler wrote (a test refuses a class there that gains logic), under its own key
   `mutants`;
 - complexity: detekt's cyclomatic count, with the highest in each file;
 - lint: detekt's findings plus Android lint's errors;

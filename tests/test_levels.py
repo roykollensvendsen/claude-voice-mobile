@@ -126,3 +126,9 @@ def test_the_levels_carry_mutants_and_never_mutation():
     # "mutation" on the page means rules proven by a test; Pitest's mutants are another measure.
     assert "mutants" in levels.KEYS
     assert "mutation" not in levels.KEYS
+
+
+def test_a_module_with_no_mutants_and_no_report_adds_nothing(tmp_path):
+    api = tmp_path / "api.xml"
+    api.write_text("<mutations><mutation detected='true' status='KILLED'/></mutations>")
+    assert levels.mutants([api, tmp_path / "missing.xml"]) == {"killed": 1, "total": 1}

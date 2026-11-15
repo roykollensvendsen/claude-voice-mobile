@@ -62,7 +62,8 @@ def coverage(report: Path) -> float:
 
 def mutants(reports: list[Path]) -> dict[str, int]:
     """Mutants the tests caught, of all made, over Pitest's XML reports."""
-    made = [m for r in reports for m in _parse(r).findall("mutation")]
+    # A module whose classes are all data-only has no mutants, and Pitest may write no report.
+    made = [m for r in reports if r.exists() for m in _parse(r).findall("mutation")]
     return {"killed": sum(m.get("detected") == "true" for m in made), "total": len(made)}
 
 

@@ -1,0 +1,10 @@
+# Classes Pitest leaves alone because they hold data and no logic: every mutant in one is in
+# code the Kotlin compiler wrote (property getters, equals, hashCode). One class per line, as
+# Pitest names it. tests/test_pitest_data_only.py fails if a class here gains a function.
+org.claudevoice.mobile.core.SeenNetwork
+org.claudevoice.mobile.core.TailnetState$OnTailnet
+org.claudevoice.mobile.core.TailnetState$HubNotAnswering
+org.claudevoice.mobile.pluginapi.Microphone
+org.claudevoice.mobile.pluginapi.Tool
+org.claudevoice.mobile.pluginapi.ToolResult$Answer
+org.claudevoice.mobile.pluginapi.ToolResult$Refused
