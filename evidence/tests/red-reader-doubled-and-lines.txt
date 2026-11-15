@@ -1,0 +1,3 @@
+RequestReaderTest > one header name repeated past 64 lines is 431() FAILED
+RequestReaderTest > a doubled header the gate reads is 400() FAILED
+39 tests completed, 2 failed
