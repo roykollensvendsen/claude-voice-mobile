@@ -5,7 +5,7 @@ import java.security.MessageDigest
 import java.time.Duration
 import java.time.Instant
 import java.util.Base64
-import kotlin.random.Random
+import java.security.SecureRandom
 
 /** What pairing gives: the hub's new key, or a refusal with protocol version 1's `error.json`. */
 sealed interface PairResult {
@@ -29,13 +29,18 @@ sealed interface PairResult {
  * The protocol asks Tailscale who is calling. Tailscale on Android cannot say, so the app passes
  * [pair] a lookup of the caller's name (its MagicDNS name), and the phone pins the caller's
  * address (`decisions/deferred.md`).
+ *
+ * The random source is a [SecureRandom] by type, with no default, so no caller can hand in a
+ * predictable one; [forPhone] is what the app uses. Requests may come at the same moment, so the
+ * code, its time and the wrong-count change under one lock.
  */
-class Pairing(private val clock: () -> Instant, private val random: Random) {
+class Pairing(private val clock: () -> Instant, internal val random: SecureRandom) {
     private var code: String? = null
     private var until: Instant = Instant.MIN
     private var wrong = 0
 
     /** A new code to show the owner. Any code before it stops working. */
+    @Synchronized
     fun newCode(): String {
         val made = String(CharArray(CODE_LENGTH) { ALPHABET[random.nextInt(ALPHABET.length)] })
         code = made
@@ -44,14 +49,23 @@ class Pairing(private val clock: () -> Instant, private val random: Random) {
         return made
     }
 
-    /** The hub's `POST /pair`, from [caller], whose tailnet name [nameOf] looks up. */
+    /**
+     * The hub's `POST /pair`, from [caller], whose tailnet name [nameOf] looks up. The code is
+     * read as typed, trimmed and in either case. The lookup runs outside the lock.
+     */
     fun pair(offered: String, caller: InetAddress, nameOf: (InetAddress) -> String?): PairResult {
-        val onTailnet = Tailnet.isTailnetAddress(caller)
-        val name = if (onTailnet) nameOf(caller) else null
+        val name = if (Tailnet.isTailnetAddress(caller)) nameOf(caller) else null
+        return when {
+            !Tailnet.isTailnetAddress(caller) -> PairResult.Refused(FORBIDDEN, OFF_TAILNET, "not_on_tailnet")
+            name == null -> PairResult.Refused(FORBIDDEN, NO_NAME, "not_on_tailnet")
+            else -> tryCode(offered.trim().uppercase(), name, caller)
+        }
+    }
+
+    @Synchronized
+    private fun tryCode(offered: String, name: String, caller: InetAddress): PairResult {
         val shown = code
         return when {
-            !onTailnet -> PairResult.Refused(FORBIDDEN, "pair from a machine on the tailnet", "not_on_tailnet")
-            name == null -> PairResult.Refused(FORBIDDEN, NO_NAME, "not_on_tailnet")
             shown == null || clock() >= until -> wrongCode()
             !MessageDigest.isEqual(offered.toByteArray(), shown.toByteArray()) -> wrongCode().also { tooMany() }
             else -> paired(name, caller)
@@ -68,14 +82,19 @@ class Pairing(private val clock: () -> Instant, private val random: Random) {
 
     private fun paired(name: String, caller: InetAddress): PairResult.Paired {
         code = null
-        val key = Base64.getUrlEncoder().withoutPadding().encodeToString(random.nextBytes(KEY_BYTES))
+        val key = Base64.getUrlEncoder().withoutPadding().encodeToString(ByteArray(KEY_BYTES).also(random::nextBytes))
         val hash = MessageDigest.getInstance("SHA-256").digest(key.toByteArray())
         return PairResult.Paired(key, hash, name, caller)
     }
 
     companion object {
+        /** The pairing the app uses: the real clock, and the platform's strong random source. */
+        fun forPhone() = Pairing(clock = Instant::now, random = SecureRandom())
+
         /** Letters and digits that neither look nor sound like one another. */
         const val ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+        private const val OFF_TAILNET =
+            "pair from a machine on the tailnet: turn on Tailscale on the hub, and use the phone's tailnet address"
         private const val NO_NAME = "the phone cannot find this machine's tailnet name; turn on MagicDNS " +
             "in the Tailscale admin console, under DNS (login.tailscale.com/admin/dns), then pair again"
         private const val CODE_LENGTH = 8
