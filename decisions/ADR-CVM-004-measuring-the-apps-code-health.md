@@ -50,7 +50,15 @@ Nothing they measure is committed. `quality.json` holds only the test-time budge
 worse, unless the pull request names it on a `Ratchet-Exception:` line, as in
 claude-voice. Of the tools, only detekt is part of the gate (`./gradlew check`), with a
 baseline of the findings the code had when it joined. The ratchet refuses a new entry
-in that baseline, so it can only shrink.
+in that baseline, so it can only shrink. The ratchet compares only on a pull request; main's own
+run measures and keeps its levels, because the exception lines of the pull request that
+landed are not there to read.
+
+The baseline has two limits. A baseline entry is a rule plus the function's signature, so
+a second finding of the same rule in a function already listed adds no entry and the gate
+lets it through; the measuring run counts every finding, and the ratchet refuses the
+higher `lint_errors`, so the two layers are both needed. And renaming a listed function
+makes its entry look new, so an honest rename needs a `detekt_baseline` exception.
 
 ## Consequences
 

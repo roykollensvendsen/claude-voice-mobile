@@ -66,7 +66,9 @@ of its own, `Ratchet-Exception: <measure> - the reason`. detekt is part of the
 gate. The findings the code already had are listed in
 `config/detekt-baseline.xml`, and the ratchet refuses a new entry there
 (exception name `detekt_baseline`). So fix a new finding rather than
-regenerating the baseline. When you fix one, remove its line too.
+regenerating the baseline. When you fix one, remove its line too. Renaming or re-signing a function that has a line there
+makes the line look new. That is an honest change: say so on a
+`Ratchet-Exception: detekt_baseline - renamed f to g` line.
 
 ## 3. Measure it locally
 
