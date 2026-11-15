@@ -137,6 +137,10 @@ plugins.
 3. `earbuds`: small, used every day, and needing nothing from the playback
    work. Its design is [`docs/design-earbuds.md`](../docs/design-earbuds.md).
 4. Then each plugin in the order ADR-CV-007 lists, one pull request at a time.
+5. Location triggers, decided by the owner on 2026-11-15 with only a spoken
+   yes: after the `location` plugin and protocol version 2, as
+   [`docs/design-location-triggers.md`](../docs/design-location-triggers.md)
+   says.
 
 ## Consequences
 
