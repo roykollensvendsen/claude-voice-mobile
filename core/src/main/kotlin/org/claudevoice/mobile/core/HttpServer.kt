@@ -67,20 +67,27 @@ class HttpServer internal constructor(
 
     private fun accept() {
         while (!socket.isClosed) {
-            val client = try {
-                socket.accept()
-            } catch (_: IOException) {
-                // Closed by stop(), which ends the loop; or a passing failure, such as too many
-                // open files, after which the server keeps listening a moment later.
-                pause()
-                continue
-            }
-            val acceptedAt = clock()
-            if (!admit(client.inetAddress) || !admitted(client)) {
-                closeQuietly(client)
-            } else {
-                Thread({ serve(client, acceptedAt) }, "http-connection").start()
-            }
+            nextClient()?.let(::take)
+        }
+    }
+
+    /**
+     * The next connection; null when the accept failed: closed by stop(), which ends the loop, or
+     * a passing failure, such as too many open files, after which the server tries again shortly.
+     */
+    private fun nextClient(): Socket? = try {
+        socket.accept()
+    } catch (_: IOException) {
+        pause()
+        null
+    }
+
+    private fun take(client: Socket) {
+        val acceptedAt = clock()
+        if (!admit(client.inetAddress) || !admitted(client)) {
+            closeQuietly(client)
+        } else {
+            Thread({ serve(client, acceptedAt) }, "http-connection").start()
         }
     }
 
@@ -98,17 +105,26 @@ class HttpServer internal constructor(
             client.soTimeout = readTimeoutMillis
             val output = BufferedOutputStream(client.getOutputStream())
             exchange.run(BufferedInputStream(client.getInputStream()), output, client.inetAddress, acceptedAt) {
-                cutOff = watchdog.schedule({ closeQuietly(client) }, writeLimitMillis, TimeUnit.MILLISECONDS)
+                cutOff = cutOffLater(client)
             }
         } catch (_: IOException) {
             // A peer gone, or the watchdog closed it: nothing more to do than close.
-        } catch (_: RejectedExecutionException) {
-            // The server stopped as the answer began: the watchdog is gone, so just close.
         } finally {
             cutOff?.cancel(false)
             closeQuietly(client)
             connections.remove(client)
         }
+    }
+
+    /**
+     * Close [client] if the answer is not written within the write limit. When the server stopped
+     * as the answer began, the watchdog is gone; [stop] closed every admitted connection, this one
+     * too, before shutting the watchdog down, so the write fails at once.
+     */
+    private fun cutOffLater(client: Socket): ScheduledFuture<*>? = try {
+        watchdog.schedule({ closeQuietly(client) }, writeLimitMillis, TimeUnit.MILLISECONDS)
+    } catch (_: RejectedExecutionException) {
+        null
     }
 
     private fun closeQuietly(closeable: java.io.Closeable) {
