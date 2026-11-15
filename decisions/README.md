@@ -33,6 +33,7 @@ decision nobody writes down.
 | [ADR-CVM-002](ADR-CVM-002-how-a-change-is-made.md) | How a change is made: owned parts, tests first, merged when green | Proposed |
 | [ADR-CVM-003](ADR-CVM-003-the-apps-internal-design.md) | The app's internal design: a core with plugin modules, one foreground service | Proposed |
 | [ADR-CVM-004](ADR-CVM-004-measuring-the-apps-code-health.md) | Measuring the app's code health: Kover, detekt and Pitest, kept as CI artifacts | Proposed |
+| [ADR-CVM-005](ADR-CVM-005-a-small-http-server-of-the-apps-own.md) | A small HTTP/1.1 server of the app's own in the core, on the tailnet address alone | Proposed |
 
 What is deliberately left undone, and what would make each worth doing, is
 [`deferred.md`](deferred.md). A thing left undone with no trigger is a thing
