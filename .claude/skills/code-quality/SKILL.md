@@ -35,35 +35,33 @@ in this skill makes a cell exempt by itself.
 
 ## 2. What this repository records today
 
-Almost nothing the page can read yet. The page reads a measure from one of two
-places: a `quality.json` in the clone, or a `levels.json` that main's checks
-keep as a build artifact named `quality-levels` (ADR-CV-009 in claude-voice).
-This repository has neither. So every cell except **Checks on main** reads
-"Nothing measured yet", and that is the honest answer, not a fault on the page.
+The app's measures, from the levels main's checks keep. The `quality` job in
+`.github/workflows/checks.yml` runs `scripts/levels.py` on every run, and main's
+run keeps its `levels.json` as the artifact `quality-levels` (ADR-CV-009 in
+claude-voice). The tools are chosen in
+[ADR-CVM-004](../../../decisions/ADR-CVM-004-measuring-the-apps-code-health.md).
+`quality.json` holds only the test-time budget, and nothing measured is
+committed.
 
-The repository has two halves, and the checks in `.github/workflows/checks.yml`
-treat them differently. The Python half is the tooling under `src/`, `scripts/`
-and `tests/`. The Kotlin half is the app: the Gradle modules `:core`,
-`:plugin-api`, `:app` and `:plugins:*`, with their layer rules in `build-logic/`.
+The repository has two halves. The Kotlin half is the app: the Gradle modules
+`:core`, `:plugin-api`, `:app` and `:plugins:*`, with their layer rules in
+`build-logic/`. The Python half is the tooling under `src/`, `scripts/` and
+`tests/`. The page shows the Kotlin half only.
 
-| Cell | Python half | Kotlin half (the app) |
+| Cell | Kotlin half (on the page) | Python half (not on the page) |
 | --- | --- | --- |
-| Test coverage | printed by `pytest --cov`, no limit, not kept | not measured: no coverage tool in the build |
-| Rules proven by a test | `scripts/mutate.py` runs; `scripts/mutations.toml` has no rows yet | not measured: `mutate.py` reads only `# RULE:` lines in `src/*.py` |
-| Most tangled function | ruff's `C901` is on (`select = ["ALL"]`), so above 10 fails lint | not measured: no Kotlin complexity tool |
-| Lint and type errors | ruff and mypy; any error fails the checks | the compiler and Android lint, inside `./gradlew check` |
-| Modules in their layers | not measured | `checkLayers` fails the build on a breach, but keeps no count |
-| Import cycles | not measured | Gradle refuses a cycle between modules |
-| Copied code | not measured | not measured |
-| Time the tests take | not measured, no time budget | not measured, no time budget |
-| Checks on main | shown: the bridge asks GitHub for the latest run | the same run |
+| Test coverage | Kover, lines, merged over the four modules | printed by `pytest --cov`, not kept |
+| Rules proven by a test | Pitest's mutants caught, in `:core` only | `scripts/mutate.py`; `scripts/mutations.toml` has no rows yet |
+| Most tangled function | detekt's cyclomatic count, the highest in each file | ruff's `C901`, so above 10 fails lint |
+| Lint and type errors | detekt's findings and Android lint's errors; Kotlin compiler warnings as type errors | ruff and mypy fail the checks |
+| Modules in their layers | `checkLayers`, one per refused edge | not measured |
+| Import cycles | groups of packages importing each other | not measured |
+| Copied code | the bridge's measure: six lines in a row, indentation ignored | not measured |
+| Time the tests take | the four test tasks, against `quality.json`'s budget | not measured |
+| Checks on main | the latest run, which the bridge asks GitHub for | the same run |
 
-There is no `scripts/ratchet.py` here, nothing that refuses a measure made
-worse than main. Making the page show this repository is its own pull request:
-a step in the checks that writes `levels.json` with the fields `MEASURES` reads,
-and keeps it as `quality-levels`. Copy the shape of the bridge's own workflow
-for that, not this page. Which tool measures the Kotlin half (coverage,
-complexity, copied code) is a choice to write down under `decisions/` first.
+There is no ratchet here yet, nothing that refuses a measure made worse than
+main.
 
 ## 3. Measure it locally
 
@@ -99,6 +97,7 @@ A cold cache takes some minutes, so run it in the background too.
 ```
 ./gradlew check --console=plain                # the app's whole gate, as CI runs it
 ./gradlew checkLayers                          # only the layer rules
+python3 scripts/levels.py --out levels.json    # every measure the page shows, as CI takes them
 ```
 
 ## 4. Fix the worst cell, test-first
