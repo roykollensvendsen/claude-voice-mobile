@@ -46,6 +46,11 @@ address comes back, the server binds again.
 
 - **IPv4 only.** The gate also accepts the tailnet's IPv6 range, so binding IPv6
   later changes no check, but the server listens on IPv4 alone for now.
+- **Only the hub, once paired.** Once the phone is paired, a connection from any
+  address but the paired hub's is closed when it is accepted, before a byte is
+  read. Before pairing, and while a pairing code is open, any tailnet address is
+  read. This keeps the connection slots for the hub, and the gate still makes
+  every check of its own.
 - **No TLS.** The tailnet's WireGuard tunnel encrypts and authenticates every
   packet between the hub and the phone, so the server does not add TLS of its own.
 
@@ -70,14 +75,19 @@ target such as `http://phone-a/mcp` and the asterisk target `*`.
 | What | Limit | Beyond it |
 |---|---|---|
 | The request line | 2 KiB | `414`, then close |
-| All header lines together | 8 KiB, at most 64 lines | `431`, then close |
+| All header lines together | 8 KiB, and at most 64 lines, counted as lines, not names | `431`, then close |
 | The body | 256 KiB | `413`, then close |
-| Time to read the request line and headers | 5 s | close, with no answer |
+| Time from accepting the connection to the end of the headers | 5 s | close, with no answer |
 | Time to read the body | 10 s | close, with no answer |
+| Time to write the answer | 10 s | close |
 | Connections at once | 4 | a fifth is closed at once |
 
 The time limits read an injected monotonic clock, which is `System.nanoTime` in
-the app. A test moves the clock forward instead of waiting.
+the app. A test moves the clock forward instead of waiting. The clock starts when
+the connection is accepted, not at its first byte. Every accepted socket has a
+read timeout of 1 s, so a client that connects and sends nothing still wakes the
+reader, which checks the limit and closes. Writes cannot time out by themselves,
+so a watchdog closes a socket whose answer is not written within the limit.
 
 **Hostile requests get a fixed refusal, and the connection is closed.** Each row
 below is a named test:
@@ -86,7 +96,8 @@ below is a named test:
 |---|---|
 | Two `Content-Length` headers, even with the same value | `400` |
 | Any `Transfer-Encoding`, with or without `Content-Length` | `400` |
-| No `Host` header, or two | `400` |
+| No `Host` header | `400` |
+| Any header name twice, such as `Host`, `Origin` or `Authorization`, whatever its case | `400` |
 | A line ending in a bare LF, or a bare CR anywhere | `400` |
 | A header line that folds onto the next, or has space before its colon | `400` |
 | A header name that is not an RFC 9110 token | `400` |
@@ -96,8 +107,11 @@ below is a named test:
 | A body shorter than its `Content-Length` when the peer stops | close, nothing handled |
 | A header sent a byte at a time past the time limit (slowloris) | close, nothing handled |
 
-A header counts as doubled whatever its case: `Content-Length` and
-`content-length` are the same header.
+The hub never sends a header twice. So no header the gate reads can arrive
+twice, with the parser taking one copy and the gate the other.
+
+Bytes after the body are never parsed. The answer is written, and the
+connection is closed.
 
 Every refusal body is claude-voice's `error.json`. A refused request never
 reaches the gate, and never reaches a plugin.
