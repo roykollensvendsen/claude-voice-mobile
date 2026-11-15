@@ -1,0 +1,7 @@
+# detekt's defaults, plus one change for the code-health page: every function's cyclomatic
+# complexity is reported (threshold 1), so scripts/levels.py can find the worst one in each
+# file. Those findings are a measure, not a fault, and the script does not count them as lint.
+complexity:
+  CyclomaticComplexMethod:
+    active: true
+    threshold: 1

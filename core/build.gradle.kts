@@ -2,6 +2,7 @@
 // It holds no phone function: those are plugins, and the core may not depend on one.
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.pitest)
 }
 
 kotlin { jvmToolchain(17) }
@@ -14,3 +15,12 @@ dependencies {
 }
 
 tasks.test { useJUnitPlatform() }
+
+// Mutation testing, for the code-health page only: run by scripts/levels.py, not by `check`.
+pitest {
+    pitestVersion = libs.versions.pitest.engine.get()
+    junit5PluginVersion = libs.versions.pitest.junit5.get()
+    targetClasses = listOf("org.claudevoice.mobile.core.*")
+    outputFormats = listOf("XML")
+    timestampedReports = false
+}

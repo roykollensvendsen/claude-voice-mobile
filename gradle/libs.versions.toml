@@ -5,6 +5,12 @@ kotlin = "2.1.0"
 junit = "5.11.3"
 junit4 = "4.13.2"
 serialization = "1.7.3"
+# Measuring only, for the code-health page; none of them is part of the gate.
+kover = "0.9.1"
+detekt = "1.23.7"
+pitest-plugin = "1.15.0"
+pitest-engine = "1.17.4"
+pitest-junit5 = "1.2.1"
 
 [libraries]
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
@@ -18,3 +24,6 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+pitest = { id = "info.solidsoft.pitest", version.ref = "pitest-plugin" }
