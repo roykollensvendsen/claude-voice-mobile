@@ -151,4 +151,13 @@ class HttpServerTest {
         val absent = checkNotNull(BindAddress.of(InetAddress.getByName("100.64.0.0")))
         assertThrows(java.io.IOException::class.java) { opener.open(absent, 0) }
     }
+
+    @Test
+    fun `the real bind listens on exactly the address it is given`() {
+        start()
+        listenOn(loopback, 0).use { socket ->
+            assertEquals(loopback, socket.inetAddress)
+            assertTrue(socket.localPort > 0)
+        }
+    }
 }
