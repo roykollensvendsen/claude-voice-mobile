@@ -154,5 +154,6 @@ class GateTest {
         val v6 = Gate(own = InetAddress.getByName("fd7a:115c:a1e0::2"), port = 8812, machine = "phone-a", hub = paired)
         assertEquals(403, refused(v6.check(request(headers = arrayOf("Host" to "[:::]:8812")))).status)
         assertEquals(403, refused(gate().check(request(headers = arrayOf("Host" to "100.64.0.256:8812")))).status)
+        assertEquals(403, refused(gate().check(request(headers = arrayOf("Host" to "[fd7a:115c:a1e0::2]:8812")))).status)
     }
 }
