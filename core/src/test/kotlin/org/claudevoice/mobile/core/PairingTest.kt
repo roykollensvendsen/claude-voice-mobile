@@ -4,8 +4,11 @@ import java.net.InetAddress
 import java.security.MessageDigest
 import java.time.Duration
 import java.time.Instant
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.Base64
-import kotlin.random.Random
+import java.security.SecureRandom
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -14,7 +17,7 @@ import org.junit.jupiter.api.Test
 class PairingTest {
     private var now = Instant.parse("2026-11-15T09:00:00Z")
     private val hub = InetAddress.getByName("100.64.0.1")
-    private val pairing = Pairing(clock = { now }, random = Random(7))
+    private val pairing = Pairing(clock = { now }, random = SecureRandom())
 
     private fun pair(code: String, from: InetAddress = hub) = pairing.pair(code, from) { "laptop-a" }
 
@@ -119,5 +122,66 @@ class PairingTest {
         assertTrue(r.error.contains("turn on MagicDNS"), r.error)
         assertTrue(r.error.contains("login.tailscale.com/admin/dns"), r.error)
         assertTrue(pair(code) is PairResult.Paired)
+    }
+
+    @Test
+    fun `two right codes at the same moment pair once`() {
+        val threads = 8
+        val pool = Executors.newFixedThreadPool(threads)
+        try {
+            repeat(300) { round ->
+                val shared = Pairing(clock = { now }, random = SecureRandom())
+                val code = shared.newCode()
+                val start = CountDownLatch(1)
+                val results = (1..threads).map { pool.submit<PairResult> { start.await(); shared.pair(code, hub) { "laptop-a" } } }
+                start.countDown()
+                val paired = results.map { it.get(5, TimeUnit.SECONDS) }.count { it is PairResult.Paired }
+                assertEquals(1, paired, "round $round")
+            }
+        } finally {
+            pool.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `wrong codes at the same moment are all counted`() {
+        val pool = Executors.newFixedThreadPool(5)
+        try {
+            repeat(300) { round ->
+                val shared = Pairing(clock = { now }, random = SecureRandom())
+                val code = shared.newCode()
+                val start = CountDownLatch(1)
+                val wrong = (1..5).map { pool.submit<PairResult> { start.await(); shared.pair("AAAAAAAA", hub) { "laptop-a" } } }
+                start.countDown()
+                wrong.forEach { it.get(5, TimeUnit.SECONDS) }
+                assertEquals("wrong_code", refused(shared.pair(code, hub) { "laptop-a" }).code, "round $round")
+            }
+        } finally {
+            pool.shutdownNow()
+        }
+    }
+
+    @Test
+    fun `a code typed in lower case works`() {
+        assertTrue(pair(pairing.newCode().lowercase()) is PairResult.Paired)
+    }
+
+    @Test
+    fun `a caller off the tailnet is told what to do`() {
+        pairing.newCode()
+        val r = refused(pair("K7MP2QXR", from = InetAddress.getByName("192.0.2.10")))
+        assertTrue(r.error.contains("turn on Tailscale on the hub"), r.error)
+    }
+
+    @Test
+    fun `the app's pairing uses the platform's strong random source`() {
+        assertEquals(SecureRandom::class, Pairing.forPhone().random::class)
+        val phone = Pairing.forPhone()
+        assertTrue(phone.pair(phone.newCode(), hub) { "laptop-a" } is PairResult.Paired, "and pairs on the real clock")
+    }
+
+    @Test
+    fun `a code typed with spaces around it works`() {
+        assertTrue(pair("  ${pairing.newCode()}\n") is PairResult.Paired)
     }
 }
