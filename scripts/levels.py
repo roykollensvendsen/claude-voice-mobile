@@ -10,8 +10,7 @@ Two keys are measured more narrowly than in claude-voice:
 
 - `mutants` replaces `mutation`. In claude-voice `mutation` counts rules proven by a
   test, and this repository has no rule rows yet; `mutants` is Pitest's mutants caught,
-  in :core only, because Pitest cannot run Android unit tests and :plugin-api has no
-  tests of its own yet.
+  in :core and :plugin-api only, because Pitest cannot run Android unit tests.
 - `duplication` leaves out lines that say nothing on their own: imports, the package
   line, and lines of brackets only.
 - `type_errors` counts Kotlin compiler warnings, because a build with a type error is
@@ -33,6 +32,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 MODULES = ("core", "plugin-api", "app", "plugins/status")
+MUTATED = ("core", "plugin-api")  # Pitest cannot run Android unit tests
 PREFIX = "org.claudevoice.mobile"
 BLOCK = 6  # lines in a row that count as a copied block, as in claude-voice
 # Lines that say nothing on their own, left out of the copied-code measure.
@@ -60,10 +60,10 @@ def coverage(report: Path) -> float:
     return round(100 * covered / (missed + covered), 2) if missed + covered else 0.0
 
 
-def mutants(report: Path) -> dict[str, int]:
-    """Mutants the tests caught, of all made, from Pitest's XML report."""
-    mutants = _parse(report).findall("mutation")
-    return {"killed": sum(m.get("detected") == "true" for m in mutants), "total": len(mutants)}
+def mutants(reports: list[Path]) -> dict[str, int]:
+    """Mutants the tests caught, of all made, over Pitest's XML reports."""
+    made = [m for r in reports for m in _parse(r).findall("mutation")]
+    return {"killed": sum(m.get("detected") == "true" for m in made), "total": len(made)}
 
 
 def passed_tests(folders: list[Path]) -> int:
@@ -241,14 +241,14 @@ def measure() -> dict[str, object]:
     started = time.monotonic()
     _must(_gradle(*(a for task in TEST_TASKS for a in (task, "--rerun"))), "The tests")
     seconds = round(time.monotonic() - started, 1)
-    _must(_gradle("koverXmlReport", "detekt", ":core:pitest", "lintDebug"), "Measuring")
+    _must(_gradle("koverXmlReport", "detekt", ":core:pitest", ":plugin-api:pitest", "lintDebug"), "Measuring")
     layers = _gradle("checkLayers")
     sources = [ROOT / m / "src" / "main" for m in MODULES]
     detekt = ROOT / "build" / "reports" / "detekt" / "detekt.xml"
     lint = [ROOT / m / "build" / "reports" / "lint-results-debug.xml" for m in MODULES]
     levels = {
         "coverage": coverage(ROOT / "build" / "reports" / "kover" / "report.xml"),
-        "mutants": mutants(ROOT / "core" / "build" / "reports" / "pitest" / "mutations.xml"),
+        "mutants": mutants([ROOT / m / "build" / "reports" / "pitest" / "mutations.xml" for m in MUTATED]),
         "tests": passed_tests([ROOT / m / "build" / "test-results" / t for m, t in RESULTS]),
         "lint_errors": detekt_findings(detekt) + android_lint_errors(lint),
         "type_errors": compiler_warnings(compiled.stdout + compiled.stderr),

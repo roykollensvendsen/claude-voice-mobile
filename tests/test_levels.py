@@ -25,9 +25,9 @@ def test_coverage_is_the_share_of_lines_over_every_module(tmp_path):
     assert levels.coverage(report) == 58.75
 
 
-def test_mutants_count_killed_and_timed_out_as_caught(tmp_path):
-    report = tmp_path / "mutations.xml"
-    report.write_text(
+def test_mutants_count_killed_and_timed_out_as_caught_over_every_report(tmp_path):
+    core = tmp_path / "core.xml"
+    core.write_text(
         "<mutations>"
         "<mutation detected='true' status='KILLED'/>"
         "<mutation detected='true' status='TIMED_OUT'/>"
@@ -35,7 +35,9 @@ def test_mutants_count_killed_and_timed_out_as_caught(tmp_path):
         "<mutation detected='false' status='NO_COVERAGE'/>"
         "</mutations>"
     )
-    assert levels.mutants(report) == {"killed": 2, "total": 4}
+    api = tmp_path / "api.xml"
+    api.write_text("<mutations><mutation detected='true' status='KILLED'/></mutations>")
+    assert levels.mutants([core, api]) == {"killed": 3, "total": 5}
 
 
 def test_tests_are_those_that_passed_in_every_result_file(tmp_path):

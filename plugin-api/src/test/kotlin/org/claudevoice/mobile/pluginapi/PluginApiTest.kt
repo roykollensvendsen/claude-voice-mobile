@@ -20,6 +20,13 @@ class PluginApiTest {
     }
 
     @Test
+    fun `a tool shows the hub its name and description as given`() {
+        val tool = Tool("status", "How the phone is", JsonObject(emptyMap()))
+        assertEquals("status", tool.name)
+        assertEquals("How the phone is", tool.description)
+    }
+
+    @Test
     fun `two tools are the same only when name, description and input all match`() {
         val input = JsonObject(mapOf("type" to JsonPrimitive("object")))
         val tool = Tool("status", "How the phone is", input)
