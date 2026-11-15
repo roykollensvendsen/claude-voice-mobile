@@ -112,22 +112,45 @@ jobs:
       - name: The app's gate
         run: ./gradlew check --console=plain
 
-  # The app's code health, for the bridge's code-health page: scripts/levels.py measures it
-  # on every run, and main keeps the levels with its own run as the artifact quality-levels.
-  # Nothing measured is committed; quality.json holds only the test-time budget.
+  # The app's code health, for the bridge's code-health page. scripts/ratchet.py measures it
+  # with scripts/levels.py and fails when a measure got worse than the base, unless the
+  # pull request names it on a Ratchet-Exception line. Main keeps its levels with its own
+  # run as the artifact quality-levels. Nothing measured is committed; quality.json holds
+  # only the test-time budget.
   quality:
     runs-on: ubuntu-latest
     # No time limit, on purpose, as in claude-voice: this job holds the mutation run, and a
     # run cut short proves nothing.
+    permissions:
+      contents: read
+      actions: read              # to fetch the levels main kept with its own run
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0         # the base is read, or measured in a copy, by the ratchet
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: temurin
           java-version: "17"
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
-      - name: Measure
-        run: python3 scripts/levels.py --out "$RUNNER_TEMP/levels.json"
+      # Missing levels, from a run cancelled or expired, leave no file, and the ratchet then
+      # measures the base itself.
+      - name: The levels main kept for the base
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          for run in $(gh run list --repo "$GITHUB_REPOSITORY" --workflow checks.yml --commit "$BASE" \
+                         --event push --json databaseId -q '.[].databaseId'); do
+            gh run download "$run" --repo "$GITHUB_REPOSITORY" --name quality-levels --dir "$RUNNER_TEMP/base" \
+              && break
+          done
+          ls "$RUNNER_TEMP/base" 2>/dev/null || echo "Main kept no levels for $BASE; the ratchet will measure it."
+      - name: The quality ratchet
+        env:                     # the pull request's text, for its Ratchet-Exception lines
+          RATCHET_EXCEPTIONS: ${{ github.event.pull_request.body }}
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python3 scripts/ratchet.py check --base "$BASE" --levels "$RUNNER_TEMP/base/levels.json" --out "$RUNNER_TEMP/levels.json"
       - name: Keep main's levels with this run
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !cancelled()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

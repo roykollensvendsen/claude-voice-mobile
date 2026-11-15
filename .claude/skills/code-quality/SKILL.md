@@ -60,8 +60,13 @@ The repository has two halves. The Kotlin half is the app: the Gradle modules
 | Time the tests take | the four test tasks, against `quality.json`'s budget | not measured |
 | Checks on main | the latest run, which the bridge asks GitHub for | the same run |
 
-There is no ratchet here yet, nothing that refuses a measure made worse than
-main.
+The ratchet, `scripts/ratchet.py`, runs in the same job. It fails a pull
+request whose measure got worse than main's, unless the pull request has a line
+of its own, `Ratchet-Exception: <measure> - the reason`. detekt is part of the
+gate. The findings the code already had are listed in
+`config/detekt-baseline.xml`, and the ratchet refuses a new entry there
+(exception name `detekt_baseline`). So fix a new finding rather than
+regenerating the baseline. When you fix one, remove its line too.
 
 ## 3. Measure it locally
 
@@ -98,6 +103,7 @@ A cold cache takes some minutes, so run it in the background too.
 ./gradlew check --console=plain                # the app's whole gate, as CI runs it
 ./gradlew checkLayers                          # only the layer rules
 python3 scripts/levels.py --out levels.json    # every measure the page shows, as CI takes them
+python3 scripts/ratchet.py check --base origin/main   # the same, compared with main as CI does
 ```
 
 ## 4. Fix the worst cell, test-first

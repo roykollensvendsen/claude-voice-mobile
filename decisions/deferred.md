@@ -12,7 +12,7 @@ read whenever a decision record is written and when a phase ends.
 | A release workflow and publishing | The first release someone outside will install | A published name is claimed and a published version cannot be reused |
 | `CODEOWNERS` | A second person who reviews | It would name one person as the owner of everything |
 | `pre-commit` as a requirement rather than an option | A second contributor | The gates run in CI, and a hook one person installs is a hook one person maintains |
-| Kotlin style lint and instrumented tests in CI (the build, Android lint, unit tests and the layer rules already run) | The first module with code worth styling, and the first test that needs a device or an emulator | A style gate over a skeleton checks nothing, and an emulator in CI costs minutes on every pull request |
+| Instrumented tests in CI (the build, detekt, Android lint, unit tests and the layer rules already run) | The first test that needs a device or an emulator | An emulator in CI costs minutes on every pull request |
 | `:app` and the plugins in the `mutants` measure (ADR-CVM-004) | A mutation tool that runs Android unit tests | Pitest runs only plain JVM tests, so it measures `:core` and `:plugin-api` |
 | The `mutation` measure: rules proven by a test, as claude-voice counts them (ADR-CVM-004) | The app's first rule rows: a `# RULE:` line in Kotlin with a row in `scripts/mutations.toml`, which needs `scripts/mutate.py` to read `.kt` files | No rule rows exist yet, and Pitest's mutants are another measure, kept under `mutants` |
 | The role skill `mobile-android` (`mobile-architecture` is written) | The Android developer has learned something worth keeping | A skill is written by the role that uses it, from what it has learned |

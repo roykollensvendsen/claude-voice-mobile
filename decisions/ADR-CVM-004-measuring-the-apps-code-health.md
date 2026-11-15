@@ -45,9 +45,12 @@ The tools:
 - copied code: the bridge's own line-based measure, leaving out lines that say nothing
   on their own (imports, the package line, lines of brackets only).
 
-None of these tools is part of the gate (`./gradlew check`), and nothing they measure is
-committed. `quality.json` holds only the test-time budget. Comparing a pull request
-with main and refusing it when it makes a measure worse (the ratchet) is a later change.
+Nothing they measure is committed. `quality.json` holds only the test-time budget.
+`scripts/ratchet.py` compares each run's levels with main's and fails when one got
+worse, unless the pull request names it on a `Ratchet-Exception:` line, as in
+claude-voice. Of the tools, only detekt is part of the gate (`./gradlew check`), with a
+baseline of the findings the code had when it joined. The ratchet refuses a new entry
+in that baseline, so it can only shrink.
 
 ## Consequences
 
