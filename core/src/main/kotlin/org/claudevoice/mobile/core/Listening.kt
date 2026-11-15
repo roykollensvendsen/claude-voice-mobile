@@ -16,7 +16,7 @@ class BindAddress private constructor(val address: InetAddress) {
     }
 }
 
-/** A server the phone has opened; [stop] closes it. */
+/** A server the phone has opened. [stop] closes its listening socket and every open connection. */
 fun interface Server {
     fun stop()
 }
@@ -38,11 +38,12 @@ sealed interface ListenStatus {
  * Listens on the tailnet address alone, following the tailnet as the phone sees it. When the
  * address changes, the old server stops before a new one opens on the new address. When the
  * tailnet goes away, or the address is not one the phone may bind, or the bind fails, it stops
- * and says why. It never falls back to another address.
+ * and says why. It never falls back to another address. After [stop] it opens nothing again.
  */
 class Listening(private val port: Int, private val opener: ServerOpener) {
     private var server: Server? = null
     private var at: InetAddress? = null
+    private var stopped = false
 
     @Volatile
     var status: ListenStatus = ListenStatus.Stopped(NOT_YET)
@@ -56,17 +57,20 @@ class Listening(private val port: Int, private val opener: ServerOpener) {
             is TailnetState.HubNotAnswering -> state.address
             else -> null
         }
-        if (address != null && address == at) return
+        if (stopped || (address != null && address == at)) return
         close()
-        status = when {
-            address == null -> ListenStatus.Stopped(OFF_TAILNET)
-            else -> BindAddress.of(address)?.let(::open) ?: ListenStatus.Stopped(NOT_IPV4)
+        status = when (state) {
+            TailnetState.TailscaleOff -> ListenStatus.Stopped(TAILSCALE_OFF)
+            TailnetState.OtherVpn -> ListenStatus.Stopped(OTHER_VPN)
+            TailnetState.NoNetwork -> ListenStatus.Stopped(NO_NETWORK)
+            else -> address?.let(BindAddress::of)?.let(::open) ?: ListenStatus.Stopped(NOT_IPV4)
         }
     }
 
     /** Stop for good, as when the app's service ends. */
     @Synchronized
     fun stop() {
+        stopped = true
         close()
         status = ListenStatus.Stopped(STOPPED)
     }
@@ -87,7 +91,9 @@ class Listening(private val port: Int, private val opener: ServerOpener) {
 
     private companion object {
         const val NOT_YET = "not on the tailnet yet"
-        const val OFF_TAILNET = "not listening: the phone is not on the tailnet"
+        const val TAILSCALE_OFF = "not listening: Tailscale is off; turn on Tailscale on this phone"
+        const val OTHER_VPN = "not listening: another VPN is on; turn off the other VPN and turn on Tailscale"
+        const val NO_NETWORK = "not listening: no network; connect to a network"
         const val NOT_IPV4 = "not listening: the phone has no tailnet IPv4 address, which protocol version 1 needs"
         const val STOPPED = "stopped"
     }

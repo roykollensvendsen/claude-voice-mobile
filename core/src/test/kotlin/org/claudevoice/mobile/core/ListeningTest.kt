@@ -106,4 +106,25 @@ class ListeningTest {
         assertTrue(opened.single().stopped)
         assertTrue(listening.status is ListenStatus.Stopped)
     }
+
+    @Test
+    fun `after stopping for good, a late tailnet state opens nothing`() {
+        listening.follow(TailnetState.OnTailnet(tailnet))
+        listening.stop()
+        listening.follow(TailnetState.OnTailnet(InetAddress.getByName("100.64.0.9")))
+        listening.follow(TailnetState.OnTailnet(tailnet))
+        assertEquals(1, opened.size)
+        assertTrue(listening.status is ListenStatus.Stopped)
+    }
+
+    @Test
+    fun `each way off the tailnet says what to do`() {
+        val reasons = listOf(TailnetState.TailscaleOff, TailnetState.OtherVpn, TailnetState.NoNetwork).map {
+            listening.follow(it)
+            (listening.status as ListenStatus.Stopped).reason
+        }
+        assertTrue(reasons[0].contains("turn on Tailscale"), reasons[0])
+        assertTrue(reasons[1].contains("turn off the other VPN"), reasons[1])
+        assertTrue(reasons[2].contains("connect to a network"), reasons[2])
+    }
 }
