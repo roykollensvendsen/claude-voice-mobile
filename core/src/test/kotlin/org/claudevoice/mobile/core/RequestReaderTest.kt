@@ -224,10 +224,38 @@ class RequestReaderTest {
     }
 
     @Test
-    fun `a doubled header line counts toward the 64`() {
-        val lines = (1..61).map { "X-$it: 1" }.toTypedArray()
-        assertTrue(read(post("{}", *lines, "X-1: again")) is ReadResult.Request, "64 lines")
-        assertEquals(431, status(read(post("{}", *lines, "X-1: again", "X-2: again"))))
+    fun `any header name sent twice, in any case, is 400`() {
+        for (name in listOf("X-A", "Accept", "User-Agent")) {
+            val r = read(post("{}", "$name: a", "${name.uppercase()}: b")) as ReadResult.Refused
+            assertEquals(400, r.status, name)
+            assertEquals("${name.lowercase()} is sent twice", r.error)
+        }
+    }
+
+    @Test
+    fun `the head limit runs from when the connection was accepted`() {
+        now = 4_999_999_999L
+        val r = RequestReader(clock = { now }).read(ByteArrayInputStream(post().toByteArray()), acceptedAt = 0L)
+        assertTrue(r is ReadResult.Request, "$r")
+        val late = RequestReader(clock = { now }).read(
+            object : InputStream() {
+                val inner = ByteArrayInputStream(post().toByteArray())
+
+                override fun read(): Int {
+                    now += 1
+                    return inner.read()
+                }
+            },
+            acceptedAt = 0L,
+        )
+        assertEquals(ReadResult.Dropped, late)
+    }
+
+    @Test
+    fun `bytes after the body are left unread`() {
+        val input = ByteArrayInputStream((post("{}") + "GET /mcp HTTP/1.1\r\n").toByteArray())
+        assertTrue(RequestReader(clock = { 0L }).read(input) is ReadResult.Request)
+        assertEquals("GET /mcp HTTP/1.1\r\n".length, input.available())
     }
 
     @Test
@@ -281,6 +309,58 @@ class RequestReaderTest {
     fun `the characters just past the letter and digit ranges are not in a token`() {
         for (method in listOf("P{ST", "P[ST", "P:ST", "P@ST", "P`ST".replace("`", "/"))) {
             assertEquals(400, status(read("$method /mcp HTTP/1.1\r\nHost: h\r\nContent-Length: 0\r\n\r\n")), method)
+        }
+    }
+
+    /** A stream that says "no data yet" [waits] times before each byte, as a socket with a short timeout does. */
+    private fun waiting(text: String, waits: Int, tick: Long) = object : InputStream() {
+        val inner = ByteArrayInputStream(text.toByteArray())
+        var left = waits
+
+        override fun read(): Int {
+            if (left > 0) {
+                left -= 1
+                now += tick
+                throw java.net.SocketTimeoutException("no data yet")
+            }
+            left = waits
+            return inner.read()
+        }
+    }
+
+    @Test
+    fun `a read that times out with no data waits on, within the time limit`() {
+        val r = RequestReader(clock = { now }).read(waiting(post(), waits = 2, tick = 1_000_000L))
+        assertTrue(r is ReadResult.Request, "$r")
+    }
+
+    @Test
+    fun `a client that sends nothing is dropped at the time limit`() {
+        val r = RequestReader(clock = { now }).read(waiting(post(), waits = Int.MAX_VALUE, tick = 1_000_000_000L))
+        assertEquals(ReadResult.Dropped, r)
+    }
+
+    @Test
+    fun `a connection reset is a drop`() {
+        val reset = object : InputStream() {
+            override fun read(): Int = throw java.io.IOException("connection reset")
+        }
+        assertEquals(ReadResult.Dropped, RequestReader(clock = { now }).read(reset))
+    }
+
+    @Test
+    fun `one header name repeated past 64 lines is 431`() {
+        val lines = Array(65) { "X: 1" }
+        assertEquals(431, status(read(post("{}", *lines))))
+        assertEquals(431, status(read(post("{}", *Array(1000) { "X: 1" }))))
+    }
+
+    @Test
+    fun `a doubled header the gate reads is 400`() {
+        for (name in listOf("Authorization", "Origin", "Claude-Voice-Protocol", "Mcp-Session-Id")) {
+            val r = read(post("{}", "$name: a", "${name.lowercase()}: b")) as ReadResult.Refused
+            assertEquals(400, r.status, name)
+            assertEquals("${name.lowercase()} is sent twice", r.error)
         }
     }
 }

@@ -1,6 +1,8 @@
 package org.claudevoice.mobile.core
 
+import java.io.IOException
 import java.io.InputStream
+import java.net.SocketTimeoutException
 
 /** What reading one request gave: the request, a fixed refusal, or nothing to answer. */
 sealed interface ReadResult {
@@ -31,8 +33,9 @@ sealed interface ReadResult {
  * a monotonic clock in nanoseconds, after every byte, so a slow sender is dropped on time.
  */
 class RequestReader(private val clock: () -> Long) {
-    fun read(input: InputStream): ReadResult = try {
-        Reading(input, clock).request()
+    /** One request from [input]. The five seconds for the head run from [acceptedAt]. */
+    fun read(input: InputStream, acceptedAt: Long = clock()): ReadResult = try {
+        Reading(input, clock, acceptedAt).request()
     } catch (refusal: Refusal) {
         refusal.result
     }
@@ -40,9 +43,8 @@ class RequestReader(private val clock: () -> Long) {
     /** One refusal or drop, thrown out of the reading at once. */
     private class Refusal(val result: ReadResult) : RuntimeException(null, null, false, false)
 
-    private class Reading(private val input: InputStream, private val clock: () -> Long) {
-        private val started = clock()
-        private var deadline = started + HEAD_NANOS
+    private class Reading(private val input: InputStream, private val clock: () -> Long, acceptedAt: Long) {
+        private var deadline = acceptedAt + HEAD_NANOS
 
         fun request(): ReadResult.Request {
             val (method, target) = requestLine(line(LINE_LIMIT, URI_TOO_LONG))
@@ -71,11 +73,13 @@ class RequestReader(private val clock: () -> Long) {
             val seen = mutableMapOf<String, String>()
             val doubled = mutableSetOf<String>()
             var used = 0
+            var lines = 0
             while (true) {
                 val line = line(HEADERS_LIMIT - used, HEADERS_TOO_LARGE)
                 if (line.isEmpty()) break
                 used += line.length + 2
-                if (seen.size + doubled.size >= HEADER_LINES) {
+                lines += 1
+                if (lines > HEADER_LINES) {
                     refuse(HEADERS_TOO_LARGE, "more than $HEADER_LINES header lines")
                 }
                 val (name, value) = header(line)
@@ -102,10 +106,11 @@ class RequestReader(private val clock: () -> Long) {
         }
 
         private fun checked(headers: Map<String, String>, doubled: Set<String>): Map<String, String> {
+            val twice = doubled.minOrNull()
             when {
                 TRANSFER_ENCODING in headers -> refuse(BAD_REQUEST, "send Content-Length, not Transfer-Encoding")
-                CONTENT_LENGTH in doubled -> refuse(BAD_REQUEST, "Content-Length is sent twice")
-                HOST !in headers || HOST in doubled -> refuse(BAD_REQUEST, "send one Host header")
+                HOST !in headers -> refuse(BAD_REQUEST, "send one Host header")
+                twice != null -> refuse(BAD_REQUEST, "$twice is sent twice")
                 EXPECT in headers -> refuse(EXPECTATION_FAILED, "Expect is not accepted")
             }
             return headers
@@ -145,10 +150,23 @@ class RequestReader(private val clock: () -> Long) {
             }
         }
 
-        /** The next byte; dropped at the end of the stream or past the deadline. */
+        /**
+         * The next byte; dropped at the end of the stream, on a broken connection, or past the
+         * deadline. A socket's short read timeout says "no data yet": it waits on until the deadline.
+         */
         private fun next(): Int {
-            val byte = input.read()
-            if (byte < 0 || clock() - deadline > 0) throw Refusal(ReadResult.Dropped)
+            var byte: Int? = null
+            while (byte == null) {
+                byte = try {
+                    input.read()
+                } catch (_: SocketTimeoutException) {
+                    null
+                } catch (_: IOException) {
+                    -1
+                }
+                if (clock() - deadline > 0) throw DROPPED
+            }
+            if (byte < 0) throw DROPPED
             return byte
         }
 
@@ -156,12 +174,15 @@ class RequestReader(private val clock: () -> Long) {
     }
 
     private companion object {
+        /** Thrown for a drop: it carries no stack, so one object serves every connection. */
+        val DROPPED = Refusal(ReadResult.Dropped)
         const val VERSION = "HTTP/1.1"
         const val POST = "POST"
         const val HOST = "host"
         const val CONTENT_LENGTH = "content-length"
         const val TRANSFER_ENCODING = "transfer-encoding"
         const val EXPECT = "expect"
+
         const val REQUEST_LINE_PARTS = 3
         const val LINE_LIMIT = 2048
         const val HEADERS_LIMIT = 8192
