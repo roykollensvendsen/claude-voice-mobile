@@ -13,3 +13,4 @@ org.claudevoice.mobile.core.GateDecision$Refuse
 org.claudevoice.mobile.core.PairResult$Refused
 org.claudevoice.mobile.core.ListenStatus$Listening
 org.claudevoice.mobile.core.ListenStatus$Stopped
+org.claudevoice.mobile.core.ReadResult$Refused
