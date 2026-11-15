@@ -8,6 +8,7 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.util.Collections
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
@@ -21,6 +22,11 @@ import java.util.concurrent.TimeUnit
  *   takes longer than the write limit, and then closes it.
  *
  * [stop] closes the listening socket and every open connection.
+ *
+ * [admit] runs on the one accept thread, before anything is read: it must stay cheap, such as a
+ * comparison with the paired hub's address, and never look anything up. The [exchange]'s handler
+ * runs on the connection's thread and must bound its own time: the server's deadlines cover only
+ * reading the request and writing the answer.
  */
 class HttpServer internal constructor(
     private val socket: ServerSocket,
@@ -47,9 +53,15 @@ class HttpServer internal constructor(
         Thread(::accept, "http-accept").start()
     }
 
+    /**
+     * The listening socket closes under the same lock [admitted] counts under, so a connection
+     * accepted at that moment is either in the snapshot closed here or refused there.
+     */
     override fun stop() {
-        closeQuietly(socket)
-        synchronized(connections) { connections.toList() }.forEach(::closeQuietly)
+        synchronized(connections) {
+            closeQuietly(socket)
+            connections.toList()
+        }.forEach(::closeQuietly)
         watchdog.shutdownNow()
     }
 
@@ -58,7 +70,10 @@ class HttpServer internal constructor(
             val client = try {
                 socket.accept()
             } catch (_: IOException) {
-                return
+                // Closed by stop(), which ends the loop; or a passing failure, such as too many
+                // open files, after which the server keeps listening a moment later.
+                pause()
+                continue
             }
             val acceptedAt = clock()
             if (!admit(client.inetAddress) || !admitted(client)) {
@@ -69,9 +84,12 @@ class HttpServer internal constructor(
         }
     }
 
-    /** Count [client] in, unless the limit is reached. */
+    /** Nothing interrupts the accept thread; [stop] ends it by closing the socket. */
+    private fun pause() = Thread.sleep(ACCEPT_PAUSE_MILLIS)
+
+    /** Count [client] in, unless the server has stopped or the limit is reached. */
     private fun admitted(client: Socket): Boolean = synchronized(connections) {
-        connections.size < MAX_CONNECTIONS && connections.add(client)
+        !socket.isClosed && connections.size < MAX_CONNECTIONS && connections.add(client)
     }
 
     private fun serve(client: Socket, acceptedAt: Long) {
@@ -84,6 +102,8 @@ class HttpServer internal constructor(
             }
         } catch (_: IOException) {
             // A peer gone, or the watchdog closed it: nothing more to do than close.
+        } catch (_: RejectedExecutionException) {
+            // The server stopped as the answer began: the watchdog is gone, so just close.
         } finally {
             cutOff?.cancel(false)
             closeQuietly(client)
@@ -104,6 +124,7 @@ class HttpServer internal constructor(
         const val READ_TIMEOUT_MILLIS = 1000
         const val WRITE_LIMIT_MILLIS = 10_000L
         const val BACKLOG = 50
+        const val ACCEPT_PAUSE_MILLIS = 100L
     }
 }
 

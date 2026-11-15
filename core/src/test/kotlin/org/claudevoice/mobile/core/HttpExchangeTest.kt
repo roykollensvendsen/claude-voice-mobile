@@ -103,4 +103,38 @@ class HttpExchangeTest {
         assertEquals("HTTP/1.1 405 Method Not Allowed", status(text))
         assertTrue(handled.isEmpty())
     }
+
+    private fun answerWith(handler: Handler): String {
+        val out = ByteArrayOutputStream()
+        HttpExchange(RequestReader(clock = { 0L }), handler)
+            .run(ByteArrayInputStream(request().toByteArray(Charsets.ISO_8859_1)), out, peer)
+        return out.toString(Charsets.ISO_8859_1)
+    }
+
+    @Test
+    fun `a handler that throws is answered 500 with an error body`() {
+        val text = answerWith { _, _ -> throw IllegalStateException("broken") }
+        assertEquals("HTTP/1.1 500 Internal Server Error", status(text))
+        assertTrue(text.endsWith("\r\n\r\n{\"error\":\"the phone could not answer this request\"}"), text)
+        assertTrue(!text.contains("broken"), text)
+    }
+
+    @Test
+    fun `a handler's header never doubles a framing header, in any case`() {
+        val text = answerWith { _, _ ->
+            Answer(200, "{}".toByteArray(), mapOf("content-length" to "99", "CONNECTION" to "keep-alive", "X-Ok" to "1"))
+        }
+        val names = text.substringBefore("\r\n\r\n").split("\r\n").drop(1).map { it.substringBefore(':') }
+        assertEquals(listOf("X-Ok", "Content-Type", "Content-Length", "Connection"), names, text)
+        assertTrue(text.contains("\r\nContent-Length: 2\r\n"), text)
+    }
+
+    @Test
+    fun `a CR or LF in a handler's header is never written, and the answer is 500`() {
+        for (bad in listOf("X-A" to "1\r\nSet-Cookie: x", "X-A\nB" to "1", "X-A" to "1\rx")) {
+            val text = answerWith { _, _ -> Answer(200, "{}".toByteArray(), mapOf(bad)) }
+            assertEquals("HTTP/1.1 500 Internal Server Error", status(text), bad.toString())
+            assertTrue(!text.contains("Set-Cookie") && !text.contains("X-A"), text)
+        }
+    }
 }

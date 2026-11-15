@@ -160,4 +160,83 @@ class HttpServerTest {
             assertTrue(socket.localPort > 0)
         }
     }
+
+    @Test
+    fun `a connection accepted just as the server stops is closed, not served`() {
+        admitted = { server.stop(); true }
+        start(readTimeoutMillis = 20)
+        connect().use { s ->
+            s.getOutputStream().write(request)
+            assertEquals("", s.answer())
+        }
+        assertEquals(0, server.open)
+        assertTrue(handled.isEmpty())
+    }
+
+    @Test
+    fun `stopping while an answer is being written leaves no thread failing`() {
+        val failures = CopyOnWriteArrayList<Throwable>()
+        val before = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { _, e -> failures += e }
+        try {
+            val exchange = HttpExchange(RequestReader(clock = { clock.get() })) { _, _ ->
+                server.stop()
+                Answer(200, body)
+            }
+            server = HttpServer(ServerSocket(0, 50, loopback), exchange, { clock.get() }, { true }, 50, 10_000)
+            server.start()
+            connect().use { s ->
+                s.getOutputStream().write(request)
+                s.answer()
+            }
+            eventually("the connection is gone") { server.open == 0 }
+            Thread.sleep(100)
+            assertEquals(emptyList<Throwable>(), failures.toList())
+        } finally {
+            Thread.setDefaultUncaughtExceptionHandler(before)
+        }
+    }
+
+    @Test
+    fun `a passing accept failure, such as too many open files, does not end the server`() {
+        val exchange = HttpExchange(RequestReader(clock = { clock.get() })) { request, _ ->
+            handled += request.target
+            Answer(200, body)
+        }
+        val flaky = object : ServerSocket(0, 50, loopback) {
+            var failed = false
+
+            override fun accept(): Socket {
+                if (!failed) {
+                    failed = true
+                    throw java.io.IOException("Too many open files")
+                }
+                return super.accept()
+            }
+        }
+        server = HttpServer(flaky, exchange, { clock.get() }, { true }, 50, 10_000)
+        server.start()
+        eventually("the failure was seen") { flaky.failed }
+        connect().use { s ->
+            s.getOutputStream().write(request)
+            assertTrue(s.answer().startsWith("HTTP/1.1 200 OK"))
+        }
+    }
+
+    @Test
+    fun `an accept that keeps failing is retried after a pause, not in a busy loop`() {
+        val exchange = HttpExchange(RequestReader(clock = { clock.get() })) { _, _ -> Answer(200, body) }
+        val tries = AtomicLong(0)
+        val failing = object : ServerSocket(0, 50, loopback) {
+            override fun accept(): Socket {
+                tries.incrementAndGet()
+                throw java.io.IOException("Too many open files")
+            }
+        }
+        server = HttpServer(failing, exchange, { clock.get() }, { true }, 50, 10_000)
+        server.start()
+        Thread.sleep(500)
+        // A pause of 100 ms allows about five tries in half a second; a busy loop makes thousands.
+        assertTrue(tries.get() in 2..10, "${tries.get()} tries")
+    }
 }

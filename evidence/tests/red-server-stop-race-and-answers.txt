@@ -1,0 +1,6 @@
+HttpExchangeTest > a handler that throws is answered 500 with an error body() FAILED
+HttpExchangeTest > a handler's header never doubles a framing header, in any case() FAILED
+HttpExchangeTest > a CR or LF in a handler's header is never written, and the answer is 500() FAILED
+HttpServerTest > stopping while an answer is being written leaves no thread failing() FAILED
+HttpServerTest > a connection accepted just as the server stops is closed, not served() FAILED
+23 tests completed, 5 failed
