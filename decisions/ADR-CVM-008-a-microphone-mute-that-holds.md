@@ -185,16 +185,17 @@ microphone (ADR-CV-007's privacy rules). So the hub's tools, in a plugin
 `plugins/micmute` on top of the capability, are `micmute_mute` and
 `micmute_state`. There is no unmute tool.
 
-**The plugin's `uses` is empty.** The protocol's `microphone` means a plugin
-that can reach the microphone's sound. With the owner's microphone setting at
-*none*, a plugin that uses it would have the whole phone refused. This plugin
-can only close the microphone, never open or hear it, and `micmute_state` tells
-the hub only muted, unmuted or not holding. So it reaches nothing private through the microphone.
+**The plugin's `uses` is `["usage"]`.** It can only close the microphone,
+never open or hear it, so it does not use `microphone`. With the owner's
+microphone setting at *none*, a plugin that did would have the whole phone
+refused. But `micmute_state` tells the hub a fact about the owner: a mute
+usually means the owner is talking with someone nearby, and over a day the
+states would make a timeline of when. That is the use of the phone, so it is
+`usage`. The owner sees it when approving the plugin, and the call log keeps
+only each call's time and caller, not its answer.
 
-It does tell the hub one thing about the owner: a mute usually means the owner
-is talking with someone nearby, and `micmute_state` says when that is. Whether
-that counts as private, and so needs a value in `uses`, is the voice
-architect's judgement, and this record follows it.
+**The state is read only when the hub asks.** The phone never pushes a mute or
+an unmute to the hub, and keeps no history of them.
 
 **Permissions:** `MODIFY_AUDIO_SETTINGS`, which Android grants without asking,
 and the notification permission. The Soundcore adapter adds Bluetooth connect.
