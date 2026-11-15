@@ -33,6 +33,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 MODULES = ("core", "plugin-api", "app", "plugins/status")
 MUTATED = ("core", "plugin-api")  # Pitest cannot run Android unit tests
+# Modules whose classes are all data-only, so Pitest makes no mutants there and writes no
+# report. tests/test_levels.py checks each holds nothing else.
+NO_MUTANTS = ("plugin-api",)
 PREFIX = "org.claudevoice.mobile"
 BLOCK = 6  # lines in a row that count as a copied block, as in claude-voice
 # Lines that say nothing on their own, left out of the copied-code measure.
@@ -60,9 +63,16 @@ def coverage(report: Path) -> float:
     return round(100 * covered / (missed + covered), 2) if missed + covered else 0.0
 
 
-def mutants(reports: list[Path]) -> dict[str, int]:
-    """Mutants the tests caught, of all made, over Pitest's XML reports."""
-    # A module whose classes are all data-only has no mutants, and Pitest may write no report.
+def mutants(reports: list[Path], may_be_missing: set[Path]) -> dict[str, int]:
+    """Mutants the tests caught, of all made, over Pitest's XML reports.
+
+    Only a report in `may_be_missing` may be absent: a module in NO_MUTANTS, whose classes are
+    all data-only, so Pitest makes no mutants and writes no report. Any other gap stops the
+    measure rather than counting less.
+    """
+    absent = [r for r in reports if not r.exists() and r not in may_be_missing]
+    if absent:
+        sys.exit(f"no Pitest report at {', '.join(map(str, absent))}; only a green tree is measured.")
     made = [m for r in reports if r.exists() for m in _parse(r).findall("mutation")]
     return {"killed": sum(m.get("detected") == "true" for m in made), "total": len(made)}
 
@@ -236,6 +246,11 @@ KEYS = (
 )
 
 
+def pitest(module: str) -> Path:
+    """Where Pitest writes a module's report."""
+    return ROOT / module / "build" / "reports" / "pitest" / "mutations.xml"
+
+
 def measure() -> dict[str, object]:
     """Every measure, from the tree as it is."""
     compiled = _must(_gradle("--rerun-tasks", "compileTestKotlin", "compileDebugUnitTestKotlin"), "Compiling")
@@ -250,7 +265,7 @@ def measure() -> dict[str, object]:
     lint = [ROOT / m / "build" / "reports" / "lint-results-debug.xml" for m in MODULES]
     levels = {
         "coverage": coverage(ROOT / "build" / "reports" / "kover" / "report.xml"),
-        "mutants": mutants([ROOT / m / "build" / "reports" / "pitest" / "mutations.xml" for m in MUTATED]),
+        "mutants": mutants([pitest(m) for m in MUTATED], {pitest(m) for m in NO_MUTANTS}),
         "tests": passed_tests([ROOT / m / "build" / "test-results" / t for m, t in RESULTS]),
         "lint_errors": detekt_findings(detekt) + android_lint_errors(lint),
         "type_errors": compiler_warnings(compiled.stdout + compiled.stderr),

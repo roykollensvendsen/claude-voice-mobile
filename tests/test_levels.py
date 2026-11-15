@@ -10,6 +10,8 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent / "scripts"))
 
 import levels
+import pytest
+import test_pitest_data_only as guard
 
 ROOT = pathlib.Path("/repo")
 
@@ -37,7 +39,7 @@ def test_mutants_count_killed_and_timed_out_as_caught_over_every_report(tmp_path
     )
     api = tmp_path / "api.xml"
     api.write_text("<mutations><mutation detected='true' status='KILLED'/></mutations>")
-    assert levels.mutants([core, api]) == {"killed": 3, "total": 5}
+    assert levels.mutants([core, api], may_be_missing=set()) == {"killed": 3, "total": 5}
 
 
 def test_tests_are_those_that_passed_in_every_result_file(tmp_path):
@@ -128,7 +130,21 @@ def test_the_levels_carry_mutants_and_never_mutation():
     assert "mutation" not in levels.KEYS
 
 
-def test_a_module_with_no_mutants_and_no_report_adds_nothing(tmp_path):
+def test_a_module_allowed_no_mutants_may_have_no_report(tmp_path):
     api = tmp_path / "api.xml"
     api.write_text("<mutations><mutation detected='true' status='KILLED'/></mutations>")
-    assert levels.mutants([api, tmp_path / "missing.xml"]) == {"killed": 1, "total": 1}
+    missing = tmp_path / "missing.xml"
+    assert levels.mutants([api, missing], may_be_missing={missing}) == {"killed": 1, "total": 1}
+
+
+def test_any_other_missing_report_stops_the_measure(tmp_path):
+    with pytest.raises(SystemExit, match="no Pitest report"):
+        levels.mutants([tmp_path / "missing.xml"], may_be_missing=set())
+
+
+def test_only_a_module_whose_classes_are_all_data_only_may_have_no_mutants():
+    # tests/test_pitest_data_only.py checks each listed class; this checks the module has no other.
+    for module in levels.NO_MUTANTS:
+        declared = guard.declared_classes(levels.ROOT / module / "src" / "main")
+        assert declared, module
+        assert guard.unlisted_with_code(declared) == [], module
