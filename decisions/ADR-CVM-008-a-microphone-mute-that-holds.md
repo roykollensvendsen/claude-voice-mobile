@@ -58,6 +58,12 @@ over Bluetooth SCO or LE Audio. The matrix below is measured for every path
 the Claude app is seen to use, and for both mutes: (A) `setMicrophoneMute` from
 the test app, and (B) the system switch for microphone access.
 
+Android hides which app another app's recording configuration belongs to, so
+the Claude app's entry is found by elimination. During the conversation the
+test app records nothing of its own in M1b, and the Claude app's capture must
+be the only active one. When more than one capture is active, that reading
+fails M1b. It is not guessed at.
+
 | Path the Claude app uses | Mute (A) | Mute (B) |
 |---|---|---|
 | its source, built-in microphone | M1a, M1b, M1c | M1a, M1b, M1c |
@@ -183,7 +189,12 @@ microphone (ADR-CV-007's privacy rules). So the hub's tools, in a plugin
 that can reach the microphone's sound. With the owner's microphone setting at
 *none*, a plugin that uses it would have the whole phone refused. This plugin
 can only close the microphone, never open or hear it, and `micmute_state` tells
-the hub only muted, unmuted or not holding. So it reaches nothing private.
+the hub only muted, unmuted or not holding. So it reaches nothing private through the microphone.
+
+It does tell the hub one thing about the owner: a mute usually means the owner
+is talking with someone nearby, and `micmute_state` says when that is. Whether
+that counts as private, and so needs a value in `uses`, is the voice
+architect's judgement, and this record follows it.
 
 **Permissions:** `MODIFY_AUDIO_SETTINGS`, which Android grants without asking,
 and the notification permission. The Soundcore adapter adds Bluetooth connect.
