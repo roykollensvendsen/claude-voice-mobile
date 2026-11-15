@@ -11,3 +11,5 @@ org.claudevoice.mobile.pluginapi.ToolResult$Refused
 org.claudevoice.mobile.core.GateDecision$Pass
 org.claudevoice.mobile.core.GateDecision$Refuse
 org.claudevoice.mobile.core.PairResult$Refused
+org.claudevoice.mobile.core.ListenStatus$Listening
+org.claudevoice.mobile.core.ListenStatus$Stopped
