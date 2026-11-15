@@ -241,10 +241,10 @@ def measure() -> dict[str, object]:
     started = time.monotonic()
     _must(_gradle(*(a for task in TEST_TASKS for a in (task, "--rerun"))), "The tests")
     seconds = round(time.monotonic() - started, 1)
-    _must(_gradle("koverXmlReport", "detekt", ":core:pitest", ":plugin-api:pitest", "lintDebug"), "Measuring")
+    _must(_gradle("koverXmlReport", "detektMeasure", ":core:pitest", ":plugin-api:pitest", "lintDebug"), "Measuring")
     layers = _gradle("checkLayers")
     sources = [ROOT / m / "src" / "main" for m in MODULES]
-    detekt = ROOT / "build" / "reports" / "detekt" / "detekt.xml"
+    detekt = ROOT / "build" / "reports" / "detekt" / "measure.xml"
     lint = [ROOT / m / "build" / "reports" / "lint-results-debug.xml" for m in MODULES]
     levels = {
         "coverage": coverage(ROOT / "build" / "reports" / "kover" / "report.xml"),
