@@ -1,0 +1,36 @@
+name: fuzz
+
+# The weekly fuzz run of ADR-CVM-005: the request reader's fuzz test with a fresh seed and
+# more cases than the fixed-seed run in checks. The seed is printed first, so a failure can be
+# run again exactly: FUZZ_SEED=<seed> FUZZ_CASES=<cases> ./gradlew :core:test
+# --tests '*RequestReaderFuzzTest'. A case it finds joins RequestReaderTest.
+on:
+  schedule:
+    - cron: "17 4 * * 1"   # Mondays, 04:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - name: A fresh seed
+        id: seed
+        run: |
+          seed="${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
+          echo "seed=$seed" >> "$GITHUB_OUTPUT"
+          echo "Fuzz seed: $seed, 200000 cases. Run again with FUZZ_SEED=$seed FUZZ_CASES=200000."
+      - name: The reader under fuzz
+        env:
+          FUZZ_SEED: ${{ steps.seed.outputs.seed }}
+          FUZZ_CASES: "200000"
+        run: ./gradlew :core:test --tests '*RequestReaderFuzzTest' --rerun --console=plain
