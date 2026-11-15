@@ -38,8 +38,8 @@ The worktree for it is a separate checkout of claude-voice on a `protocol/` bran
    is version 0 and is accepted until Roy decides otherwise. Freezing a version and
    refusing the old one are two separate needs-roy items, so freezing cuts no
    machine off.
-5. **claude-voice-work reviews; it merges.** Its commit hook refuses a
-   `Claude-Session:` line, so leave that out in that repository. Do not merge a
+5. **claude-voice-work reviews; it merges.** Every voice repository takes only
+   `Co-Authored-By:` trailers, never a `Claude-Session:` line. Do not merge a
    claude-voice pull request yourself, even when its owner could not: tell Roy.
 6. **Freezing is Roy's.** Open a needs-roy issue in claude-voice-mobile, in plain
    Norwegian, and add it to STATUS.md. On his yes, record each file's SHA-256 under
