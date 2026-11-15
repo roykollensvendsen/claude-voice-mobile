@@ -11,8 +11,9 @@ merges it.
 
 - The owner wants to ask the voice how much mobile data is left this month.
 - The carrier knows the exact figure, but reading it means logging in to the
-  carrier. How that could be done safely, if at all, is still being researched.
-  That is "route a", and it is not decided here.
+  carrier. That is "route a". The research found that the carrier's terms
+  allow it to block a subscription used that way, and that its token would be
+  a session for the whole account. So route a is most likely dropped.
 - The phone itself counts the bytes it sends and receives over mobile data.
   Android's `NetworkStatsManager` gives that count for any span of time. With a
   quota and a renewal day, the phone can work out an estimate of what is left,
@@ -57,6 +58,8 @@ the period until now. The subscriber id is passed as null, which Android allows
 since version 10 and which counts every mobile network on the phone. It is not
 exact, and the record says so plainly:
 
+- the carrier's own count is the one that is billed. It may lag behind the
+  phone's or differ from it, and when they disagree, the carrier is right;
 - it does not see add-on packs, or data the carrier does not count against the
   quota (zero-rated data);
 - it does not see another SIM or device that shares the same plan;
@@ -83,8 +86,8 @@ words saying where to give it. It never asks for any other permission.
 a `source`. The phone's count is one implementation, and a later carrier source
 would be another. The tool and its words do not change, except that `source`
 says which one answered, and "about" is dropped only for an exact source.
-Whether route a is built at all, and how its login is kept, is a record of its
-own, with the owner's yes.
+**No exact source is planned.** The seam costs one interface and keeps the door
+open. Building route a would need a record of its own, and the owner's yes.
 
 **What stays on the phone.** The plugin keeps the quota and the renewal day, and
 nothing else. It sends the hub only the answer above. Like every plugin that
@@ -100,7 +103,7 @@ It is small, and it needs no Bluetooth or playback work.
   the carrier, and it says the answer is approximate.
 - The owner approves `usage` once for this plugin, and `status` stays without it.
 - The estimate can be off by whatever the list above does not see. If it is off
-  by enough to mislead, that is the trigger to look at route a again.
+  by enough to mislead, that is the trigger to look for an exact source again.
 - `NetworkStatsManager` is read through a small interface of the plugin's own,
   `MobileBytes`. So plain JVM tests with a fake count cover the arithmetic: a
   renewal day on the 31st, a period across a new year, a time-zone change, use
