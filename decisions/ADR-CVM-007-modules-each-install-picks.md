@@ -62,18 +62,21 @@ row in [`deferred.md`](deferred.md).
 **Modules are picked when the app is built.** One Gradle property lists the
 plugins, for example `-PcvPlugins=status,micmute,mobiledata`. Gradle includes
 only those modules and the capabilities they use. The app's list of plugins is
-generated from the property, so no code names a plugin that was left out. Each
-module brings its own permissions and foreground service types in its own
-manifest, so a module left out adds nothing to the app's manifest. The default
-list in the repository is `status` alone. Anyone's own list, the owner's
+generated from the property, so no code names a plugin that was left out. A name
+in the property that is not a module fails the build, with the list of names it
+knows. Each module brings its own permissions and foreground service types in
+its own manifest, so a module left out adds nothing to the app's manifest. The
+default list in the repository is `status` alone. Anyone's own list, the owner's
 included, goes in their own `~/.gradle/gradle.properties`, outside the
 repository, so nothing in it is tied to one phone, headset or person.
 
 **And switched at run time.** Each plugin that is built in has an on and off
 switch in the app's settings, off when first installed. A runtime permission is
 asked for only when its plugin is switched on. The hub sees only the plugins
-that are on. The plugin list on the hub changes when a plugin is switched on,
-so the owner approves it, as protocol version 1 already requires.
+that are on. A test proves that a plugin switched off is never registered: it is
+not in `tools/list`, not in `agent_info`, and a call to its tool is refused as
+unknown. The plugin list on the hub changes when a plugin is switched on, so the
+owner approves it, as protocol version 1 already requires.
 
 **A third party adds a module without changing the core.** They write a Gradle
 module that implements `plugin-api`, add it to the build and name it in the
@@ -85,8 +88,10 @@ not done: it would need a trust model of its own. That is a row in
 
 - A person who wants only the mute builds an app that holds the mute and
   nothing else, and is never asked about location or contacts.
-- The layer check gains a rule and a test for each new edge: a plugin may use a
-  capability, a capability may not use a plugin, and the core may use neither.
+- The layer check gains a rule and a named test for each edge: a plugin may use
+  a capability; a capability may not use a plugin, `plugin-api`, the core or
+  another capability; an adapter may not use a plugin or another adapter; and
+  the core may use neither a plugin nor a capability.
 - Publishing `plugin-api` or a capability is still not done. Until it is, a third
   party builds from this repository.
 
