@@ -164,4 +164,4 @@ jobs:
         with:
           name: quality-levels
           path: ${{ runner.temp }}/levels.json
-          if-no-files-found: ignore
+          if-no-files-found: error   # a failed measure on main shows at once
