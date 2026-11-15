@@ -1,5 +1,6 @@
 package org.claudevoice.mobile.core
 
+import java.io.IOException
 import java.net.InetAddress
 import java.util.Base64
 import kotlinx.serialization.json.Json
@@ -14,6 +15,8 @@ import kotlinx.serialization.json.put
 interface HubStore {
     fun read(): String?
 
+    /** Replace what is kept, all at once or not at all; an [IOException] when it could not. */
+    @Throws(IOException::class)
     fun write(text: String)
 }
 
@@ -23,7 +26,11 @@ interface HubStore {
  * still answers its hub alone, and a hub that has spoken version 1 still cannot slip back to 0.
  *
  * Anything kept that cannot be read, or an address off the tailnet, counts as not paired: the
- * phone refuses every call until it is paired again, rather than trust it.
+ * phone refuses every call until it is paired again, rather than trust it, and [problem] says so.
+ *
+ * Requests run on their own threads while the owner may pair again. So the record changes under
+ * one lock, and a gate hears a rise only for the pairing it was built from: a request to the old
+ * hub still in flight cannot write the old hub back, nor mark the new one as having spoken 1.
  */
 class KeptGate(
     private val store: HubStore,
@@ -31,32 +38,61 @@ class KeptGate(
     private val port: Int,
     private val machine: String,
 ) {
-    private var kept: Kept? = Kept.parse(store.read())
+    private val text = store.read()
+    private var kept: Kept? = Kept.parse(text)
+    /** Which pairing is current: a new token each time, compared by identity. */
+    private var pairing = Any()
 
+    /** Why what was kept could not be used, for the app to show; null when it could, or none was. */
+    @Volatile
+    var problem: String? = if (text != null && kept == null) UNREADABLE else null
+        private set
+
+    /** The gate for the hub paired now. Take it again for each request. */
+    @Volatile
     var gate: Gate = build()
         private set
 
     val hubName: String? get() = kept?.name
 
-    /** Pairing gave a new hub: it replaces the one before, whose key stops working at once. */
-    fun paired(result: PairResult.Paired) {
-        keep(Kept(result.keyHash, result.hubName, result.hubAddress, highest = 0))
-        gate = build()
+    /**
+     * Pairing gave a new hub: it replaces the one before, whose key stops working at once. False
+     * when it could not be written: then nothing changed, and the key must not be sent to the hub.
+     */
+    @Synchronized
+    fun paired(result: PairResult.Paired): Boolean {
+        val written = keep(Kept(result.keyHash, result.hubName, result.hubAddress, highest = 0))
+        if (written) {
+            pairing = Any()
+            problem = null
+            gate = build()
+        }
+        return written
     }
 
-    private fun keep(next: Kept) {
+    /** Write first, and change what is trusted only once it is written. */
+    private fun keep(next: Kept): Boolean {
+        try {
+            store.write(next.json())
+        } catch (_: IOException) {
+            return false
+        }
         kept = next
-        store.write(next.json())
+        return true
     }
 
     private fun build(): Gate {
         val hub = kept?.let { PairedHub(it.keyHash, PinnedAddress(it.address)) }
-        return Gate(own, port, machine, hub, kept?.highest ?: 0, ::rose)
+        val builtFor = pairing
+        return Gate(own, port, machine, hub, kept?.highest ?: 0) { version -> rose(builtFor, version) }
     }
 
-    /** The hub spoke a higher version: keep it, so a restart cannot let it slip back. */
-    private fun rose(version: Int) {
-        kept?.let { keep(it.withHighest(version)) }
+    /** The hub of pairing [builtFor] spoke a higher version: keep it, unless it has been replaced. */
+    @Synchronized
+    private fun rose(builtFor: Any, version: Int) {
+        val now = kept
+        // A rise that cannot be written is kept next time; the request still goes through.
+        if (builtFor === pairing && now != null) keep(now.withHighest(version))
     }
 
     private class Kept(val keyHash: ByteArray, val name: String, val address: InetAddress, val highest: Int) {
@@ -86,6 +122,7 @@ class KeptGate(
     }
 
     private companion object {
+        const val UNREADABLE = "the pairing kept on this phone could not be read; pair it again from the hub"
         const val KEY_HASH = "key_hash"
         const val NAME = "name"
         const val ADDRESS = "address"
