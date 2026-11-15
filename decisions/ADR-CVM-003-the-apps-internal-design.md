@@ -170,4 +170,5 @@ plugins.
 
 ADR-CVM-001 (a native app), ADR-CV-007 and ADR-CV-006 in claude-voice,
 [`docs/prototype-audio-focus.md`](../docs/prototype-audio-focus.md),
-`docs/organisation.md`.
+`docs/organisation.md`. The layer rules are amended by
+[ADR-CVM-007](ADR-CVM-007-modules-each-install-picks.md).
