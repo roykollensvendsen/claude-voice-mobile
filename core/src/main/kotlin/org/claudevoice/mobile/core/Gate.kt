@@ -11,9 +11,23 @@ data class GateRequest(val path: String, val peer: InetAddress, private val head
     fun header(name: String): String? = folded[name.lowercase()]
 }
 
-/** What the gate decides: let the request through in [Pass.version], or refuse it. */
+/** Where a request that passes goes. Read from the same path the gate checks pairing on. */
+enum class Route {
+    PAIR,
+    MCP,
+    NOT_FOUND,
+}
+
+/** The path as it came, undecoded: only these two exact strings lead anywhere. */
+private fun routeOf(path: String) = when (path) {
+    Gate.PAIR_PATH -> Route.PAIR
+    Gate.MCP_PATH -> Route.MCP
+    else -> Route.NOT_FOUND
+}
+
+/** What the gate decides: let the request through in [Pass.version] to [Pass.route], or refuse it. */
 sealed interface GateDecision {
-    data class Pass(val version: Int) : GateDecision
+    data class Pass(val version: Int, val route: Route) : GateDecision
 
     /**
      * A refusal: its HTTP status, the headers to send, and the body protocol version 1's
@@ -60,7 +74,8 @@ class PairedHub(private val keyHash: ByteArray, private val caller: CallerCheck)
  * the paired hub's machine. The core gives decisions, never HTTP: the app's listener sends them.
  *
  * [highestSeen] is the highest version the hub has spoken; once it is 1, a request with no
- * version header is refused, so the hub cannot slip back to version 0.
+ * version header is refused, so the hub cannot slip back to version 0. [onHigher] hears each rise,
+ * so it can be kept with the pairing ([KeptGate]).
  */
 class Gate(
     private val own: InetAddress,
@@ -68,6 +83,7 @@ class Gate(
     private val machine: String,
     private val hub: PairedHub?,
     highestSeen: Int = 0,
+    private val onHigher: ((Int) -> Unit)? = null,
 ) {
     var highestSeen = highestSeen
         private set
@@ -77,8 +93,11 @@ class Gate(
         val version = if (offered == null) 0 else agreed(offered)
         val slipsBack = version == 0 && highestSeen >= 1
         val refusal = if (version == null || slipsBack) unsupported() else refusal(request, version)
-        if (refusal == null && version != null) highestSeen = maxOf(highestSeen, version)
-        return refusal ?: GateDecision.Pass(checkNotNull(version))
+        if (refusal == null && version != null && version > highestSeen) {
+            highestSeen = version
+            onHigher?.invoke(version)
+        }
+        return refusal ?: GateDecision.Pass(checkNotNull(version), routeOf(request.path))
     }
 
     private fun unsupported(): GateDecision.Refuse {
@@ -150,6 +169,7 @@ class Gate(
     companion object {
         const val VERSION_HEADER = "Claude-Voice-Protocol"
         const val PAIR_PATH = "/pair"
+        const val MCP_PATH = "/mcp"
         private val SPOKEN = listOf(1)
         private const val BYTE_MAX = 255
         private const val IPV4_PARTS = 4

@@ -28,19 +28,19 @@ class GateTest {
 
     @Test
     fun `the paired hub's request with its key passes in version 1`() {
-        assertEquals(GateDecision.Pass(version = 1), gate().check(request()))
+        assertEquals(GateDecision.Pass(version = 1, route = Route.MCP), gate().check(request()))
     }
 
     @Test
     fun `header names are read in any case`() {
         val lower = request(headers = arrayOf("host" to "100.64.0.2:8812", "claude-voice-protocol" to "1", "authorization" to "Bearer $key"))
-        assertEquals(GateDecision.Pass(version = 1), gate().check(lower))
+        assertEquals(GateDecision.Pass(version = 1, route = Route.MCP), gate().check(lower))
     }
 
     @Test
     fun `a hub that also knows a later version is answered in 1`() {
         val r = request(headers = arrayOf("Host" to "100.64.0.2:8812", "Claude-Voice-Protocol" to "1,2", "Authorization" to "Bearer $key"))
-        assertEquals(GateDecision.Pass(version = 1), gate().check(r))
+        assertEquals(GateDecision.Pass(version = 1, route = Route.MCP), gate().check(r))
     }
 
     @Test
@@ -55,7 +55,7 @@ class GateTest {
     @Test
     fun `no version header is version 0, and accepted until the hub has spoken 1`() {
         val v0 = request(headers = arrayOf("Host" to "100.64.0.2:8812", "Authorization" to "Bearer $key"))
-        assertEquals(GateDecision.Pass(version = 0), gate().check(v0))
+        assertEquals(GateDecision.Pass(version = 0, route = Route.MCP), gate().check(v0))
         assertEquals("unsupported_version", refused(gate(highestSeen = 1).check(v0)).code)
     }
 
@@ -122,7 +122,7 @@ class GateTest {
     @Test
     fun `pairing needs no key, only the network and version checks`() {
         val pair = request(path = "/pair", headers = arrayOf("Host" to "100.64.0.2:8812", "Claude-Voice-Protocol" to "1"))
-        assertEquals(GateDecision.Pass(version = 1), gate(hub = null).check(pair))
+        assertEquals(GateDecision.Pass(version = 1, route = Route.PAIR), gate(hub = null).check(pair))
     }
 
     @Test
@@ -137,8 +137,8 @@ class GateTest {
         val v6 = Gate(own = InetAddress.getByName("fd7a:115c:a1e0::2"), port = 8812, machine = "phone-a", hub = paired)
         fun host(value: String) =
             request(headers = arrayOf("Host" to value, "Claude-Voice-Protocol" to "1", "Authorization" to "Bearer $key"))
-        assertEquals(GateDecision.Pass(version = 1), v6.check(host("[fd7a:115c:a1e0::2]:8812")))
-        assertEquals(GateDecision.Pass(version = 1), v6.check(host("[FD7A:115C:A1E0:0:0:0:0:2]:8812")))
+        assertEquals(GateDecision.Pass(version = 1, route = Route.MCP), v6.check(host("[fd7a:115c:a1e0::2]:8812")))
+        assertEquals(GateDecision.Pass(version = 1, route = Route.MCP), v6.check(host("[FD7A:115C:A1E0:0:0:0:0:2]:8812")))
         assertEquals(403, refused(v6.check(host("fd7a:115c:a1e0::2:8812"))).status)
         assertEquals(403, refused(v6.check(host("[fd7a:115c:a1e0::3]:8812"))).status)
         assertEquals(403, refused(v6.check(host("[fd7a:115c:a1e0::2]:8813"))).status)
@@ -155,5 +155,34 @@ class GateTest {
         assertEquals(403, refused(v6.check(request(headers = arrayOf("Host" to "[:::]:8812")))).status)
         assertEquals(403, refused(gate().check(request(headers = arrayOf("Host" to "100.64.0.256:8812")))).status)
         assertEquals(403, refused(gate().check(request(headers = arrayOf("Host" to "[fd7a:115c:a1e0::2]:8812")))).status)
+    }
+
+    @Test
+    fun `the route is read from the same undecoded path the pairing check reads`() {
+        fun on(path: String, key: String? = null) = gate(hub = if (key == null) null else paired).check(
+            GateRequest(path, hub, listOfNotNull("Host" to "100.64.0.2:8812", key?.let { "Authorization" to "Bearer $it" }).toMap()),
+        )
+        assertEquals(GateDecision.Pass(0, Route.PAIR), on("/pair"))
+        // An encoded or longer path is not pairing: it needs the key, and then leads nowhere.
+        for (path in listOf("/%70air", "/pair/", "/PAIR", "/pair?x=1", "//pair")) {
+            assertEquals(401, refused(on(path)).status, path)
+            assertEquals(GateDecision.Pass(0, Route.NOT_FOUND), on(path, key), path)
+        }
+        assertEquals(GateDecision.Pass(0, Route.MCP), on("/mcp", key))
+    }
+
+    @Test
+    fun `each rise in the version spoken is heard once, to be kept`() {
+        val heard = mutableListOf<Int>()
+        val gate = Gate(own = phone, port = 8812, machine = "phone-a", hub = paired, onHigher = { heard += it })
+        repeat(3) { gate.check(request()) }
+        assertEquals(listOf(1), heard)
+    }
+
+    @Test
+    fun `an address part of 255 is read`() {
+        val gate = Gate(own = InetAddress.getByName("100.64.0.255"), port = 8812, machine = "phone-a", hub = paired)
+        val r = request(headers = arrayOf("Host" to "100.64.0.255:8812", "Claude-Voice-Protocol" to "1", "Authorization" to "Bearer $key"))
+        assertEquals(GateDecision.Pass(1, Route.MCP), gate.check(r))
     }
 }
