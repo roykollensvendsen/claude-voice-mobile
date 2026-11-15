@@ -25,7 +25,7 @@ def test_coverage_is_the_share_of_lines_over_every_module(tmp_path):
     assert levels.coverage(report) == 58.75
 
 
-def test_mutation_counts_killed_and_timed_out_as_caught(tmp_path):
+def test_mutants_count_killed_and_timed_out_as_caught(tmp_path):
     report = tmp_path / "mutations.xml"
     report.write_text(
         "<mutations>"
@@ -35,7 +35,7 @@ def test_mutation_counts_killed_and_timed_out_as_caught(tmp_path):
         "<mutation detected='false' status='NO_COVERAGE'/>"
         "</mutations>"
     )
-    assert levels.mutation(report) == {"killed": 2, "total": 4}
+    assert levels.mutants(report) == {"killed": 2, "total": 4}
 
 
 def test_tests_are_those_that_passed_in_every_result_file(tmp_path):
@@ -88,8 +88,8 @@ def test_duplication_is_the_share_of_lines_in_a_repeated_block(tmp_path):
     block = [f"val a{i} = {i}" for i in range(levels.BLOCK)]
     (tmp_path / "One.kt").write_text("\n".join(["package x", *block, "fun one() = 1"]) + "\n")
     (tmp_path / "Two.kt").write_text("\n".join(["package y", *("    " + line for line in block)]) + "\n\n")
-    # 12 of the 15 non-blank lines sit in the block seen twice, indentation ignored.
-    assert levels.duplication([tmp_path]) == 80.0
+    # 12 of the 13 lines that say something sit in the block seen twice, indentation ignored.
+    assert levels.duplication([tmp_path]) == 92.31
 
 
 def test_a_cycle_is_a_group_of_packages_importing_each_other(tmp_path):
@@ -111,3 +111,16 @@ def test_a_layer_breach_is_each_line_checklayers_lists():
     )
     assert levels.layer_violations(failed, ok=False) == 2
     assert levels.layer_violations("BUILD SUCCESSFUL", ok=True) == 0
+
+
+def test_lines_that_say_nothing_are_left_out_of_copied_code(tmp_path):
+    noise = ["import org.x.A", "import org.x.B", "}", "})", "{", ")", "package x"]
+    (tmp_path / "One.kt").write_text("\n".join([*noise, "fun one() = 1"]) + "\n")
+    (tmp_path / "Two.kt").write_text("\n".join([*noise, "fun two() = 2"]) + "\n")
+    assert levels.duplication([tmp_path]) == 0.0
+
+
+def test_the_levels_carry_mutants_and_never_mutation():
+    # "mutation" on the page means rules proven by a test; Pitest's mutants are another measure.
+    assert "mutants" in levels.KEYS
+    assert "mutation" not in levels.KEYS
