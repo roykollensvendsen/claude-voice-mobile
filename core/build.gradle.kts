@@ -22,6 +22,8 @@ pitest {
     junit5PluginVersion = libs.versions.pitest.junit5.get()
     targetClasses = listOf("org.claudevoice.mobile.core.*")
     outputFormats = listOf("XML")
+    // The null checks the Kotlin compiler inserts are not code anyone wrote.
+    avoidCallsTo = setOf("kotlin.jvm.internal")
     // Data-only classes, whose every mutant is in code the compiler wrote; the list is
     // guarded by tests/test_pitest_data_only.py.
     excludedClasses = rootProject.file("config/pitest-data-only.txt").readLines()
