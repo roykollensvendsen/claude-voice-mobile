@@ -10,3 +10,4 @@ org.claudevoice.mobile.pluginapi.ToolResult$Answer
 org.claudevoice.mobile.pluginapi.ToolResult$Refused
 org.claudevoice.mobile.core.GateDecision$Pass
 org.claudevoice.mobile.core.GateDecision$Refuse
+org.claudevoice.mobile.core.PairResult$Refused
