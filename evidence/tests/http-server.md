@@ -19,3 +19,20 @@ matched `POST` exactly, and the test holds that.
 
 `a bind that fails is reported` was red for its new words, "close the app using port
 8812", before the message gained them.
+
+## After review of #64
+
+- `red-server-stop-race-and-answers.txt`: five new tests, all red before their fixes.
+  - A connection accepted just as the server stops was served on. It is now refused under the
+    lock `stop()` takes its snapshot with.
+  - Stopping while an answer begins let `RejectedExecutionException` from the watchdog escape
+    the connection thread. It is now caught, and the connection closes.
+  - A handler that throws left the hub with no answer. It now gets a 500 with an error body
+    that holds no detail.
+  - A handler's `content-length` in another case went out beside the server's own. Any header
+    naming a framing header, in any case, is now dropped.
+  - A CR or LF in a handler's header could split the answer. That answer is now a 500.
+- `red-server-accept-failure.txt`: one failed accept, such as too many open files, ended the
+  accept thread while the socket stayed open. The server now keeps accepting.
+- `red-server-accept-busy-loop.txt`: with the pause after a failed accept removed, an accept
+  that keeps failing spun in a busy loop, and the test that counts tries failed.

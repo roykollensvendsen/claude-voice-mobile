@@ -53,22 +53,43 @@ class HttpExchange(private val reader: RequestReader, private val handler: Handl
             is ReadResult.Request -> route(read, peer)
         }
         writing?.started()
-        write(answer, output)
+        write(framed(answer), output)
     }
 
     private fun route(request: ReadResult.Request, peer: InetAddress): Answer = when {
         request.target != PAIR && request.target != MCP -> Answer.refusal(NOT_FOUND, "only /pair and /mcp are served")
         request.method != POST -> Answer.refusal(METHOD_NOT_ALLOWED, "only POST is served", mapOf("Allow" to POST))
-        else -> handler.handle(request, peer)
+        else -> handled(request, peer)
     }
 
-    private fun write(answer: Answer, output: OutputStream) {
-        val head = StringBuilder("HTTP/1.1 ${answer.status} ${reason(answer.status)}".trimEnd()).append(CRLF)
-        val headers = answer.headers + mapOf(
+    /** The handler's answer; a 500 with no detail when it throws, so the thread never dies unanswered. */
+    @Suppress("TooGenericExceptionCaught")
+    private fun handled(request: ReadResult.Request, peer: InetAddress): Answer = try {
+        handler.handle(request, peer)
+    } catch (_: RuntimeException) {
+        Answer.refusal(INTERNAL_ERROR, FAILED)
+    }
+
+    /**
+     * The headers to write: the handler's own, less any that names a framing header in any case,
+     * then the framing headers. A CR or LF in a handler's header would split the answer, so that
+     * answer becomes a 500 instead.
+     */
+    private fun framed(answer: Answer): Pair<Answer, Map<String, String>> {
+        val own = answer.headers.filterKeys { !isFraming(it) }
+        val split = own.any { (name, value) -> name.any(::isBreak) || value.any(::isBreak) }
+        val sent = if (split) Answer.refusal(INTERNAL_ERROR, FAILED) else answer
+        val headers = (if (split) emptyMap() else own) + mapOf(
             "Content-Type" to "application/json",
-            "Content-Length" to "${answer.body.size}",
+            "Content-Length" to "${sent.body.size}",
             "Connection" to "close",
         )
+        return sent to headers
+    }
+
+    private fun write(framed: Pair<Answer, Map<String, String>>, output: OutputStream) {
+        val (answer, headers) = framed
+        val head = StringBuilder("HTTP/1.1 ${answer.status} ${reason(answer.status)}".trimEnd()).append(CRLF)
         headers.forEach { (name, value) -> head.append(name).append(": ").append(value).append(CRLF) }
         output.write(head.append(CRLF).toString().toByteArray(Charsets.ISO_8859_1))
         output.write(answer.body)
@@ -82,6 +103,15 @@ class HttpExchange(private val reader: RequestReader, private val handler: Handl
         const val CRLF = "\r\n"
         const val NOT_FOUND = 404
         const val METHOD_NOT_ALLOWED = 405
+        const val INTERNAL_ERROR = 500
+        const val FAILED = "the phone could not answer this request"
+
+        fun isFraming(name: String) = when (name.lowercase()) {
+            "content-type", "content-length", "connection" -> true
+            else -> false
+        }
+
+        fun isBreak(c: Char) = c == '\r' || c == '\n'
 
         @Suppress("MagicNumber", "CyclomaticComplexMethod")
         fun reason(status: Int) = when (status) {
