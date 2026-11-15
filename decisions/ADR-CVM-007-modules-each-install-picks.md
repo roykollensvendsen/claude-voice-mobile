@@ -19,8 +19,9 @@ everything else in that record.
 - The microphone mute (ADR-CVM-008) is needed by more than one caller: a tap on
   the earbuds, the hub's tools, and later the `call` plugin. Under "no plugin
   depends on another", it cannot live in one plugin and be used by another.
-- A module that is switched off should cost nothing: no permission in the
-  manifest, no prompt, no code on the phone.
+- A module that is left out should cost nothing: no permission in the
+  manifest, no prompt, no code on the phone. A module that is built in but
+  switched off should ask for nothing.
 
 ## Options considered
 
@@ -65,14 +66,22 @@ only those modules and the capabilities they use. The app's list of plugins is
 generated from the property, so no code names a plugin that was left out. A name
 in the property that is not a module fails the build, with the list of names it
 knows. Each module brings its own permissions and foreground service types in
-its own manifest, so a module left out adds nothing to the app's manifest. The
+its own manifest. Android merges every included module's manifest into the
+app's, libraries' entries too, so the guarantee is only for a module left out
+of the build. **A CI job checks it:** it reads the app's merged manifest and
+fails when a permission or service type in it is not declared by a module in
+the property's list, or by the app itself. The
 default list in the repository is `status` alone. Anyone's own list, the owner's
 included, goes in their own `~/.gradle/gradle.properties`, outside the
 repository, so nothing in it is tied to one phone, headset or person.
 
 **And switched at run time.** Each plugin that is built in has an on and off
-switch in the app's settings, off when first installed. A runtime permission is
-asked for only when its plugin is switched on. The hub sees only the plugins
+switch in the app's settings, off when first installed. A runtime permission,
+one the person must allow, is asked for only when its plugin is switched on.
+The switch does not withdraw what Android grants at install: permissions such
+as `MODIFY_AUDIO_SETTINGS` and the foreground service types of a built-in
+module are held whatever the switch says. Only leaving the module out of the
+build removes those. The hub sees only the plugins
 that are on. A test proves that a plugin switched off is never registered: it is
 not in `tools/list`, not in `agent_info`, and a call to its tool is refused as
 unknown. The plugin list on the hub changes when a plugin is switched on, so the
@@ -84,10 +93,16 @@ property. No core file changes. Loading plugins at run time from other apps is
 not done: it would need a trust model of its own. That is a row in
 `deferred.md` too.
 
+**The layer rules are not a security boundary.** They keep the code in order,
+not a module out of what the app holds. A module built into the app runs in the
+app's process, holds every permission the app holds, and could read the pairing
+key. So a third party's module is trusted as much as the core. It is built in
+only by someone who has read it, and it is approved like any other plugin.
+
 ## Consequences
 
 - A person who wants only the mute builds an app that holds the mute and
-  nothing else, and is never asked about location or contacts.
+  nothing else. Its manifest has no location or contacts permission at all.
 - The layer check gains a rule and a named test for each edge: a plugin may use
   a capability; a capability may not use a plugin, `plugin-api`, the core or
   another capability; an adapter may not use a plugin or another adapter; and
