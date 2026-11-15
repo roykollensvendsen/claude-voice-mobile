@@ -33,5 +33,6 @@ class PluginApiTest {
         assertEquals(tool, Tool("status", "How the phone is", input))
         assertNotEquals(tool, Tool("status", "How the phone is", JsonObject(emptyMap())))
         assertNotEquals(tool, Tool("battery", "How the phone is", input))
+        assertNotEquals(tool, Tool("status", "How the battery is", input))
     }
 }
