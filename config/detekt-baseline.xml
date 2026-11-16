@@ -2,21 +2,5 @@
 <SmellBaseline>
   <ManuallySuppressedIssues></ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>MagicNumber:MainActivity.kt$MainActivity$18f</ID>
-    <ID>MagicNumber:MainActivity.kt$MainActivity$30</ID>
-    <ID>MagicNumber:MainActivity.kt$MainActivity$48</ID>
-    <ID>MagicNumber:MainActivity.kt$MainActivity$96</ID>
-    <ID>MagicNumber:Tailnet.kt$Tailnet$0x11</ID>
-    <ID>MagicNumber:Tailnet.kt$Tailnet$0x40</ID>
-    <ID>MagicNumber:Tailnet.kt$Tailnet$0x5c</ID>
-    <ID>MagicNumber:Tailnet.kt$Tailnet$0x7a</ID>
-    <ID>MagicNumber:Tailnet.kt$Tailnet$0xc0</ID>
-    <ID>MagicNumber:Tailnet.kt$Tailnet$0xff</ID>
-    <ID>MagicNumber:Tailnet.kt$Tailnet$100</ID>
-    <ID>MaxLineLength:Plugins.kt$Plugins$require(tool.name.startsWith("${plugin.name}_")) { "${plugin.name} offers ${tool.name}, not named after it" }</ID>
-    <ID>MaxLineLength:StatusPlugin.kt$StatusPlugin$override suspend fun call(tool: String, arguments: JsonObject): ToolResult</ID>
-    <ID>MaxLineLength:Tailnet.kt$Tailnet$val address = tailnet.firstOrNull { it is Inet4Address } ?: tailnet.firstOrNull() ?: return TailnetState.OtherVpn</ID>
-    <ID>ReturnCount:DefaultNetwork.kt$DefaultNetwork$private fun known(): List&lt;SeenNetwork&gt;?</ID>
-    <ID>ReturnCount:Tailnet.kt$Tailnet$fun state(networks: List&lt;SeenNetwork&gt;, hubAnswering: Boolean?): TailnetState</ID>
   </CurrentIssues>
 </SmellBaseline>
