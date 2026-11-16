@@ -150,15 +150,19 @@ def test_only_a_module_whose_classes_are_all_data_only_may_have_no_mutants():
         assert guard.unlisted_with_code(declared) == [], module
 
 
-def _report(path, *rows):
-    path.write_text(
-        "<mutations>"
-        + "".join(
-            f"<mutation detected='{d}' status='{s}'><sourceFile>{f}</sourceFile></mutation>"
-            for d, s, f in rows
-        )
-        + "</mutations>"
+CORE = "org.claudevoice.mobile.core"
+
+
+def _mutation(detected, status, file, package=CORE):
+    owner = f"{package}.{file.removesuffix('.kt')}$inner"
+    return (
+        f"<mutation detected='{detected}' status='{status}'><sourceFile>{file}</sourceFile>"
+        f"<mutatedClass>{owner}</mutatedClass></mutation>"
     )
+
+
+def _report(path, *rows):
+    path.write_text("<mutations>" + "".join(_mutation(*row) for row in rows) + "</mutations>")
     return path
 
 
@@ -180,7 +184,7 @@ def test_mutants_are_also_counted_per_module(tmp_path):
     }
 
 
-def test_survivors_are_counted_per_file_as_the_complexity_names_files(tmp_path):
+def test_survivors_are_counted_per_file_by_its_package_path(tmp_path):
     core = _report(
         tmp_path / "core.xml",
         ("true", "KILLED", "Gate.kt"),
@@ -189,8 +193,21 @@ def test_survivors_are_counted_per_file_as_the_complexity_names_files(tmp_path):
         ("false", "SURVIVED", "Tailnet.kt"),
     )
     assert levels.survivors({"core": core}, may_be_missing=set()) == {
-        "core/Pairing.kt": 2,
-        "core/Tailnet.kt": 1,
+        "core/org/claudevoice/mobile/core/Pairing.kt": 2,
+        "core/org/claudevoice/mobile/core/Tailnet.kt": 1,
+    }
+
+
+def test_two_files_of_one_name_in_different_packages_keep_their_own_count(tmp_path):
+    core = _report(
+        tmp_path / "core.xml",
+        ("false", "SURVIVED", "Gate.kt", "org.a"),
+        ("false", "SURVIVED", "Gate.kt", "org.b"),
+        ("false", "SURVIVED", "Gate.kt", "org.b"),
+    )
+    assert levels.survivors({"core": core}, may_be_missing=set()) == {
+        "core/org/a/Gate.kt": 1,
+        "core/org/b/Gate.kt": 2,
     }
 
 
