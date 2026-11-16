@@ -6,6 +6,9 @@ Proposed 2026-11-15 by the architect session, at the owner's request, relayed
 by the manager session. Reviewed by the quality and voice architect sessions,
 then shown to the owner before anything is built. Settled when the owner
 merges it.
+Amended 2026-11-16, on the owner's answers relayed by the manager session: one
+plan per phone, a second phone counts its own, and only made-up values appear
+in the repository.
 
 ## Context
 
@@ -51,7 +54,7 @@ merges it.
 | `as_of` | the end of the latest count Android holds, as an ISO 8601 time |
 | `partial` | true when the phone's count begins after `period_start` |
 | `source` | `estimate` |
-| `say` | for example "About 6.2 GB of 20 GB left, until 1 December. This is the phone's own count, so it is approximate." |
+| `say` | for example "About 3.4 GB of 10 GB left, until the 9th. This is the phone's own count, so it is approximate." (made-up values) |
 
 The words always say "about", and that the count is the phone's own. Over the
 quota they say "about 1.3 GB over". When `partial` is true they say the count
@@ -118,6 +121,21 @@ open. Building route a would need a record of its own, and the owner's yes.
 nothing else. It sends the hub only the answer above. Like every plugin that
 uses a private thing, the call log keeps the time and the caller of each call,
 not its answer.
+
+**One plan per phone, and a second phone counts its own.** The settings hold
+one plan: a quota and a renewal day. A second phone with a plan of its own runs
+its own copy of the app, paired as a machine of its own, and answers for its own
+plan. The hub asks each phone, and the voice can name them or add them up. No
+phone ever reports another phone's use. Two plans on one phone, one for each
+SIM, are not built. An ordinary app cannot split Android's count by SIM: that
+needs the subscriber id, which Android keeps from apps since version 10. The
+settings are stored as a list of plans with one entry, so that a later way to
+split by SIM would not change what is kept.
+
+**Only made-up values in the repository.** The owner's quota, renewal day and
+use are entered in the app and stay on the phone. No real quota, use or date
+appears in the code, the tests, the examples, the pull requests or the
+commits. Tests and examples use values that are plainly made up.
 
 **Order.** After the earbuds plugin, as the next plugin in ADR-CVM-003's step 4.
 It is small, and it needs no Bluetooth or playback work.
