@@ -109,3 +109,53 @@ def test_main_kept_levels_are_used_when_there_are_some(tmp_path):
 def test_when_main_kept_no_levels_the_base_is_measured(tmp_path):
     assert ratchet.base_levels(tmp_path / "missing.json", lambda: {"coverage": 2.0}) == {"coverage": 2.0}
     assert ratchet.base_levels(None, lambda: {"coverage": 2.0}) == {"coverage": 2.0}
+
+
+def by_module(**scores):
+    return {
+        m.replace("_", "-"): {"killed": k, "survived": t - k, "no_coverage": 0, "total": t}
+        for m, (k, t) in scores.items()
+    }
+
+
+def test_a_drop_in_one_module_fails_even_when_the_total_holds():
+    base = levels(mutants_by_module=by_module(core=(90, 100), plugin_api=(10, 20)))
+    # The total rises from 100/120 to 109/130, but core falls from 90% to 89%.
+    now = levels(mutants_by_module=by_module(core=(89, 100), plugin_api=(20, 30)))
+    assert ratchet.compare(base, now, set(), BUDGET) == ["mutants of core got worse: 90.0% -> 89.0%"]
+
+
+def test_a_drop_in_one_module_passes_with_the_mutants_exception():
+    base = levels(mutants_by_module=by_module(core=(90, 100)))
+    now = levels(mutants_by_module=by_module(core=(89, 100)))
+    assert ratchet.compare(base, now, {"mutants"}, BUDGET) == []
+
+
+def test_a_new_module_starts_its_own_baseline():
+    base = levels(mutants_by_module=by_module(core=(90, 100)))
+    now = levels(mutants_by_module=by_module(core=(90, 100), plugin_api=(1, 10)))
+    assert ratchet.compare(base, now, set(), BUDGET) == []
+
+
+def test_a_new_survivor_in_a_file_the_change_touched_fails():
+    base = levels(survivors={"core/Pairing.kt": 1})
+    now = levels(survivors={"core/Pairing.kt": 2, "core/Gate.kt": 1})
+    found = ratchet.compare(base, now, set(), BUDGET, changed={"core/Pairing.kt"})
+    assert found == ["a mutant survives in core/Pairing.kt, which this change touched: 1 -> 2"]
+
+
+def test_a_survivor_in_an_untouched_file_or_with_the_exception_passes():
+    base = levels(survivors={})
+    now = levels(survivors={"core/Gate.kt": 1})
+    assert ratchet.compare(base, now, set(), BUDGET, changed={"core/Pairing.kt"}) == []
+    assert ratchet.compare(base, now, {"mutants"}, BUDGET, changed={"core/Gate.kt"}) == []
+
+
+def test_changed_sources_are_named_as_the_measures_name_files():
+    paths = [
+        "core/src/main/kotlin/org/claudevoice/mobile/core/Pairing.kt",
+        "plugins/status/src/main/kotlin/org/x/StatusPlugin.kt",
+        "core/src/test/kotlin/org/claudevoice/mobile/core/PairingTest.kt",
+        "scripts/ratchet.py",
+    ]
+    assert ratchet.changed_sources(paths) == {"core/Pairing.kt", "plugins/status/StatusPlugin.kt"}

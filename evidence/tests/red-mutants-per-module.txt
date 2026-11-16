@@ -1,0 +1,8 @@
+FAILED tests/test_levels.py::test_mutants_are_also_counted_per_module
+FAILED tests/test_levels.py::test_survivors_are_counted_per_file_as_the_complexity_names_files
+FAILED tests/test_levels.py::test_a_module_report_that_should_be_there_stops_the_per_module_measure
+FAILED tests/test_ratchet.py::test_a_drop_in_one_module_fails_even_when_the_total_holds
+FAILED tests/test_ratchet.py::test_a_new_survivor_in_a_file_the_change_touched_fails
+FAILED tests/test_ratchet.py::test_a_survivor_in_an_untouched_file_or_with_the_exception_passes
+FAILED tests/test_ratchet.py::test_changed_sources_are_named_as_the_measures_name_files
+7 failed, 30 passed in 0.31s
