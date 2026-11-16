@@ -1,0 +1,4 @@
+# tests/test_evidence_paths.py, the pattern test with its three new cases, before the anchor took a
+# bracket, a colon or a comma (the path is described in words, as the guard requires):
+AssertionError: a home path in square brackets
+1 failed, 1 passed in 0.03s
