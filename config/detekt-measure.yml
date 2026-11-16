@@ -1,6 +1,10 @@
 # For the measuring run only (detektMeasure), not the gate: detekt's defaults, plus one change: every function's cyclomatic
 # complexity is reported (threshold 1), so scripts/levels.py can find the worst one in each
 # file. Those findings are a measure, not a fault, and the script does not count them as lint.
+naming:
+  # As in the gate (config/detekt.yml): a file's package must match its folder.
+  InvalidPackageDeclaration:
+    active: true
 complexity:
   CyclomaticComplexMethod:
     active: true

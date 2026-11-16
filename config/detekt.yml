@@ -1,0 +1,7 @@
+# The gate's detekt rules (./gradlew check): detekt's defaults, plus the rules below.
+naming:
+  # A file's package must match its folder. scripts/levels.py names a surviving mutant by the
+  # package of its class, and scripts/ratchet.py names a changed file by its folder; the two
+  # must agree, or the check for a new survivor in a touched file would miss that file.
+  InvalidPackageDeclaration:
+    active: true

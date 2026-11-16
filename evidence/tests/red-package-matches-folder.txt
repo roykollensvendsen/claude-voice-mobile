@@ -1,0 +1,4 @@
+# detekt with InvalidPackageDeclaration on, against a file put in a folder its package does not name
+# (a temporary core/.../core/elsewhere/Misplaced.kt declaring package org.claudevoice.mobile.core):
+core/src/main/kotlin/org/claudevoice/mobile/core/elsewhere/Misplaced.kt:1:1: The package declaration does not match the actual file location. [InvalidPackageDeclaration]
+BUILD FAILED in 22s
