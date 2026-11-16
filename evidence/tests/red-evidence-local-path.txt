@@ -1,0 +1,3 @@
+>       assert found == [], f"local paths in evidence, make them relative: {found}"
+E       AssertionError: local paths in evidence, make them relative: ['evidence/tests/red-endpoint-failure-kind.txt:1', 'evidence/tests/red-endpoint-failure-kind.txt:2']
+1 failed in 0.04s

@@ -51,26 +51,35 @@ class Pairing(private val clock: () -> Instant, internal val random: SecureRando
 
     /** Whether a code is shown and still works: then a machine other than the hub may pair. */
     @Synchronized
-    fun isOpen(): Boolean = code != null && clock() < until
+    fun isOpen(): Boolean = open()
+
+    /** Under the lock: a code is shown, and its ten minutes have not run out. */
+    private fun open() = code != null && clock() < until
 
     /**
      * The hub's `POST /pair`, from [caller], whose tailnet name [nameOf] looks up. The code is
-     * read as typed, trimmed and in either case. The lookup runs outside the lock.
+     * read as typed, trimmed and in either case. The lookup runs outside the lock, and only
+     * while a code is open, so no one on the tailnet can make the phone look names up at will.
      */
-    fun pair(offered: String, caller: InetAddress, nameOf: (InetAddress) -> String?): PairResult {
-        val name = if (Tailnet.isTailnetAddress(caller)) nameOf(caller) else null
-        return when {
-            !Tailnet.isTailnetAddress(caller) -> PairResult.Refused(FORBIDDEN, OFF_TAILNET, "not_on_tailnet")
-            name == null -> PairResult.Refused(FORBIDDEN, NO_NAME, "not_on_tailnet")
-            else -> tryCode(offered.trim().uppercase(), name, caller)
-        }
+    fun pair(offered: String, caller: InetAddress, nameOf: (InetAddress) -> String?): PairResult = when {
+        !Tailnet.isTailnetAddress(caller) -> PairResult.Refused(FORBIDDEN, OFF_TAILNET, "not_on_tailnet")
+        !isOpen() -> wrongCode()
+        else -> named(offered, caller, nameOf(caller))
     }
+
+    private fun named(offered: String, caller: InetAddress, name: String?): PairResult =
+        if (name == null) {
+            PairResult.Refused(FORBIDDEN, NO_NAME, "not_on_tailnet")
+        } else {
+            tryCode(offered.trim().uppercase(), name, caller)
+        }
 
     @Synchronized
     private fun tryCode(offered: String, name: String, caller: InetAddress): PairResult {
         val shown = code
         return when {
-            shown == null || clock() >= until -> wrongCode()
+            // Checked again under the lock: the code may have ended since pair() asked.
+            shown == null || !open() -> wrongCode()
             !MessageDigest.isEqual(offered.toByteArray(), shown.toByteArray()) -> wrongCode().also { tooMany() }
             else -> paired(name, caller)
         }

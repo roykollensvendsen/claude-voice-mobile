@@ -1,0 +1,3 @@
+HubEndpointTest > before pairing, an address off the tailnet is not let in() FAILED
+PairingTest > with no code open, a pairing try is refused before any name lookup() FAILED
+31 tests completed, 2 failed

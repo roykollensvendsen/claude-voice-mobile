@@ -142,4 +142,26 @@ class HubEndpointTest {
         pair(pairing.newCode())
         assertFalse(endpoint.admits(other))
     }
+
+    @Test
+    fun `before pairing, an address off the tailnet is not let in`() {
+        assertFalse(endpoint.admits(InetAddress.getByName("192.168.1.20")))
+        assertFalse(endpoint.admits(InetAddress.getByName("100.128.0.1")))
+    }
+
+    @Test
+    fun `a name lookup that hangs is cut off, and answered as no name`() {
+        val stuck = java.util.concurrent.CountDownLatch(1)
+        val slow = HubEndpoint(kept, pairing, nameOf = { stuck.await(); "laptop-a" }, lookupLimit = Duration.ofMillis(100)) { _, _ ->
+            Answer(200, "{}".toByteArray())
+        }
+        val started = System.nanoTime()
+        val answer = slow.handle(request("/pair", """{"code":"${pairing.newCode()}"}"""), hubAt)
+        stuck.countDown()
+        assertTrue(System.nanoTime() - started < 2_000_000_000L, "cut off in time")
+        assertEquals(403, answer.status)
+        assertEquals("not_on_tailnet", field(answer, "code"))
+        assertTrue(field(answer, "error")!!.contains("MagicDNS"))
+        assertNull(kept.hubName)
+    }
 }
