@@ -30,11 +30,17 @@ fun interface Handler {
 
 /**
  * One request in, one answer out, as ADR-CVM-005 sets. A request the reader refuses is answered
- * with its refusal; one it drops gets no answer. Only a `POST` to `/pair` or `/mcp`, exactly as
- * written, reaches [handler]: another target is `404`, and another method `405`. Every answer
+ * with its refusal; one it drops gets no answer. A handler that throws is answered `500`, and
+ * [failed] hears the exception's class name, never its message, for the phone's log. Only a
+ * `POST` to `/pair` or `/mcp`, exactly as written, reaches [handler]: another target is `404`,
+ * and another method `405`. Every answer
  * carries `Content-Length`, `Content-Type: application/json` and `Connection: close`.
  */
-class HttpExchange(private val reader: RequestReader, private val handler: Handler) {
+class HttpExchange(
+    private val reader: RequestReader,
+    private val failed: ((String) -> Unit)? = null,
+    private val handler: Handler,
+) {
     /**
      * Read one request from [input], answer it on [output]. The head's time runs from
      * [acceptedAt]; [writing] is told just before the answer is written, to start a watchdog.
@@ -66,7 +72,9 @@ class HttpExchange(private val reader: RequestReader, private val handler: Handl
     @Suppress("TooGenericExceptionCaught")
     private fun handled(request: ReadResult.Request, peer: InetAddress): Answer = try {
         handler.handle(request, peer)
-    } catch (_: RuntimeException) {
+    } catch (e: RuntimeException) {
+        // The kind alone: a message could carry a key or what the hub sent.
+        failed?.invoke(e.javaClass.name)
         Answer.refusal(INTERNAL_ERROR, FAILED)
     }
 

@@ -106,7 +106,7 @@ class HttpExchangeTest {
 
     private fun answerWith(handler: Handler): String {
         val out = ByteArrayOutputStream()
-        HttpExchange(RequestReader(clock = { 0L }), handler)
+        HttpExchange(RequestReader(clock = { 0L }), handler = handler)
             .run(ByteArrayInputStream(request().toByteArray(Charsets.ISO_8859_1)), out, peer)
         return out.toString(Charsets.ISO_8859_1)
     }
@@ -136,5 +136,16 @@ class HttpExchangeTest {
             assertEquals("HTTP/1.1 500 Internal Server Error", status(text), bad.toString())
             assertTrue(!text.contains("Set-Cookie") && !text.contains("X-A"), text)
         }
+    }
+
+    @Test
+    fun `a handler that throws is recorded by the kind of failure alone, never its words`() {
+        val seen = mutableListOf<String>()
+        val out = ByteArrayOutputStream()
+        HttpExchange(RequestReader(clock = { 0L }), failed = { seen += it }) { _, _ ->
+            throw IllegalStateException("key=secret")
+        }
+            .run(ByteArrayInputStream(request().toByteArray(Charsets.ISO_8859_1)), out, peer)
+        assertEquals(listOf("java.lang.IllegalStateException"), seen)
     }
 }

@@ -49,6 +49,10 @@ class Pairing(private val clock: () -> Instant, internal val random: SecureRando
         return made
     }
 
+    /** Whether a code is shown and still works: then a machine other than the hub may pair. */
+    @Synchronized
+    fun isOpen(): Boolean = code != null && clock() < until
+
     /**
      * The hub's `POST /pair`, from [caller], whose tailnet name [nameOf] looks up. The code is
      * read as typed, trimmed and in either case. The lookup runs outside the lock.

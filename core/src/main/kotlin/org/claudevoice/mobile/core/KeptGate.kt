@@ -39,6 +39,8 @@ class KeptGate(
     private val machine: String,
 ) {
     private val text = store.read()
+    /** Read without the lock by [hubAddress], on the server's accept thread. */
+    @Volatile
     private var kept: Kept? = Kept.parse(text)
     /** Which pairing is current: a new token each time, compared by identity. */
     private var pairing = Any()
@@ -54,6 +56,9 @@ class KeptGate(
         private set
 
     val hubName: String? get() = kept?.name
+
+    /** The paired hub's tailnet address, the only one let in once paired; null before pairing. */
+    val hubAddress: InetAddress? get() = kept?.address
 
     /**
      * Pairing gave a new hub: it replaces the one before, whose key stops working at once. False
