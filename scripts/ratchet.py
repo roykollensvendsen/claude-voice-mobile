@@ -49,7 +49,12 @@ HIGHER = ("coverage", "mutants", "tests")
 LOWER = ("lint_errors", "type_errors", "cycles", "layer_violations", "duplication")
 DEFAULT_BUDGET = {"seconds": 30, "tolerance": 0.25}
 NEW_FILE_CEILING = 15  # the most tangled function a new file may have, as in claude-voice
-EXCEPTION = re.compile(r"^\s*ratchet-exception:\s*([a-z_]+)", re.IGNORECASE | re.MULTILINE)
+# A main source file: the module, then the path under the source root, which is the package path.
+SOURCE = re.compile(r"^(?P<module>.+?)/src/main/(?:kotlin|java)/(?P<path>.+\.kt)$")
+# Only `Ratchet-Exception: <measure> - <reason>` counts: an exception without a reason is none.
+EXCEPTION = re.compile(
+    r"^[ \t]*ratchet-exception:[ \t]*([a-z_]+)[ \t]+-[ \t]+\S", re.IGNORECASE | re.MULTILINE
+)
 
 
 def _score(value: Any) -> float:  # noqa: ANN401 - a level is a number or a killed/total pair
@@ -105,31 +110,47 @@ def compare(
 def _mutants_worse(
     base: dict[str, Any], now: dict[str, Any], changed: set[str] | frozenset[str]
 ) -> list[str]:
-    """A module whose share caught fell, or a new survivor in a file the change touched.
+    """A module that fell or is no longer measured, or a new survivor in a file the change touched.
 
     A module the base did not measure starts its own baseline. `Ratchet-Exception: mutants`
-    lets both through, as it does the total.
+    lets all three through, as it does the total.
     """
+    return _modules_worse(base, now) + _survivors_worse(base, now, changed)
+
+
+def _modules_worse(base: dict[str, Any], now: dict[str, Any]) -> list[str]:
     found = []
-    before = base.get("mutants_by_module", {})
-    for module, counts in now.get("mutants_by_module", {}).items():
-        if module in before and _score(counts) < _score(before[module]):
-            found.append(
-                f"mutants of {module} got worse: {_score(before[module]):.1f}% -> {_score(counts):.1f}%"
-            )
-    if "survivors" in base:
-        for file in sorted(changed):
-            was, now_left = base["survivors"].get(file, 0), now.get("survivors", {}).get(file, 0)
-            if now_left > was:
-                found.append(f"a mutant survives in {file}, which this change touched: {was} -> {now_left}")
+    before, after = base.get("mutants_by_module", {}), now.get("mutants_by_module", {})
+    for module, counts in before.items():
+        if module not in after:
+            found.append(f"mutants of {module} are no longer measured")
+        elif _score(after[module]) < _score(counts):
+            was, is_now = _score(counts), _score(after[module])
+            found.append(f"mutants of {module} got worse: {was:.1f}% -> {is_now:.1f}%")
+    return found
+
+
+def _survivors_worse(
+    base: dict[str, Any], now: dict[str, Any], changed: set[str] | frozenset[str]
+) -> list[str]:
+    if "survivors" not in base:
+        return []
+    found = []
+    for file in sorted(changed):
+        was, now_left = base["survivors"].get(file, 0), now.get("survivors", {}).get(file, 0)
+        if now_left > was:
+            found.append(f"a mutant survives in {file}, which this change touched: {was} -> {now_left}")
     return found
 
 
 def changed_sources(paths: list[str]) -> set[str]:
-    """The Kotlin sources among `paths`, named `core/Pairing.kt` as the measures name files."""
-    return {
-        f"{p.split('/src/main/')[0]}/{Path(p).name}" for p in paths if "/src/main/" in p and p.endswith(".kt")
-    }
+    """The Kotlin sources among `paths`, by package path as survivors are: `core/org/x/Pairing.kt`."""
+    found = set()
+    for p in paths:
+        match = SOURCE.match(p)
+        if match:
+            found.add(f"{match['module']}/{match['path']}")
+    return found
 
 
 def exceptions(text: str) -> set[str]:

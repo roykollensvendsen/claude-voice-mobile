@@ -108,12 +108,17 @@ def mutants_by_module(reports: dict[str, Path], may_be_missing: set[Path]) -> di
 
 
 def survivors(reports: dict[str, Path], may_be_missing: set[Path]) -> dict[str, int]:
-    """Mutants no test caught, per source file, named `core/Pairing.kt` as `complexity` names them."""
+    """Mutants no test caught, per source file, by its package path: `core/org/x/Pairing.kt`.
+
+    The package comes from the mutated class, so two files of one name in different packages
+    keep their own counts.
+    """
     found: dict[str, int] = {}
     for module, report in _present(reports, may_be_missing).items():
         for m in _parse(report).findall("mutation"):
             if m.get("detected") != "true":
-                file = f"{module}/{m.findtext('sourceFile')}"
+                package = (m.findtext("mutatedClass") or "").rpartition(".")[0].replace(".", "/")
+                file = f"{module}/{package}/{m.findtext('sourceFile')}"
                 found[file] = found.get(file, 0) + 1
     return found
 

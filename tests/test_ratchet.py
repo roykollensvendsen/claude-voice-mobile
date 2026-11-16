@@ -51,6 +51,16 @@ def test_an_exception_line_lets_that_measure_get_worse():
     assert ratchet.compare(levels(), levels(tests=30), allowed, BUDGET) == []
 
 
+def test_an_exception_counts_only_with_a_reason_after_a_dash():
+    text = (
+        "Ratchet-Exception: tests\n"
+        "Ratchet-Exception: coverage -\n"
+        "Ratchet-Exception: lint_errors because reasons\n"
+        "Ratchet-Exception: mutants - the new module starts low\n"
+    )
+    assert ratchet.exceptions(text) == {"mutants"}
+
+
 def test_a_file_whose_worst_function_gets_worse_fails():
     found = ratchet.compare(levels(), levels(complexity={"core/Tailnet.kt": 7}), set(), BUDGET)
     assert found == ["complexity of core/Tailnet.kt got worse: 6 -> 7"]
@@ -151,11 +161,23 @@ def test_a_survivor_in_an_untouched_file_or_with_the_exception_passes():
     assert ratchet.compare(base, now, {"mutants"}, BUDGET, changed={"core/Gate.kt"}) == []
 
 
-def test_changed_sources_are_named_as_the_measures_name_files():
+def test_changed_sources_are_named_by_package_path_as_survivors_are():
     paths = [
         "core/src/main/kotlin/org/claudevoice/mobile/core/Pairing.kt",
         "plugins/status/src/main/kotlin/org/x/StatusPlugin.kt",
+        "plugin-api/src/main/java/org/y/Old.kt",
         "core/src/test/kotlin/org/claudevoice/mobile/core/PairingTest.kt",
         "scripts/ratchet.py",
     ]
-    assert ratchet.changed_sources(paths) == {"core/Pairing.kt", "plugins/status/StatusPlugin.kt"}
+    assert ratchet.changed_sources(paths) == {
+        "core/org/claudevoice/mobile/core/Pairing.kt",
+        "plugins/status/org/x/StatusPlugin.kt",
+        "plugin-api/org/y/Old.kt",
+    }
+
+
+def test_a_module_that_is_no_longer_measured_fails_unless_excepted():
+    base = levels(mutants_by_module=by_module(core=(90, 100), plugin_api=(10, 20)))
+    now = levels(mutants_by_module=by_module(core=(90, 100)))
+    assert ratchet.compare(base, now, set(), BUDGET) == ["mutants of plugin-api are no longer measured"]
+    assert ratchet.compare(base, now, {"mutants"}, BUDGET) == []

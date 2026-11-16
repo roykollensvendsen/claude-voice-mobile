@@ -1,0 +1,7 @@
+# The five new tests, run before the code they guard (uv run pytest tests/test_levels.py tests/test_ratchet.py):
+FAILED tests/test_levels.py::test_survivors_are_counted_per_file_by_its_package_path
+FAILED tests/test_levels.py::test_two_files_of_one_name_in_different_packages_keep_their_own_count
+FAILED tests/test_ratchet.py::test_an_exception_counts_only_with_a_reason_after_a_dash
+FAILED tests/test_ratchet.py::test_changed_sources_are_named_by_package_path_as_survivors_are
+FAILED tests/test_ratchet.py::test_a_module_that_is_no_longer_measured_fails_unless_excepted
+5 failed, 35 passed in 0.23s
