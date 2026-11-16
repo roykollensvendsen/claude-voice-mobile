@@ -14,3 +14,7 @@ Follow-ups from review of #76.
 - `red-evidence-other-systems.txt`: the pattern test, run against the old pattern, missed the
   macOS temporary folder. Writing that evidence, the guard then caught its own example path
   in the evidence file, so the file describes the path in words.
+- CI's Pitest run found the interrupt test racy: one test failed without any mutation. When
+  the lookup had already finished on its own thread, `Future.get()` returned the name without
+  looking at the interrupt. The test's lookup now waits until the test releases it, and the
+  test passed five runs in a row.

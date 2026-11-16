@@ -192,12 +192,19 @@ class HubEndpointTest {
 
     @Test
     fun `an interrupted connection ends its wait as no name, and keeps its interrupt flag`() {
+        // The lookup waits to be released: a lookup already done is returned without a look at
+        // the interrupt, which made this test pass or fail by which thread ran first.
+        val release = java.util.concurrent.CountDownLatch(1)
+        val waiting = HubEndpoint(kept, pairing, nameOf = { release.await(); "laptop-a" }) { _, _ ->
+            Answer(200, "{}".toByteArray())
+        }
         val code = pairing.newCode()
         Thread.currentThread().interrupt()
         val answer = try {
-            endpoint.handle(request("/pair", """{"code":"$code"}"""), hubAt)
+            waiting.handle(request("/pair", """{"code":"$code"}"""), hubAt)
         } finally {
             assertTrue(Thread.interrupted(), "the flag is kept, and cleared here")
+            release.countDown()
         }
         assertEquals(403, answer.status)
         assertTrue(field(answer, "error")!!.contains("MagicDNS"))
