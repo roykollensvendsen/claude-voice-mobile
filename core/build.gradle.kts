@@ -21,7 +21,11 @@ pitest {
     pitestVersion = libs.versions.pitest.engine.get()
     junit5PluginVersion = libs.versions.pitest.junit5.get()
     targetClasses = listOf("org.claudevoice.mobile.core.*")
-    outputFormats = listOf("XML")
+    // XML for scripts/levels.py; HTML so a survivor can be read in the run's artifact.
+    outputFormats = listOf("XML", "HTML")
+    // Every run measures in full, with no history of earlier results: Pitest's history can
+    // keep a mutant counted as caught after a change it does not notice, and this run gates.
+    threads = Runtime.getRuntime().availableProcessors()
     // The null checks the Kotlin compiler inserts are not code anyone wrote.
     avoidCallsTo = setOf("kotlin.jvm.internal")
     // Data-only classes, whose every mutant is in code the compiler wrote; the list is

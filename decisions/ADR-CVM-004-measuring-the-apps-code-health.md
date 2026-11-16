@@ -42,7 +42,14 @@ The tools:
   out the data-only classes in `config/pitest-data-only.txt`, whose every mutant is in code
   the compiler wrote (a test refuses a class there that gains logic), and skipping calls
   to `kotlin.jvm.internal`, the null checks the compiler inserts, under its own key
-  `mutants`;
+  `mutants`, with each module's counts under `mutants_by_module` and the mutants no test
+  caught, per source file, under `survivors`. Pitest runs on all the runner's processors,
+  with no cap on time or mutants. The measurement the ratchet reads, on main and on pull
+  requests alike, always runs in full and never uses Pitest's history of earlier results.
+  The history keeps a class's result while the class and its tests are unchanged, so a
+  change in a helper, a fixture or a dependency could keep a now-surviving mutant counted
+  as caught. A full run costs only minutes, and the job has no time limit. Each run keeps Pitest's HTML and XML reports as the artifact
+  `pitest-reports`, so a survivor can be read without running anything;
 - complexity: detekt's cyclomatic count, with the highest in each file;
 - lint: detekt's findings plus Android lint's errors;
 - copied code: the bridge's own line-based measure, leaving out lines that say nothing
@@ -51,7 +58,10 @@ The tools:
 Nothing they measure is committed. `quality.json` holds only the test-time budget.
 `scripts/ratchet.py` compares each run's levels with main's and fails when one got
 worse, unless the pull request names it on a `Ratchet-Exception:` line, as in
-claude-voice. Of the tools, only detekt is part of the gate (`./gradlew check`), with a
+claude-voice. For mutants it also refuses a module whose share caught fell, so a module
+that gains much cannot hide a drop in another, and a new survivor in a source file the
+pull request touched. A module the base did not measure starts its own baseline.
+`Ratchet-Exception: mutants` lets all three through. Of the tools, only detekt is part of the gate (`./gradlew check`), with a
 baseline of the findings the code had when it joined. The ratchet refuses a new entry
 in that baseline, so it can only shrink. The ratchet compares only on a pull request; main's own
 run measures and keeps its levels, because the exception lines of the pull request that
