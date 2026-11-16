@@ -184,4 +184,12 @@ class PairingTest {
     fun `a code typed with spaces around it works`() {
         assertTrue(pair("  ${pairing.newCode()}\n") is PairResult.Paired)
     }
+
+    @Test
+    fun `with no code open, a pairing try is refused before any name lookup`() {
+        var lookups = 0
+        val result = refused(pairing.pair("ABCDEFGH", hub) { lookups++; "laptop-a" })
+        assertEquals("wrong_code", result.code)
+        assertEquals(0, lookups)
+    }
 }
