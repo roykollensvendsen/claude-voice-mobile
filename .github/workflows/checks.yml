@@ -143,6 +143,12 @@ jobs:
           restore-keys: |
             pitest-history-${{ github.ref_name }}-
             pitest-history-main-
+      # Pitest reuses a result when a class and its tests are unchanged, without noticing a
+      # changed class the mutant reaches. Main's levels are the baseline every pull request is
+      # held to, so main measures in full and only writes the history for pull requests to use.
+      - name: Main measures in full
+        if: github.event_name == 'push'
+        run: rm -rf build/pitest-history
       # Missing levels, from a run cancelled or expired, leave no file, and the ratchet then
       # measures the base itself.
       - name: The levels main kept for the base

@@ -43,9 +43,11 @@ The tools:
   the compiler wrote (a test refuses a class there that gains logic), and skipping calls
   to `kotlin.jvm.internal`, the null checks the compiler inserts, under its own key
   `mutants`, with each module's counts under `mutants_by_module` and the mutants no test
-  caught, per source file, under `survivors`. Pitest runs on every core, and keeps its
-  history of earlier results in the CI cache, never in git, so a run mutates again only
-  what changed. Each run keeps Pitest's HTML and XML reports as the artifact
+  caught, per source file, under `survivors`. Pitest runs on all the runner's processors.
+  A pull request's run reuses Pitest's history of earlier results from the CI cache, never
+  from git, so it mutates again only what changed. Main always measures in full and only
+  writes that history, because Pitest misses a change in a class a mutant reaches, and
+  main's levels are the baseline every pull request is held to. Each run keeps Pitest's HTML and XML reports as the artifact
   `pitest-reports`, so a survivor can be read without running anything;
 - complexity: detekt's cyclomatic count, with the highest in each file;
 - lint: detekt's findings plus Android lint's errors;
