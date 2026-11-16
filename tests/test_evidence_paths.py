@@ -11,8 +11,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 LOCAL = re.compile(
-    # Not inside a web address or a longer path: nothing but a start, a space, a quote or file:// before it.
-    r"(?:^|(?<=[\s'\"(=])|file://)/(?:home|Users|root|tmp|private/var/folders|var/folders)/"  # Linux, macOS
+    # Not inside a web address or a longer path: only a start, space, quote, bracket, =, :, comma
+    # or file:// before it. In a web address a letter of the host name comes before the slash.
+    # Linux and macOS:
+    r"(?:^|(?<=[\s'\"(\[=:,])|file://)/(?:home|Users|root|tmp|private/var/folders|var/folders)/"
     r"|[A-Za-z]:[\\/](?:Users|Windows[\\/]Temp)[\\/]",  # Windows, either slash
     re.IGNORECASE,
 )
@@ -39,6 +41,9 @@ def test_the_pattern_knows_each_system_s_home_and_temporary_folders():
         r"C:\Users\a\x.kt",
         "C:/Users/a/x.kt",
         r"c:\Windows\Temp\x",
+        "[/home/a/x.kt]",
+        "at x:/tmp/y",
+        "a,/Users/b/x",
     ):
         assert LOCAL.search(path), path
     for path in ("core/src/main/kotlin/x.kt", "evidence/tests/a.txt", "https://example.com/home/"):

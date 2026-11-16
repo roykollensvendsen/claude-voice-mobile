@@ -42,8 +42,10 @@ class HubEndpoint(
      * The caller's name, or null when the lookup fails or takes longer than [lookupLimit]. It
      * runs on [LOOKUPS], two daemon threads of the endpoint's own, so a stalled lookup never
      * holds a thread the rest of the app shares. Past the limit it is cancelled and interrupted.
-     * An interrupt of the connection's own thread also ends the wait as no name, and the thread
-     * keeps its interrupt flag, so the server closes the connection as it would anyway.
+     * An interrupt during the wait ends it as no name, and the thread keeps its interrupt flag,
+     * so the server closes the connection as it would anyway. The system's own name lookup
+     * does not stop when interrupted: what bounds it is this pool of its own, and that each
+     * nameless try counts toward the five that end a code.
      */
     private fun nameWithin(peer: InetAddress): String? {
         val lookup = LOOKUPS.submit<String?> { nameOf(peer) }
