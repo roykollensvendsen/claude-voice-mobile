@@ -77,6 +77,47 @@ def mutants(reports: list[Path], may_be_missing: set[Path]) -> dict[str, int]:
     return {"killed": sum(m.get("detected") == "true" for m in made), "total": len(made)}
 
 
+def _undetected(status: str | None) -> str | None:
+    return {"SURVIVED": "survived", "NO_COVERAGE": "no_coverage"}.get(status or "")
+
+
+def _present(reports: dict[str, Path], may_be_missing: set[Path]) -> dict[str, Path]:
+    absent = [r for r in reports.values() if not r.exists() and r not in may_be_missing]
+    if absent:
+        sys.exit(f"no Pitest report at {', '.join(map(str, absent))}; only a green tree is measured.")
+    return {module: r for module, r in reports.items() if r.exists()}
+
+
+def mutants_by_module(reports: dict[str, Path], may_be_missing: set[Path]) -> dict[str, dict[str, int]]:
+    """Each module's mutants: caught, survived, not reached by any test, and all made.
+
+    Kept per module so a new module, or one that gains much, cannot hide a drop in another.
+    The same reports as `mutants`, and the same rule for one that is missing.
+    """
+    found = {}
+    for module, report in _present(reports, may_be_missing).items():
+        made = _parse(report).findall("mutation")
+        missed = [_undetected(m.get("status")) for m in made if m.get("detected") != "true"]
+        found[module] = {
+            "killed": len(made) - len(missed),
+            "survived": missed.count("survived"),
+            "no_coverage": missed.count("no_coverage"),
+            "total": len(made),
+        }
+    return found
+
+
+def survivors(reports: dict[str, Path], may_be_missing: set[Path]) -> dict[str, int]:
+    """Mutants no test caught, per source file, named `core/Pairing.kt` as `complexity` names them."""
+    found: dict[str, int] = {}
+    for module, report in _present(reports, may_be_missing).items():
+        for m in _parse(report).findall("mutation"):
+            if m.get("detected") != "true":
+                file = f"{module}/{m.findtext('sourceFile')}"
+                found[file] = found.get(file, 0) + 1
+    return found
+
+
 def passed_tests(folders: list[Path]) -> int:
     """Tests that passed, over every JUnit result file under `folders`."""
     total = 0
@@ -243,6 +284,8 @@ KEYS = (
     "complexity",
     "test_seconds",
     "test_budget",
+    "mutants_by_module",
+    "survivors",
 )
 
 
@@ -263,6 +306,8 @@ def measure() -> dict[str, object]:
     sources = [ROOT / m / "src" / "main" for m in MODULES]
     detekt = ROOT / "build" / "reports" / "detekt" / "measure.xml"
     lint = [ROOT / m / "build" / "reports" / "lint-results-debug.xml" for m in MODULES]
+    pitests = {m: pitest(m) for m in MUTATED}
+    missing = {pitest(m) for m in NO_MUTANTS}
     levels = {
         "coverage": coverage(ROOT / "build" / "reports" / "kover" / "report.xml"),
         "mutants": mutants([pitest(m) for m in MUTATED], {pitest(m) for m in NO_MUTANTS}),
@@ -275,6 +320,8 @@ def measure() -> dict[str, object]:
         "complexity": complexity(detekt, ROOT),
         "test_seconds": seconds,
         "test_budget": None,
+        "mutants_by_module": mutants_by_module(pitests, missing),
+        "survivors": survivors(pitests, missing),
     }
     assert tuple(levels) == KEYS  # noqa: S101 - the keys the bridge is told about
     return levels

@@ -148,3 +148,52 @@ def test_only_a_module_whose_classes_are_all_data_only_may_have_no_mutants():
         declared = guard.declared_classes(levels.ROOT / module / "src" / "main")
         assert declared, module
         assert guard.unlisted_with_code(declared) == [], module
+
+
+def _report(path, *rows):
+    path.write_text(
+        "<mutations>"
+        + "".join(
+            f"<mutation detected='{d}' status='{s}'><sourceFile>{f}</sourceFile></mutation>"
+            for d, s, f in rows
+        )
+        + "</mutations>"
+    )
+    return path
+
+
+def test_mutants_are_also_counted_per_module(tmp_path):
+    core = _report(
+        tmp_path / "core.xml",
+        ("true", "KILLED", "Gate.kt"),
+        ("true", "TIMED_OUT", "Gate.kt"),
+        ("false", "SURVIVED", "Pairing.kt"),
+        ("false", "NO_COVERAGE", "Tailnet.kt"),
+    )
+    api = _report(tmp_path / "api.xml", ("true", "KILLED", "Plugin.kt"))
+    missing = tmp_path / "none.xml"
+    assert levels.mutants_by_module(
+        {"core": core, "plugin-api": api, "x": missing}, may_be_missing={missing}
+    ) == {
+        "core": {"killed": 2, "survived": 1, "no_coverage": 1, "total": 4},
+        "plugin-api": {"killed": 1, "survived": 0, "no_coverage": 0, "total": 1},
+    }
+
+
+def test_survivors_are_counted_per_file_as_the_complexity_names_files(tmp_path):
+    core = _report(
+        tmp_path / "core.xml",
+        ("true", "KILLED", "Gate.kt"),
+        ("false", "SURVIVED", "Pairing.kt"),
+        ("false", "NO_COVERAGE", "Pairing.kt"),
+        ("false", "SURVIVED", "Tailnet.kt"),
+    )
+    assert levels.survivors({"core": core}, may_be_missing=set()) == {
+        "core/Pairing.kt": 2,
+        "core/Tailnet.kt": 1,
+    }
+
+
+def test_a_module_report_that_should_be_there_stops_the_per_module_measure(tmp_path):
+    with pytest.raises(SystemExit):
+        levels.mutants_by_module({"core": tmp_path / "missing.xml"}, may_be_missing=set())

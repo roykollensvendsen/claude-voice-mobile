@@ -66,7 +66,11 @@ def _worse(metric: str, base: Any, now: Any) -> bool:  # noqa: ANN401 - see _sco
 
 
 def compare(
-    base: dict[str, Any], now: dict[str, Any], allowed: set[str], budget: dict[str, Any]
+    base: dict[str, Any],
+    now: dict[str, Any],
+    allowed: set[str],
+    budget: dict[str, Any],
+    changed: set[str] | frozenset[str] = frozenset(),
 ) -> list[str]:
     """What is wrong: a measure worse than the base without an exception, or the tests over budget.
 
@@ -78,6 +82,8 @@ def compare(
             continue  # a measure added since the base: nothing to compare with yet
         if _worse(metric, base[metric], now[metric]) and metric not in allowed:
             found.append(f"{metric} got worse: {base[metric]} -> {now[metric]}")
+    if "mutants" not in allowed:
+        found += _mutants_worse(base, now, changed)
     if "complexity" not in allowed:
         for file, score in now["complexity"].items():
             before = base.get("complexity", {}).get(file)
@@ -94,6 +100,36 @@ def compare(
             f" (+{budget['tolerance']:.0%})"
         )
     return found
+
+
+def _mutants_worse(
+    base: dict[str, Any], now: dict[str, Any], changed: set[str] | frozenset[str]
+) -> list[str]:
+    """A module whose share caught fell, or a new survivor in a file the change touched.
+
+    A module the base did not measure starts its own baseline. `Ratchet-Exception: mutants`
+    lets both through, as it does the total.
+    """
+    found = []
+    before = base.get("mutants_by_module", {})
+    for module, counts in now.get("mutants_by_module", {}).items():
+        if module in before and _score(counts) < _score(before[module]):
+            found.append(
+                f"mutants of {module} got worse: {_score(before[module]):.1f}% -> {_score(counts):.1f}%"
+            )
+    if "survivors" in base:
+        for file in sorted(changed):
+            was, now_left = base["survivors"].get(file, 0), now.get("survivors", {}).get(file, 0)
+            if now_left > was:
+                found.append(f"a mutant survives in {file}, which this change touched: {was} -> {now_left}")
+    return found
+
+
+def changed_sources(paths: list[str]) -> set[str]:
+    """The Kotlin sources among `paths`, named `core/Pairing.kt` as the measures name files."""
+    return {
+        f"{p.split('/src/main/')[0]}/{Path(p).name}" for p in paths if "/src/main/" in p and p.endswith(".kt")
+    }
 
 
 def exceptions(text: str) -> set[str]:
@@ -170,7 +206,8 @@ def check(base_ref: str, kept: Path | None, out: Path | None) -> list[str]:
     if out:
         out.write_text(json.dumps(now, indent=2, sort_keys=True) + "\n")
     allowed = exceptions(os.environ.get("RATCHET_EXCEPTIONS", ""))
-    found = compare(base, now, allowed, budget(FILE))
+    touched = _git("diff", "--name-only", f"{base_ref}...HEAD").stdout.split()
+    found = compare(base, now, allowed, budget(FILE), changed_sources(touched))
     shown = _git("show", f"{base_ref}:{BASELINE.as_posix()}")
     added = baseline_added(shown.stdout if shown.returncode == 0 else None, (ROOT / BASELINE).read_text())
     if added and "detekt_baseline" not in allowed:
