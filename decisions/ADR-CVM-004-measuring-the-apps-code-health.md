@@ -43,14 +43,16 @@ The tools:
   the compiler wrote (a test refuses a class there that gains logic), and skipping calls
   to `kotlin.jvm.internal`, the null checks the compiler inserts, under its own key
   `mutants`, with each module's counts under `mutants_by_module` and the mutants no test
-  caught, per source file by its package path, under `survivors`. Pitest runs on all the
+  caught, per source file by its package path, under `survivors` (detekt's
+  `InvalidPackageDeclaration`, on in the gate, keeps each file's package and folder the
+  same, so a changed file is named as its survivors are). Pitest runs on all the
   runner's processors, with no cap on time or mutants. The measurement the ratchet
   reads, on main and on pull requests alike, always runs in full and never uses Pitest's
   history of earlier results. The history keeps a class's result while the class and its
   tests are unchanged, so a change in a helper, a fixture or a dependency could keep a
   now-surviving mutant counted as caught. A full run costs only minutes, and the job has
-  no time limit. Each run keeps Pitest's HTML and XML reports as the artifact `pitest-
-  reports`, so a survivor can be read without running anything;
+  no time limit. Each run keeps Pitest's HTML and XML reports as the artifact
+  `pitest-reports`, so a survivor can be read without running anything;
 - complexity: detekt's cyclomatic count, with the highest in each file;
 - lint: detekt's findings plus Android lint's errors;
 - copied code: the bridge's own line-based measure, leaving out lines that say nothing

@@ -23,6 +23,7 @@ val kotlinSources = measured.map { file(it.removePrefix(":").replace(':', '/') +
 detekt {
     source.setFrom(kotlinSources)
     buildUponDefaultConfig = true
+    config.setFrom("config/detekt.yml")
     baseline = file("config/detekt-baseline.xml")
 }
 
