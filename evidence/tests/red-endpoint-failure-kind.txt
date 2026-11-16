@@ -1,2 +1,2 @@
-e: file:///home/roy/claude-voice-mobile-android/core/src/test/kotlin/org/claudevoice/mobile/core/HttpExchangeTest.kt:145:108 No parameter with name 'failed' found.
-e: file:///home/roy/claude-voice-mobile-android/core/src/test/kotlin/org/claudevoice/mobile/core/HttpExchangeTest.kt:145:127 Unresolved reference 'it'.
+e: core/src/test/kotlin/org/claudevoice/mobile/core/HttpExchangeTest.kt:145:108 No parameter with name 'failed' found.
+e: core/src/test/kotlin/org/claudevoice/mobile/core/HttpExchangeTest.kt:145:127 Unresolved reference 'it'.
