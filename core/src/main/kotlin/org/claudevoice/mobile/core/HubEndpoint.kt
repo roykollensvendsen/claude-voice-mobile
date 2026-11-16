@@ -2,8 +2,9 @@ package org.claudevoice.mobile.core
 
 import java.net.InetAddress
 import java.time.Duration
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import kotlinx.serialization.json.JsonArray
@@ -37,13 +38,27 @@ class HubEndpoint(
         return Tailnet.isTailnetAddress(peer) && (hub == null || hub == peer || pairing.isOpen())
     }
 
-    /** The caller's name, or null when the lookup fails or takes longer than [lookupLimit]. */
-    private fun nameWithin(peer: InetAddress): String? = try {
-        CompletableFuture.supplyAsync { nameOf(peer) }.get(lookupLimit.toMillis(), TimeUnit.MILLISECONDS)
-    } catch (_: TimeoutException) {
-        null
-    } catch (_: ExecutionException) {
-        null
+    /**
+     * The caller's name, or null when the lookup fails or takes longer than [lookupLimit]. It
+     * runs on [LOOKUPS], two daemon threads of the endpoint's own, so a stalled lookup never
+     * holds a thread the rest of the app shares. Past the limit it is cancelled and interrupted.
+     * An interrupt of the connection's own thread also ends the wait as no name, and the thread
+     * keeps its interrupt flag, so the server closes the connection as it would anyway.
+     */
+    private fun nameWithin(peer: InetAddress): String? {
+        val lookup = LOOKUPS.submit<String?> { nameOf(peer) }
+        return try {
+            lookup.get(lookupLimit.toMillis(), TimeUnit.MILLISECONDS)
+        } catch (_: TimeoutException) {
+            null
+        } catch (_: ExecutionException) {
+            null
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            null
+        } finally {
+            lookup.cancel(true)
+        }
     }
 
     override fun handle(request: ReadResult.Request, peer: InetAddress): Answer =
@@ -80,6 +95,10 @@ class HubEndpoint(
 
     private companion object {
         val LOOKUP_LIMIT: Duration = Duration.ofSeconds(2)
+        const val LOOKUP_THREADS = 2
+        val LOOKUPS: ExecutorService = Executors.newFixedThreadPool(LOOKUP_THREADS) { task ->
+            Thread(task, "name-lookup").apply { isDaemon = true }
+        }
         const val OK = 200
         const val INTERNAL_ERROR = 500
         const val PROTOCOL = "Claude-Voice-Protocol"

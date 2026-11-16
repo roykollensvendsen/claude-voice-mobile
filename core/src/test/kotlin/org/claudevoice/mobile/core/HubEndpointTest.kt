@@ -164,4 +164,43 @@ class HubEndpointTest {
         assertTrue(field(answer, "error")!!.contains("MagicDNS"))
         assertNull(kept.hubName)
     }
+
+    @Test
+    fun `the name lookup runs on a daemon thread of its own, and a stalled one is interrupted`() {
+        val ran = java.util.concurrent.ArrayBlockingQueue<Thread>(1)
+        val interrupted = java.util.concurrent.CountDownLatch(1)
+        val slow = HubEndpoint(
+            kept,
+            pairing,
+            nameOf = {
+                ran.add(Thread.currentThread())
+                try {
+                    Thread.sleep(60_000)
+                } catch (_: InterruptedException) {
+                    interrupted.countDown()
+                }
+                null
+            },
+            lookupLimit = Duration.ofMillis(100),
+        ) { _, _ -> Answer(200, "{}".toByteArray()) }
+        slow.handle(request("/pair", """{"code":"${pairing.newCode()}"}"""), hubAt)
+        val thread = ran.take()
+        assertTrue(thread.isDaemon, "a daemon thread")
+        assertTrue(thread.name.startsWith("name-lookup"), thread.name)
+        assertTrue(interrupted.await(5, java.util.concurrent.TimeUnit.SECONDS), "the stalled lookup was interrupted")
+    }
+
+    @Test
+    fun `an interrupted connection ends its wait as no name, and keeps its interrupt flag`() {
+        val code = pairing.newCode()
+        Thread.currentThread().interrupt()
+        val answer = try {
+            endpoint.handle(request("/pair", """{"code":"$code"}"""), hubAt)
+        } finally {
+            assertTrue(Thread.interrupted(), "the flag is kept, and cleared here")
+        }
+        assertEquals(403, answer.status)
+        assertTrue(field(answer, "error")!!.contains("MagicDNS"))
+        assertNull(kept.hubName)
+    }
 }

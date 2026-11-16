@@ -1,0 +1,5 @@
+HubEndpointTest > the name lookup runs on a daemon thread of its own, and a stalled one is interrupted() FAILED
+PairingTest > a try from a machine with no name counts toward the five wrong tries() FAILED
+33 tests completed, 2 failed
+HubEndpointTest > an interrupted connection ends its wait as no name, and keeps its interrupt flag() FAILED
+BUILD FAILED in 5s

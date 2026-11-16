@@ -192,4 +192,12 @@ class PairingTest {
         assertEquals("wrong_code", result.code)
         assertEquals(0, lookups)
     }
+
+    @Test
+    fun `a try from a machine with no name counts toward the five wrong tries`() {
+        val code = pairing.newCode()
+        repeat(5) { refused(pairing.pair(code, hub) { null }) }
+        assertEquals(false, pairing.isOpen())
+        assertEquals("wrong_code", refused(pairing.pair(code, hub) { "laptop-a" }).code)
+    }
 }

@@ -10,7 +10,12 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-LOCAL = re.compile(r"(?:file://)?/(?:home|Users|root|tmp)/")
+LOCAL = re.compile(
+    # Not inside a web address or a longer path: nothing but a start, a space, a quote or file:// before it.
+    r"(?:^|(?<=[\s'\"(=])|file://)/(?:home|Users|root|tmp|private/var/folders|var/folders)/"  # Linux, macOS
+    r"|[A-Za-z]:[\\/](?:Users|Windows[\\/]Temp)[\\/]",  # Windows, either slash
+    re.IGNORECASE,
+)
 
 
 def test_no_evidence_file_holds_a_local_path():
@@ -22,3 +27,19 @@ def test_no_evidence_file_holds_a_local_path():
         if LOCAL.search(line)
     ]
     assert found == [], f"local paths in evidence, make them relative: {found}"
+
+
+def test_the_pattern_knows_each_system_s_home_and_temporary_folders():
+    for path in (
+        "/home/a/x.kt",
+        "file:///tmp/x",
+        "/Users/a/x",
+        "/private/var/folders/ab/T/x",
+        "/var/folders/ab/T/x",
+        r"C:\Users\a\x.kt",
+        "C:/Users/a/x.kt",
+        r"c:\Windows\Temp\x",
+    ):
+        assert LOCAL.search(path), path
+    for path in ("core/src/main/kotlin/x.kt", "evidence/tests/a.txt", "https://example.com/home/"):
+        assert not LOCAL.search(path), path
