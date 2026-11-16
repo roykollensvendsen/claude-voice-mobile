@@ -133,6 +133,16 @@ jobs:
           distribution: temurin
           java-version: "17"
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      # Pitest's history of earlier results, so a run mutates again only what changed. Each
+      # run saves its own; a pull request starts from main's latest. Never committed.
+      - name: Pitest's history
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/pitest-history
+          key: pitest-history-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            pitest-history-${{ github.ref_name }}-
+            pitest-history-main-
       # Missing levels, from a run cancelled or expired, leave no file, and the ratchet then
       # measures the base itself.
       - name: The levels main kept for the base
@@ -158,6 +168,15 @@ jobs:
       - name: Measure main
         if: github.event_name == 'push'
         run: python3 scripts/levels.py --out "$RUNNER_TEMP/levels.json"
+      - name: Keep Pitest's reports with this run
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pitest-reports
+          path: |
+            core/build/reports/pitest
+            plugin-api/build/reports/pitest
+          if-no-files-found: ignore   # plugin-api may have no mutants at all
       - name: Keep main's levels with this run
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !cancelled()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

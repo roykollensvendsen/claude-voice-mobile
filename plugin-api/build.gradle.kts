@@ -23,7 +23,13 @@ pitest {
     pitestVersion = libs.versions.pitest.engine.get()
     junit5PluginVersion = libs.versions.pitest.junit5.get()
     targetClasses = listOf("org.claudevoice.mobile.pluginapi.*")
-    outputFormats = listOf("XML")
+    // XML for scripts/levels.py; HTML so a survivor can be read in the run's artifact.
+    outputFormats = listOf("XML", "HTML")
+    threads = Runtime.getRuntime().availableProcessors()
+    // Earlier results, so a run mutates again only what changed. CI keeps the file in its
+    // cache, keyed on main; it is never committed.
+    historyInputLocation = rootProject.layout.buildDirectory.file("pitest-history/plugin-api.bin")
+    historyOutputLocation = rootProject.layout.buildDirectory.file("pitest-history/plugin-api.bin")
     // The null checks the Kotlin compiler inserts are not code anyone wrote.
     avoidCallsTo = setOf("kotlin.jvm.internal")
     // Data-only classes, whose every mutant is in code the compiler wrote; the list is
