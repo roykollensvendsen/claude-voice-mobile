@@ -1,0 +1,6 @@
+# tests/test_evidence_paths.py, test_the_pattern_knows_each_system_s_home_and_temporary_folders,
+# run against the old pattern (Linux home and /tmp only):
+FAILED: the old pattern did not find the macOS temporary-folder example (private, var, folders).
+1 failed, 1 passed
+# The new test also first failed on its own negative case: the pattern matched a home folder inside
+# a web address. The pattern is now anchored, and both tests pass.

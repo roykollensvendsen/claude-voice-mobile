@@ -67,8 +67,10 @@ class Pairing(private val clock: () -> Instant, internal val random: SecureRando
         else -> named(offered, caller, nameOf(caller))
     }
 
+    /** A caller with no name counts as a wrong try, so a nameless machine cannot try forever. */
     private fun named(offered: String, caller: InetAddress, name: String?): PairResult =
         if (name == null) {
+            countWrong()
             PairResult.Refused(FORBIDDEN, NO_NAME, "not_on_tailnet")
         } else {
             tryCode(offered.trim().uppercase(), name, caller)
@@ -84,6 +86,9 @@ class Pairing(private val clock: () -> Instant, internal val random: SecureRando
             else -> paired(name, caller)
         }
     }
+
+    @Synchronized
+    private fun countWrong() = tooMany()
 
     private fun tooMany() {
         wrong += 1
