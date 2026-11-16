@@ -91,7 +91,9 @@ exact, and the record says so plainly:
   late is measured on the phone, before the words promise anything.
 
 **What the owner sets, once, on the phone.** The owner enters the
-quota in GB and the renewal day, 1 to 31, in the app's own screen. A day the
+quota in GB and the renewal day, 1 to 31, in the app's own screen. The
+renewal day belongs to the plan, and is 1 unless the owner changes it, since
+most plans renew with the calendar month. A day the
 month does not have means the month's last day. These are phone-only
 settings, like the ones in
 ADR-CVM-003. The tool takes no input, so nothing the hub sends can change them,
