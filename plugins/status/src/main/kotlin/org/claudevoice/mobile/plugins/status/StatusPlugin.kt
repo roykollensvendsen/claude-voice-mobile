@@ -10,5 +10,6 @@ class StatusPlugin : Plugin {
     override val name = "status"
     override val tools = listOf<Tool>()
 
-    override suspend fun call(tool: String, arguments: JsonObject): ToolResult = ToolResult.Refused("status has no tool $tool")
+    override suspend fun call(tool: String, arguments: JsonObject): ToolResult =
+        ToolResult.Refused("status has no tool $tool")
 }

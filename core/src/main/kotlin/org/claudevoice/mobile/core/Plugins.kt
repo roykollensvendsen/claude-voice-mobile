@@ -14,7 +14,9 @@ class Plugins(private val plugins: List<Plugin>) {
         val seen = mutableSetOf<String>()
         for (plugin in plugins) {
             for (tool in plugin.tools) {
-                require(tool.name.startsWith("${plugin.name}_")) { "${plugin.name} offers ${tool.name}, not named after it" }
+                require(tool.name.startsWith("${plugin.name}_")) {
+                    "${plugin.name} offers ${tool.name}, not named after it"
+                }
                 require(seen.add(tool.name)) { "two plugins offer ${tool.name}" }
                 val taken = inputNames(tool.input).filter { it.fold() in PHONE_ONLY }
                 require(taken.isEmpty()) { "${tool.name} takes $taken; only the phone's own screens change that" }

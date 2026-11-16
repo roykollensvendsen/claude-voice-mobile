@@ -17,7 +17,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val message = TextView(this).apply {
-            textSize = 18f
+            textSize = TEXT_SIZE_SP
             setText(R.string.tailnet_checking)
         }
         val open = Button(this).apply {
@@ -35,15 +35,15 @@ class MainActivity : Activity() {
         }
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(48, 96, 48, 48)
+            setPadding(MARGIN, TOP_MARGIN, MARGIN, MARGIN)
             addView(message)
             addView(open)
         }
         // From Android 15 the screen is drawn under the bars; keep the message clear of them.
-        if (Build.VERSION.SDK_INT >= 30) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             root.setOnApplyWindowInsetsListener { view, insets ->
                 val bars = insets.getInsets(WindowInsets.Type.systemBars())
-                view.setPadding(48, bars.top + 48, 48, bars.bottom + 48)
+                view.setPadding(MARGIN, bars.top + MARGIN, MARGIN, bars.bottom + MARGIN)
                 insets
             }
         }
@@ -65,5 +65,13 @@ class MainActivity : Activity() {
     override fun onStop() {
         watcher.stop()
         super.onStop()
+    }
+
+    private companion object {
+        const val TEXT_SIZE_SP = 18f
+
+        /** In pixels: room around the message, and more at the top, clear of the status bar. */
+        const val MARGIN = 48
+        const val TOP_MARGIN = 96
     }
 }

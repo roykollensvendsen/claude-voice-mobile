@@ -46,8 +46,8 @@ class DefaultNetwork<K : Any> {
     }
 
     private fun known(): List<SeenNetwork>? {
-        val vpn = isVpn ?: return null
-        val addresses = addresses ?: return null
-        return listOf(SeenNetwork(vpn, addresses))
+        val vpn = isVpn
+        val addresses = addresses
+        return if (vpn == null || addresses == null) null else listOf(SeenNetwork(vpn, addresses))
     }
 }

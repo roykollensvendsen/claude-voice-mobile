@@ -40,7 +40,7 @@ object Tailnet {
     fun isTailnetAddress(address: InetAddress): Boolean {
         val b = address.address
         return when (address) {
-            is Inet4Address -> b[0].toInt() and 0xff == 100 && b[1].toInt() and 0xc0 == 0x40
+            is Inet4Address -> b[0] == CGNAT_FIRST && b[1].toInt() and CGNAT_MASK == CGNAT_SECOND
             is Inet6Address -> TAILNET_V6.indices.all { b[it] == TAILNET_V6[it] }
             else -> false
         }
@@ -51,17 +51,34 @@ object Tailnet {
      * (null: not known yet). Addresses on any network other than the VPN are ignored.
      */
     fun state(networks: List<SeenNetwork>, hubAnswering: Boolean?): TailnetState {
-        if (networks.isEmpty()) return TailnetState.NoNetwork
         val vpns = networks.filter { it.isVpn }
-        if (vpns.isEmpty()) return TailnetState.TailscaleOff
-        val tailnet = vpns.flatMap { it.addresses }.filter(::isTailnetAddress)
-        // Protocol v1 listens on the IPv4 address. An IPv6-only tailnet still counts as on, for
-        // the message, though the listener cannot serve version 1 there.
-        val address = tailnet.firstOrNull { it is Inet4Address } ?: tailnet.firstOrNull() ?: return TailnetState.OtherVpn
-        return if (hubAnswering == false) TailnetState.HubNotAnswering(address) else TailnetState.OnTailnet(address)
+        val address = addressOn(vpns)
+        return when {
+            networks.isEmpty() -> TailnetState.NoNetwork
+            vpns.isEmpty() -> TailnetState.TailscaleOff
+            address == null -> TailnetState.OtherVpn
+            hubAnswering == false -> TailnetState.HubNotAnswering(address)
+            else -> TailnetState.OnTailnet(address)
+        }
     }
 
-    private val TAILNET_V6 = byteArrayOf(0xfd.toByte(), 0x7a, 0x11, 0x5c, 0xa1.toByte(), 0xe0.toByte())
+    /**
+     * The tailnet address on [vpns]: the IPv4 one, as protocol v1 listens there. An IPv6-only
+     * tailnet still counts as on, for the message, though the listener cannot serve v1 there.
+     */
+    private fun addressOn(vpns: List<SeenNetwork>): InetAddress? {
+        val tailnet = vpns.flatMap { it.addresses }.filter(::isTailnetAddress)
+        return tailnet.firstOrNull { it is Inet4Address } ?: tailnet.firstOrNull()
+    }
+
+    /** 100.64.0.0/10: the first byte is 100, and the second's top two bits are 01. */
+    private const val CGNAT_FIRST: Byte = 100
+    private const val CGNAT_MASK = 0b1100_0000
+    private const val CGNAT_SECOND = 0b0100_0000
+
+    /** fd7a:115c:a1e0::/48: the first 48 bits, six bytes. */
+    private const val TAILNET_V6_BYTES = 6
+    private val TAILNET_V6 = InetAddress.getByName("fd7a:115c:a1e0::").address.copyOf(TAILNET_V6_BYTES)
 }
 
 /**
