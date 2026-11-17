@@ -3,15 +3,18 @@ package org.claudevoice.mobile.core
 import java.io.File
 import java.io.IOException
 import java.net.InetAddress
-import java.nio.file.Files
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 import org.junit.jupiter.api.assertThrows
 
 class FileHubStoreTest {
-    private val dir: File = Files.createTempDirectory("hub").toFile()
-    private val file = File(dir, "hub.json")
+    /** A folder of its own for each test, which JUnit deletes afterwards. */
+    @TempDir
+    lateinit var dir: File
+
+    private val file get() = File(dir, "hub.json")
 
     @Test
     fun `no file yet is no hub`() {
