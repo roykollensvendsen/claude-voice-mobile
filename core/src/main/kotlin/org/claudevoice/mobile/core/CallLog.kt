@@ -139,7 +139,8 @@ class CallLog(
         /** Without control characters, at most [TEXT_LIMIT] long, never ending in half a character. */
         private fun cleaned(text: String): String {
             val cut = text.filterNot { it.isISOControl() }.take(TEXT_LIMIT)
-            return cut.dropLastWhile { it.isHighSurrogate() }
+            // A plain check, not dropLastWhile: its inlined loop leaves Pitest a boundary no test can reach.
+            return if (cut.lastOrNull()?.isHighSurrogate() == true) cut.dropLast(1) else cut
         }
     }
 }
