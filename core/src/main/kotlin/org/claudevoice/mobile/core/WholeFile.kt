@@ -50,11 +50,21 @@ private fun synced(folder: FolderSync, dir: File) {
     }
 }
 
+/** A small text the app keeps privately, such as the paired hub or the phone's confirmed name. */
+interface TextStore {
+    fun read(): String?
+
+    /** Replace what is kept, all at once or not at all; an [IOException] when it could not. */
+    @Throws(IOException::class)
+    fun write(text: String)
+}
+
 /**
- * The paired hub, kept in one file of the app's own, which the app puts in its no-backup folder
- * (ADR-CVM-003). Each pairing replaces it whole, so a crash never leaves a hub half written.
+ * A text kept in one file of the app's own, which the app puts in its no-backup folder
+ * (ADR-CVM-003): the paired hub, or the phone's name. Each write replaces it whole, so a crash
+ * never leaves it half written.
  */
-class FileHubStore(private val file: File) : HubStore {
+class FileTextStore(private val file: File) : HubStore {
     override fun read(): String? = if (file.exists()) file.readText(Charsets.UTF_8) else null
 
     override fun write(text: String) = replaceWhole(file, text.toByteArray(Charsets.UTF_8))

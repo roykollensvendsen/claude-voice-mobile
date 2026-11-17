@@ -8,4 +8,10 @@
     <string name="tailnet_ok">Telefonen er på tailnettet.</string>
     <string name="open_tailscale">Åpne Tailscale</string>
     <string name="no_browser">Ingen app på telefonen kan åpne nedlastingssiden. Installer Tailscale fra Google Play, eller åpne denne adressen i en nettleser: %1$s</string>
+    <string name="name_first">Bekreft telefonens navn først. Huben kjenner telefonen på det, og den kan ikke pares før det er satt. To telefoner av samme modell får samme forslag, så sjekk det.</string>
+    <string name="name_confirm">Bekreft navnet</string>
+    <string name="name_kept">Telefonen er nå kjent under dette navnet.</string>
+    <string name="name_not_allowed">Et navn kan ha små bokstaver, sifre og bindestreker, må begynne med en bokstav, og være høyst 32 tegn.</string>
+    <string name="name_paired_as">Telefonen er paret under et annet navn. Å endre det betyr å pare på nytt.</string>
+    <string name="name_not_written">Telefonen fikk ikke lagret navnet. Frigjør litt plass, og prøv igjen.</string>
 </resources>

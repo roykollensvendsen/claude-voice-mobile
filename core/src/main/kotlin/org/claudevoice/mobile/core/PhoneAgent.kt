@@ -47,6 +47,7 @@ class PhoneAgent internal constructor(
     private val here = AtomicReference<Here?>()
 
     private val place = object : AgentPlace {
+        // Empty only while the phone listens nowhere, when no server is open to answer agent_info.
         override fun address(): String = here.get()?.address?.hostAddress.orEmpty()
 
         override fun hub(): String? = here.get()?.gate?.hubName

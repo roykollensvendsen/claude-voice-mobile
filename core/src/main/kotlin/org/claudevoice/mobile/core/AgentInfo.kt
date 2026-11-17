@@ -58,7 +58,7 @@ class AgentInfo(
         const val TOOL = "agent_info"
 
         /** As agent-protocol names a machine: lowercase letters, digits and hyphens, from a letter, at most 32. */
-        private val MACHINE = Regex("[a-z][a-z0-9-]{0,31}")
+        internal val MACHINE = Regex("[a-z][a-z0-9-]{0,31}")
     }
 }
 

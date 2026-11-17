@@ -8,4 +8,10 @@
     <string name="tailnet_ok">The phone is on the tailnet.</string>
     <string name="open_tailscale">Open Tailscale</string>
     <string name="no_browser">No app on this phone can open the download page. Install Tailscale from Google Play, or open this address in a browser: %1$s</string>
+    <string name="name_first">Confirm the phone\'s name first. The hub knows the phone by it, and it can\'t pair until it\'s set. Two phones of one model would get the same suggestion, so check it.</string>
+    <string name="name_confirm">Confirm the name</string>
+    <string name="name_kept">The phone is now known by this name.</string>
+    <string name="name_not_allowed">A name may have small letters, digits and hyphens, must start with a letter, and be at most 32 long.</string>
+    <string name="name_paired_as">The phone is paired under another name. Changing it means pairing again.</string>
+    <string name="name_not_written">The phone could not save the name. Free some space, and try again.</string>
 </resources>
