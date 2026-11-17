@@ -1,9 +1,9 @@
 package org.claudevoice.mobile.core
 
-import java.net.ConnectException
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
+import java.net.SocketException
 import java.security.SecureRandom
 import java.time.Duration
 import java.time.Instant
@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 
 /** The agent built in one place: one log, one pairing and one set of kept call ids for its life. */
 class PhoneAgentTest {
@@ -229,17 +228,25 @@ class PhoneAgentTest {
             log,
             { null },
             describe,
-            PhoneAgent.Parts(serve = PhoneAgent.serving { _, _ -> ServerSocket(0, 5, InetAddress.getLoopbackAddress()).also { socket = it } }),
+            PhoneAgent.Parts(serve = PhoneAgent.serving(bind = { _, _ -> ServerSocket(0, 5, InetAddress.getLoopbackAddress()).also { socket = it } })),
         )
         real.follow(TailnetState.OnTailnet(phone))
         assertEquals(ListenStatus.Listening(phone, 8812), real.status)
         val port = socket!!.localPort
         Socket(InetAddress.getLoopbackAddress(), port).use {
             it.soTimeout = 5_000
-            assertEquals(-1, it.getInputStream().read(), "a caller off the tailnet gets no answer")
+            // Closed with nothing sent: an end of stream, or a reset if the close beat the read.
+            val first = try {
+                it.getInputStream().read()
+            } catch (_: SocketException) {
+                -1
+            }
+            assertEquals(-1, first, "a caller off the tailnet gets no answer")
         }
         real.stop()
-        assertThrows<ConnectException> { Socket(InetAddress.getLoopbackAddress(), port).close() }
+        // The listening socket itself, not a new connection: under Pitest, another test may
+        // already have been given the freed port, and a connect would then reach its server.
+        assertTrue(socket!!.isClosed, "the agent's stop closes the real server's socket")
     }
 
     @Test
@@ -253,5 +260,13 @@ class PhoneAgentTest {
         assertTrue(agent.problem != null)
         agent.stop()
         assertNull(agent.problem)
+    }
+
+    @Test
+    fun `the real server's clock is a monotonic clock in nanoseconds that moves`() {
+        val first = PhoneAgent.MONOTONIC()
+        Thread.sleep(5)
+        val later = PhoneAgent.MONOTONIC()
+        assertTrue(later - first >= 5_000_000, "moved ${later - first} ns in 5 ms")
     }
 }

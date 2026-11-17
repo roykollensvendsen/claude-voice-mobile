@@ -90,10 +90,12 @@ class PhoneAgent internal constructor(
         /** Protocol version 1's port, unless the hub's settings name another. */
         const val PORT = 8812
 
-        /** The real HTTP server; [bind] is for tests, to listen where a test machine can. */
-        internal fun serving(bind: ((InetAddress, Int) -> ServerSocket)? = null) =
+        /** The real server's clock: monotonic, in nanoseconds, for its read and write deadlines. */
+        internal val MONOTONIC: () -> Long = { System.nanoTime() }
+
+        /** The real HTTP server; [bind] and [clock] are for tests, to listen where a test machine can. */
+        internal fun serving(bind: ((InetAddress, Int) -> ServerSocket)? = null, clock: () -> Long = MONOTONIC) =
             { handler: Handler, admit: (InetAddress) -> Boolean, address: BindAddress, port: Int ->
-                val clock = System::nanoTime
                 val exchange = HttpExchange(RequestReader(clock), handler = handler)
                 HttpServerOpener(exchange, clock, admit, bind).open(address, port)
             }

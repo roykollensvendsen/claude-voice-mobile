@@ -1,0 +1,5 @@
+# PhoneAgentTest with the clock test, before the clock is its own value:
+BUILD FAILED in 2s
+e: core/PhoneAgentTest.kt:260:32 Unresolved reference 'MONOTONIC'.
+e: core/PhoneAgentTest.kt:262:32 Unresolved reference 'MONOTONIC'.
+e: core/PhoneAgentTest.kt:263:34 'operator' modifier is required on 'FirNamedFunctionSymbol kotlin/compareTo' in 'compareTo'.
