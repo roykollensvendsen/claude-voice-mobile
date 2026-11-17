@@ -1,0 +1,9 @@
+# FileHubStoreTest before FileHubStore exists:
+e: core/FileHubStoreTest.kt:18:20 Unresolved reference 'FileHubStore'.
+e: core/FileHubStoreTest.kt:23:9 Unresolved reference 'FileHubStore'.
+e: core/FileHubStoreTest.kt:24:46 Unresolved reference 'FileHubStore'.
+e: core/FileHubStoreTest.kt:30:21 Unresolved reference 'FileHubStore'.
+e: core/FileHubStoreTest.kt:38:21 Unresolved reference 'FileHubStore'.
+e: core/FileHubStoreTest.kt:48:30 Unresolved reference 'FileHubStore'.
+e: core/FileHubStoreTest.kt:51:30 Unresolved reference 'FileHubStore'.
+BUILD FAILED in 1s
