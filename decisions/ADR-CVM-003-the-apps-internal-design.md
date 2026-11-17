@@ -91,8 +91,9 @@ asks every agent to log each call, and to keep the log on the machine.
 - **What it leaves out.** Requests the gate refused, such as a wrong key, never
   reached a plugin. They are counted elsewhere, not logged here.
 - **How long.** 30 days, and at most 5 000 lines, whichever is less; the oldest
-  go first, when a line is written. This is the owner's choice. The numbers are
-  proposed here, and changing them changes this record.
+  go first, when a line is written, when the app starts and when the log is
+  read, so a quiet phone keeps nothing longer either. This is the owner's
+  choice. The numbers are proposed here, and changing them changes this record.
 - **Who reads it.** Only the owner, on the phone. No tool the app offers reads
   it, and a test proves that, as for the settings above. The app's screen can
   show it and delete all of it at once.
