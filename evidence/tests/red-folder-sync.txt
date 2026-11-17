@@ -1,0 +1,10 @@
+# WholeFileTest before the folder sync exists:
+BUILD FAILED in 1s
+e: core/WholeFileTest.kt:20:49 Too many arguments for 'fun replaceWhole(file: File, bytes: ByteArray): Unit'.
+e: core/WholeFileTest.kt:20:51 Cannot infer type for this parameter. Please specify it explicitly.
+e: core/WholeFileTest.kt:20:76 Cannot infer type for this parameter. Please specify it explicitly.
+e: core/WholeFileTest.kt:20:76 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
+e: core/WholeFileTest.kt:26:49 Too many arguments for 'fun replaceWhole(file: File, bytes: ByteArray): Unit'.
+e: core/WholeFileTest.kt:34:109 Unresolved reference 'it'.
+e: core/WholeFileTest.kt:34:99 Too many arguments for 'fun replaceWhole(file: File, bytes: ByteArray): Unit'.
+e: core/WholeFileTest.kt:42:9 Unresolved reference 'SYNC_FOLDER'.
