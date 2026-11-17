@@ -20,8 +20,7 @@ class MachineNameTest {
     }
 
     private val store = Memory()
-    private var paired = false
-    private fun names() = MachineName(store, paired = { paired })
+    private fun names() = MachineName(store)
 
     @Test
     fun `before the owner confirms one, there is no name`() {
@@ -45,12 +44,19 @@ class MachineNameTest {
     }
 
     @Test
-    fun `once paired, a different name is refused, since changing it means pairing again`() {
+    fun `once a name is kept, a different one is refused, paired or not, since the agent is built under it`() {
         names().confirm("pixel-8")
-        paired = true
-        assertEquals(Confirmed.PairedAs, names().confirm("pixel-9"))
+        assertEquals(Confirmed.AlreadyNamed, names().confirm("pixel-9"))
         assertEquals("pixel-8", names().name)
         assertEquals(Confirmed.Kept, names().confirm("pixel-8"))
+    }
+
+    @Test
+    fun `a paired phone whose name file was lost takes a name again, so it is never stuck`() {
+        // Whether a hub is paired plays no part: the hub refuses a name it did not approve.
+        store.text = "lost"
+        assertEquals(Confirmed.Kept, names().confirm("pixel-8"))
+        assertEquals("pixel-8", names().name)
     }
 
     @Test

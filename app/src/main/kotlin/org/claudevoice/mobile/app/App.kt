@@ -32,8 +32,8 @@ class App : Application() {
     /** The phone's settings, set only on its own screens (ADR-CVM-003). */
     val settings by lazy { SettingsKeeper() }
 
-    /** The name the owner confirmed for the phone; none before. Refused if different once paired. */
-    val machine by lazy { MachineName(FileTextStore(File(noBackupFilesDir, MACHINE_FILE))) { hub.read() != null } }
+    /** The name the owner confirmed for the phone; none before. A different one is refused once kept. */
+    val machine by lazy { MachineName(FileTextStore(File(noBackupFilesDir, MACHINE_FILE))) }
 
     /** What the owner is offered to confirm: a name made from the phone's model. */
     val suggestedName: String get() = suggestedMachine(Build.MODEL.orEmpty())

@@ -1,0 +1,9 @@
+# MachineNameTest and NameAnswerTest with the new rules, before the change:
+BUILD FAILED in 2m 9s
+e: app/NameAnswerTest.kt:12:31 Unresolved reference 'name_already_named'.
+e: app/NameAnswerTest.kt:12:75 Unresolved reference 'AlreadyNamed'.
+e: app/NameAnswerTest.kt:17:39 Unresolved reference 'shown'.
+e: app/NameAnswerTest.kt:18:40 Unresolved reference 'shown'.
+e: app/NameAnswerTest.kt:23:83 Unresolved reference 'ends'.
+e: core/MachineNameTest.kt:23:39 No value passed for parameter 'paired'.
+e: core/MachineNameTest.kt:49:32 Unresolved reference 'AlreadyNamed'.

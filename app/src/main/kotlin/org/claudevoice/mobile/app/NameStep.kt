@@ -37,12 +37,12 @@ class NameStep(context: Context, private val machine: MachineName, suggested: St
         addView(field)
         addView(confirm)
         addView(answer)
-        visibility = if (machine.name == null) View.VISIBLE else View.GONE
+        visibility = if (NameAnswer.shown(machine.name)) View.VISIBLE else View.GONE
     }
 
     private fun answered(result: Confirmed) {
         answer.setText(NameAnswer.of(result))
-        if (result == Confirmed.Kept) {
+        if (NameAnswer.ends(result)) {
             view.visibility = View.GONE
             done()
         }
@@ -53,12 +53,18 @@ class NameStep(context: Context, private val machine: MachineName, suggested: St
     }
 }
 
-/** The words for each answer to a confirmed name. */
+/** The step's rules: when it shows, which words answer, and which answer ends it. */
 object NameAnswer {
+    /** Shown only while the phone has no name. */
+    fun shown(name: String?): Boolean = name == null
+
+    /** Only a kept name ends the step. */
+    fun ends(result: Confirmed): Boolean = result == Confirmed.Kept
+
     fun of(result: Confirmed): Int = when (result) {
         Confirmed.Kept -> R.string.name_kept
         Confirmed.NotAllowed -> R.string.name_not_allowed
-        Confirmed.PairedAs -> R.string.name_paired_as
+        Confirmed.AlreadyNamed -> R.string.name_already_named
         Confirmed.NotWritten -> R.string.name_not_written
     }
 }
