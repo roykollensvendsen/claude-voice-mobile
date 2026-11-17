@@ -1,0 +1,5 @@
+# tests/test_no_session_links.py before scripts/no_session_links.py exists:
+ERROR tests/test_no_session_links.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.20s
+E   ModuleNotFoundError: No module named 'no_session_links'
