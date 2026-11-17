@@ -83,8 +83,9 @@ asks every agent to log each call, and to keep the log on the machine.
 - **What a line holds.** The time, in UTC; the tool; the hub's node; the caller
   from the call's `_meta`, `voice` or a session's name; and what came of it:
   `answered`, `refused`, `late` (past the time limit), `broke` (the plugin
-  failed, with the error's class only, never its message), `duplicate` or
-  `busy`. **Never a call's inputs or its answer, for any tool.** Version 1 allows
+  failed, with the error's class only, never its message), `not_run` (it
+  waited too long for a thread and never reached the plugin, so its call id is
+  freed for a retry), `duplicate` or `busy`. **Never a call's inputs or its answer, for any tool.** Version 1 allows
   them for a tool that uses nothing private, but nothing needs them, and a log
   without them cannot become a record of what the owner asked or heard.
 - **What it leaves out.** Requests the gate refused, such as a wrong key, never
