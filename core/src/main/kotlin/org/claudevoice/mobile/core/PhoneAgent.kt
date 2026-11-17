@@ -3,6 +3,7 @@ package org.claudevoice.mobile.core
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.time.Duration
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * The one place the agent's parts are built and joined: the pairing, the MCP handler with what
@@ -40,17 +41,15 @@ class PhoneAgent internal constructor(
 
     val pairing: Pairing get() = parts.pairing
 
-    /** The gate for the address the phone listens on now; null while it listens nowhere. */
-    @Volatile
-    private var kept: KeptGate? = null
+    /** Where the phone listens now and its gate, set as a server opens and cleared as it stops. */
+    private class Here(val address: InetAddress, val gate: KeptGate)
 
-    @Volatile
-    private var own: InetAddress? = null
+    private val here = AtomicReference<Here?>()
 
     private val place = object : AgentPlace {
-        override fun address(): String = own?.hostAddress.orEmpty()
+        override fun address(): String = here.get()?.address?.hostAddress.orEmpty()
 
-        override fun hub(): String? = kept?.hubName
+        override fun hub(): String? = here.get()?.gate?.hubName
     }
 
     private val info = describe(place)
@@ -60,9 +59,17 @@ class PhoneAgent internal constructor(
     private val listening = Listening(parts.port) { address, at ->
         val gate = KeptGate(store, own = address.address, port = at, machine = info.machine)
         val endpoint = HubEndpoint(gate, parts.pairing, nameOf, mcp = mcp)
-        parts.serve(endpoint, endpoint::admits, address, at).also {
-            kept = gate
-            own = address.address
+        val now = Here(address.address, gate)
+        // Set before the server opens, so its first request already knows where it is.
+        here.set(now)
+        // A bind that fails leaves nothing behind either.
+        val server = runCatching { parts.serve(endpoint, endpoint::admits, address, at) }
+            .onFailure { here.compareAndSet(now, null) }
+            .getOrThrow()
+        Server {
+            server.stop()
+            // Listening nowhere now: nothing reports the old address or its gate.
+            here.compareAndSet(now, null)
         }
     }
 
@@ -70,7 +77,7 @@ class PhoneAgent internal constructor(
     val status: ListenStatus get() = listening.status
 
     /** Why the kept pairing could not be used, for the owner; null when it could, or there is none. */
-    val problem: String? get() = kept?.problem
+    val problem: String? get() = here.get()?.gate?.problem
 
     /** The tailnet as the phone sees it now: listen, move to the new address, or stop. */
     fun follow(state: TailnetState) = listening.follow(state)
