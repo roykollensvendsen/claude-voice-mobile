@@ -9,6 +9,8 @@ import kotlinx.serialization.json.JsonObject
 class StatusPlugin : Plugin {
     override val name = "status"
     override val tools = listOf<Tool>()
+    override val uses = listOf<String>()
+    override val confirms = listOf<String>()
 
     override suspend fun call(tool: String, arguments: JsonObject): ToolResult =
         ToolResult.Refused("status has no tool $tool")

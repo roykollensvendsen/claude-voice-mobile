@@ -1,0 +1,15 @@
+# The agent_info tests with stubs in place (PluginsTest, AgentInfoTest, McpHandlerTest), before the code:
+AgentInfoTest > the answer holds every field protocol version 1 asks for, and no other() FAILED
+AgentInfoTest > the privacy settings are read as they are when the hub asks() FAILED
+AgentInfoTest > the hub is null before pairing, and its name after() FAILED
+AgentInfoTest > the tools are every plugin's, without agent_info itself() FAILED
+McpHandlerTest > agent_info answers what the phone is, as a structured answer, and reaches no plugin() FAILED
+McpHandlerTest > agent_info is listed first, taking nothing() FAILED
+McpHandlerTest > tools list offers every plugin's tools with their inputs() FAILED
+PluginsTest > no plugin may offer agent_info, which the core answers for the whole phone() FAILED
+PluginsTest > an entry reads what a plugin uses at the time it is asked() FAILED
+PluginsTest > each plugin's entry for agent_info names its tools, what confirms a yes, and what it uses() FAILED
+PluginsTest > what a plugin uses follows the protocol's rule for a name, once each() FAILED
+PluginsTest > a confirming tool must be one of the plugin's own tools() FAILED
+209 tests completed, 12 failed
+BUILD FAILED in 13s

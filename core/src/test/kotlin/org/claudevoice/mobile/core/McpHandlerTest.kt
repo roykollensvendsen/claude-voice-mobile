@@ -55,6 +55,8 @@ class McpHandlerTest {
 
     private val status = object : Plugin {
         override val name = "status"
+        override val uses = listOf<String>()
+        override val confirms = listOf<String>()
         override val tools = listOf("hang", "break", "later", "later_break", "slow", "block").map { Tool("status_$it", "", battery.input) }
             .let { listOf(battery, ring) + it }
 
@@ -94,9 +96,16 @@ class McpHandlerTest {
             }
         }
 
+    private val place = object : AgentPlace {
+        override fun address() = "100.64.0.10"
+
+        override fun hub() = "laptop-a"
+    }
+
+    private fun about() = AgentInfo(Plugins(listOf(status)), "0.1.0", "phone-a", SettingsKeeper().settings, place)
+
     private fun handler(limit: Duration = Duration.ofSeconds(5), keptIds: Int = 10_000) = McpHandler(
-        Plugins(listOf(status)),
-        softwareVersion = "0.1.0",
+        about(),
         clock = { now },
         callLimit = limit,
         keptIds = keptIds,
@@ -176,11 +185,11 @@ class McpHandlerTest {
     fun `tools list offers every plugin's tools with their inputs`() {
         val tools = result(rpc("tools/list"))["tools"]!!.jsonArray.map { it.jsonObject }
         assertEquals(
-            listOf("status_battery", "status_ring", "status_hang", "status_break", "status_later", "status_later_break", "status_slow", "status_block"),
+            listOf("agent_info", "status_battery", "status_ring", "status_hang", "status_break", "status_later", "status_later_break", "status_slow", "status_block"),
             tools.map { it["name"]!!.jsonPrimitive.content },
         )
-        assertEquals(ring.input, tools[1]["inputSchema"])
-        assertEquals(ring.description, tools[1]["description"]!!.jsonPrimitive.content)
+        assertEquals(ring.input, tools[2]["inputSchema"])
+        assertEquals(ring.description, tools[2]["description"]!!.jsonPrimitive.content)
     }
 
     @Test
@@ -376,7 +385,7 @@ class McpHandlerTest {
         Thread.sleep(20)
         val second = CallIds.monotonicMillis()
         assertTrue(second - first in 20L..2_000L, "${second - first}")
-        McpHandler(Plugins(listOf(status)), "0.1.0").let { plain ->
+        McpHandler(about()).let { plain ->
             result(call("status_battery", id = "d"), plain)
             assertTrue(isError(result(call("status_battery", id = "d"), plain)))
         }
@@ -396,5 +405,21 @@ class McpHandlerTest {
         assertEquals(4, blocks.get(), "the fifth never reached the plugin, even once a thread was free")
         assertFalse(isError(result(call("status_block", id = "q-5"), quick)), "its retry runs")
         assertEquals(5, blocks.get())
+    }
+
+    @Test
+    fun `agent_info is listed first, taking nothing`() {
+        val first = result(rpc("tools/list"))["tools"]!!.jsonArray.first().jsonObject
+        assertEquals("agent_info", first["name"]!!.jsonPrimitive.content)
+        assertEquals("""{"type":"object"}""", first["inputSchema"].toString())
+        assertTrue(first["description"]!!.jsonPrimitive.content.isNotBlank())
+    }
+
+    @Test
+    fun `agent_info answers what the phone is, as a structured answer, and reaches no plugin`() {
+        val answer = result(call("agent_info"))
+        assertFalse(isError(answer))
+        assertEquals(about().report(), answer["structuredContent"])
+        assertEquals(0, runs.get())
     }
 }
