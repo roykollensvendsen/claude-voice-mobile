@@ -9,6 +9,8 @@ Amended 2026-11-17: what the log of every call holds, where it is kept and for
 how long, and that nothing the app keeps leaves the phone in a backup or a
 transfer to a new phone. Proposed by the architect session; how long the log
 keeps calls is the owner's choice, made by merging this.
+Amended 2026-11-17, if the owner agrees: a poll that finds nothing is counted
+once a day, not logged line by line.
 Nothing beyond [the audio-focus prototype](../docs/prototype-audio-focus.md) is
 built until he accepts this record.
 
@@ -90,6 +92,16 @@ asks every agent to log each call, and to keep the log on the machine.
   without them cannot become a record of what the owner asked or heard.
 - **What it leaves out.** Requests the gate refused, such as a wrong key, never
   reached a plugin. They are counted elsewhere, not logged here.
+- **Empty polls are counted, not logged.** A tool that the hub calls on a timer
+  to ask for something new, such as new text messages, may mark itself as a
+  poll. A call to it that is answered with nothing new is not a line of its
+  own. Instead, the empty polls of a tool are counted, and the count is written
+  as one line, with the tool and the outcome `empty`, when the UTC day ends and
+  when the app stops, and then starts again from zero. The screen shows the
+  running count without writing it. A crash loses at most that count. A
+  poll that returns something, is refused, or fails is logged like any call.
+  Without this, a poll every 15 seconds would make more than 5 000 lines a
+  day, and push every other call out of the log.
 - **How long.** 30 days, and at most 5 000 lines, whichever is less; the oldest
   go first, when a line is written, when the app starts and when the log is
   read, so a quiet phone keeps nothing longer either. This is the owner's
