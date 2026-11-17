@@ -35,6 +35,12 @@ class CallIds(
         }
     }
 
+    /** Frees [id] again, for a call that was claimed but never ran, so its retry may run. */
+    @Synchronized
+    fun release(id: String) {
+        ran.remove(id)
+    }
+
     private fun forgetOlderThan(oldest: Long) {
         val each = ran.values.iterator()
         while (each.hasNext() && each.next() <= oldest) each.remove()
