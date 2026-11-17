@@ -22,6 +22,24 @@ android {
 
 kotlin { jvmToolchain(17) }
 
+// NoBackupTest reads the manifest the build merged for the variant under test, and the rules
+// file it names, so what it checks is what ships.
+androidComponents {
+    onVariants { variant ->
+        val name = variant.name.replaceFirstChar { it.uppercase() }
+        val manifest = layout.buildDirectory
+            .file("intermediates/merged_manifest/${variant.name}/process${name}MainManifest/AndroidManifest.xml")
+        tasks.matching { it.name == "test${name}UnitTest" }.configureEach {
+            dependsOn("process${name}MainManifest")
+            // Declared as inputs, so a change to either runs the test again instead of reusing it.
+            inputs.file(manifest)
+            inputs.dir("src/main/res/xml")
+            (this as Test).systemProperty("mergedManifest", manifest.get().asFile.path)
+            systemProperty("resources", file("src/main/res").path)
+        }
+    }
+}
+
 dependencies {
     implementation(project(":core"))
     implementation(project(":plugins:status"))

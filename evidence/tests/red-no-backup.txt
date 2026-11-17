@@ -1,0 +1,11 @@
+# NoBackupTest against the merged manifest before the fix (./gradlew :app:testDebugUnitTest):
+NoBackupTest > backup_is_off_for_android_8_to_11 FAILED
+  expected:<[false]> but was:<[]>   (fullBackupContent was not set)
+NoBackupTest > cloud_backup_and_transfer_to_a_new_phone_exclude_every_place_the_app_keeps_data FAILED
+  expected:<[@xml/data_extraction_rules]> but was:<[]>   (no data extraction rules)
+13 tests completed, 2 failed
+
+# After the fix, the test was checked against one domain left out (device_sharedpref, under
+# device-transfer). It failed, and passed again once it was put back. A first version of the
+# build wiring passed the files' paths but did not declare them as inputs, so Gradle reused the
+# earlier pass; both are now inputs of the test task.

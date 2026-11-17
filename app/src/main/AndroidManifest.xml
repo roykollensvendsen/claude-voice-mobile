@@ -8,9 +8,14 @@
         <package android:name="com.tailscale.ipn" />
     </queries>
 
+    <!-- Nothing the app keeps is backed up or moved to a new phone, which must pair again
+         (ADR-CVM-009). allowBackup and fullBackupContent cover Android 8 to 11; from Android 12
+         only the data extraction rules stop a transfer from phone to phone. -->
     <application
         android:name=".App"
         android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:label="claude-voice">
         <activity
             android:name=".MainActivity"
