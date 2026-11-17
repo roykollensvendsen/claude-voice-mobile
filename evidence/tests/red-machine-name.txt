@@ -1,0 +1,10 @@
+# MachineNameTest before MachineName exists:
+BUILD FAILED in 1s
+e: core/MachineNameTest.kt:10:28 Unresolved reference 'TextStore'.
+e: core/MachineNameTest.kt:24:27 Unresolved reference 'MachineName'.
+e: core/MachineNameTest.kt:33:22 Unresolved reference 'Confirmed'.
+e: core/MachineNameTest.kt:41:26 Unresolved reference 'Confirmed'.
+e: core/MachineNameTest.kt:44:22 Unresolved reference 'Confirmed'.
+e: core/MachineNameTest.kt:51:22 Unresolved reference 'Confirmed'.
+e: core/MachineNameTest.kt:53:22 Unresolved reference 'Confirmed'.
+e: core/MachineNameTest.kt:60:22 Unresolved reference 'Confirmed'.

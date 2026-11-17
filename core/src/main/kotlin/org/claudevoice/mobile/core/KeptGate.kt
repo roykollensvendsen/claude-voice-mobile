@@ -12,13 +12,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 /** Where the phone keeps its paired hub between restarts: a small text the app stores privately. */
-interface HubStore {
-    fun read(): String?
-
-    /** Replace what is kept, all at once or not at all; an [IOException] when it could not. */
-    @Throws(IOException::class)
-    fun write(text: String)
-}
+interface HubStore : TextStore
 
 /**
  * The gate, with its paired hub kept in a [HubStore]: the hash of the hub's key, its name, its

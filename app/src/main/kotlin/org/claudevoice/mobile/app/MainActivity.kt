@@ -36,6 +36,8 @@ class MainActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(MARGIN, TOP_MARGIN, MARGIN, MARGIN)
+            val app = application as App
+            addView(NameStep(this@MainActivity, app.machine, app.suggestedName) { }.view)
             addView(message)
             addView(open)
         }
