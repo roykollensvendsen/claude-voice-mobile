@@ -213,8 +213,10 @@ class PhoneAgentTest {
 
     @Test
     fun `with the app's own parts, an address the phone cannot bind says why instead of failing`() {
+        store.text = "not a pairing"
         val real = PhoneAgent(store, log, { null }, describe)
         real.follow(TailnetState.OnTailnet(InetAddress.getByName("100.100.100.101")))
+        assertNull(real.problem, "a phone that listens nowhere reports no gate")
         val status = real.status
         assertTrue(status is ListenStatus.Stopped && "could not listen on 100.100.100.101:8812" in status.reason, "$status")
     }
@@ -238,5 +240,18 @@ class PhoneAgentTest {
         }
         real.stop()
         assertThrows<ConnectException> { Socket(InetAddress.getLoopbackAddress(), port).close() }
+    }
+
+    @Test
+    fun `once it listens nowhere, the agent no longer reports the gate of the old address`() {
+        store.text = "not a pairing"
+        agent.follow(TailnetState.OnTailnet(phone))
+        assertTrue(agent.problem != null, "a kept pairing that cannot be read is a problem while listening")
+        agent.follow(TailnetState.TailscaleOff)
+        assertNull(agent.problem)
+        agent.follow(TailnetState.OnTailnet(phone))
+        assertTrue(agent.problem != null)
+        agent.stop()
+        assertNull(agent.problem)
     }
 }
