@@ -5,6 +5,10 @@
 Proposed 2026-11-08. Settled with Roy Kollen Svendsen by voice on 2026-11-08.
 Amended 2026-11-11: `earbuds` added, and built first among the plugins, as
 Roy decided on #26.
+Amended 2026-11-17: what the log of every call holds, where it is kept and for
+how long, and that nothing the app keeps leaves the phone in a backup or a
+transfer to a new phone. Proposed by the architect session; how long the log
+keeps calls is the owner's choice, made by merging this.
 Nothing beyond [the audio-focus prototype](../docs/prototype-audio-focus.md) is
 built until he accepts this record.
 
@@ -67,6 +71,38 @@ Its notification is always shown, and says which of those are on.
 logging, the list of people who may be called straight away and the camera are
 changed in the app's own screens. No tool the app offers to the hub writes them.
 A test proves each.
+
+**The log of every call stays on the phone, and says little.** Protocol version 1
+asks every agent to log each call, and to keep the log on the machine.
+
+- **Where.** One file in the app's private storage, one JSON line per call. The
+  core writes it through a small interface, and the app gives it the file, so the
+  core stays plain Kotlin. Each line is encoded as JSON, never pieced together,
+  so a session name cannot break a line. A line is appended on its own; pruning
+  writes a new file and renames it, so a crash loses at most the newest line.
+- **What a line holds.** The time, in UTC; the tool; the hub's node; the caller
+  from the call's `_meta`, `voice` or a session's name; and what came of it:
+  `answered`, `refused`, `late` (past the time limit), `broke` (the plugin
+  failed, with the error's class only, never its message), `duplicate` or
+  `busy`. **Never a call's inputs or its answer, for any tool.** Version 1 allows
+  them for a tool that uses nothing private, but nothing needs them, and a log
+  without them cannot become a record of what the owner asked or heard.
+- **What it leaves out.** Requests the gate refused, such as a wrong key, never
+  reached a plugin. They are counted elsewhere, not logged here.
+- **How long.** 30 days, and at most 5 000 lines, whichever is less; the oldest
+  go first, when a line is written. This is the owner's choice. The numbers are
+  proposed here, and changing them changes this record.
+- **Who reads it.** Only the owner, on the phone. No tool the app offers reads
+  it, and a test proves that, as for the settings above. The app's screen can
+  show it and delete all of it at once.
+
+**Nothing the app keeps leaves the phone.** The pairing, the pinned hub, the
+settings and the log are excluded from Android's backup and from a transfer to a
+new phone. The manifest turns backup off, and its data extraction rules exclude
+everything for both, since from Android 12 turning backup off alone no longer
+stops a transfer between phones. A test reads the merged manifest. A new phone is
+paired again, as the record on how the phone knows its hub, ADR-CVM-009,
+assumes.
 
 **Playback runs beside Claude's voice, never instead of it.**
 
