@@ -1,0 +1,5 @@
+# McpHandlerTest with the queued-call and boolean-id tests, before the fix (issue #85):
+McpHandlerTest > a call waiting behind four stuck ones is dropped unrun when its time is up, and its id stays free() FAILED
+McpHandlerTest > a batch, or a body that is no JSON-RPC message, is refused with 400() FAILED
+28 tests completed, 2 failed
+BUILD FAILED in 13s

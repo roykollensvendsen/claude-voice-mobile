@@ -6,7 +6,6 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.claudevoice.mobile.pluginapi.Plugin
@@ -110,15 +109,19 @@ class McpHandler(
                 ),
             )
             CallIds.Claim.BUSY -> refusal(BUSY)
-            CallIds.Claim.RUN -> outcome(tool, calls.run(plugin, tool, arguments))
+            CallIds.Claim.RUN -> outcome(tool, calls.run(plugin, tool, arguments), callId)
         }
 
-    private fun outcome(tool: String, outcome: CallOutcome): JsonObject = when (outcome) {
+    private fun outcome(tool: String, outcome: CallOutcome, callId: String?): JsonObject = when (outcome) {
         is CallOutcome.Done -> when (val result = outcome.result) {
             is ToolResult.Answer -> answered(result.content)
             is ToolResult.Refused -> refusal(result.say)
         }
         CallOutcome.Late -> refusal("$tool took longer than $limitSeconds seconds. It may still finish on the phone.")
+        CallOutcome.NotRun -> {
+            callId?.let { ids.release(it) }
+            refusal("The phone was too busy to start $tool in $limitSeconds seconds, so it did not run.")
+        }
         is CallOutcome.Broke -> {
             failed?.invoke(outcome.kind)
             refusal("The phone could not run $tool.")
@@ -150,7 +153,9 @@ class McpHandler(
             null
         }
 
-        private fun validId(id: JsonElement?) = id == null || (id is JsonPrimitive && id !is JsonNull)
+        /** No id, or one that is a string or a number, as JSON-RPC allows; never null, true or false. */
+        private fun validId(id: JsonElement?) =
+            id == null || (id is JsonPrimitive && (id.isString || id.content.toDoubleOrNull() != null))
 
         private fun callIdIn(params: JsonObject): String? =
             ((params["_meta"] as? JsonObject)?.get(CALL_ID) as? JsonPrimitive)?.takeIf { it.isString }?.content
