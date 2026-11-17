@@ -16,8 +16,8 @@ enum class Confirmed {
     /** Not a name the protocol takes: lowercase letters, digits and hyphens, from a letter, at most 32. */
     NotAllowed,
 
-    /** The phone is paired under another name; changing it means pairing again. */
-    PairedAs,
+    /** The phone already has another name; changing it means clearing the app's data and pairing again. */
+    AlreadyNamed,
 
     /** The phone could not write it; nothing changed. */
     NotWritten,
@@ -29,10 +29,12 @@ enum class Confirmed {
  * [store] as `{"version":1,"name":"…"}`. It is a setting of the phone alone: only the owner's
  * screen confirms it, and no tool the app offers reaches it.
  *
- * It is the identity the hub approved. So while [paired] says a hub is paired, a different name
- * is refused here, in the core, whatever screen asks.
+ * Once kept, it is the name the agent is built under and the hub approves. So a different name
+ * is refused here, in the core, whatever screen asks, paired or not. With no name kept, as when
+ * the file was lost, a name is taken again even if a hub is paired: the phone is never stuck,
+ * and a hub refuses a name it did not approve.
  */
-class MachineName(private val store: TextStore, private val paired: () -> Boolean) {
+class MachineName(private val store: TextStore) {
     @Volatile
     var name: String? = parse(store.read())
         private set
@@ -40,9 +42,9 @@ class MachineName(private val store: TextStore, private val paired: () -> Boolea
     @Synchronized
     fun confirm(given: String): Confirmed = when {
         !AgentInfo.MACHINE.matches(given) -> Confirmed.NotAllowed
+        name == null -> kept(given)
         given == name -> Confirmed.Kept
-        paired() -> Confirmed.PairedAs
-        else -> kept(given)
+        else -> Confirmed.AlreadyNamed
     }
 
     private fun kept(given: String): Confirmed = try {

@@ -12,6 +12,6 @@
     <string name="name_confirm">Confirm the name</string>
     <string name="name_kept">The phone is now known by this name.</string>
     <string name="name_not_allowed">A name may have small letters, digits and hyphens, must start with a letter, and be at most 32 long.</string>
-    <string name="name_paired_as">The phone is paired under another name. Changing it means pairing again.</string>
+    <string name="name_already_named">The phone already has another name. Changing it means clearing the app\'s data and pairing again.</string>
     <string name="name_not_written">The phone could not save the name. Free some space, and try again.</string>
 </resources>

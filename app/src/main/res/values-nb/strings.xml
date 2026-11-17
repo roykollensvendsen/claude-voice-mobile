@@ -12,6 +12,6 @@
     <string name="name_confirm">Bekreft navnet</string>
     <string name="name_kept">Telefonen er nå kjent under dette navnet.</string>
     <string name="name_not_allowed">Et navn kan ha små bokstaver, sifre og bindestreker, må begynne med en bokstav, og være høyst 32 tegn.</string>
-    <string name="name_paired_as">Telefonen er paret under et annet navn. Å endre det betyr å pare på nytt.</string>
+    <string name="name_already_named">Telefonen har allerede et annet navn. Å endre det betyr å slette appens data og pare på nytt.</string>
     <string name="name_not_written">Telefonen fikk ikke lagret navnet. Frigjør litt plass, og prøv igjen.</string>
 </resources>
