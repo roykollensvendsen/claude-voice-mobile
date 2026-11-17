@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test
 class MemoryStore : LogStore {
     val lines = mutableListOf<String>()
     var rewrites = 0
+    var reads = 0
     var failing = false
 
     override fun append(line: String) {
@@ -25,7 +26,10 @@ class MemoryStore : LogStore {
         lines.add(line)
     }
 
-    override fun lines(): List<String> = lines.toList()
+    override fun lines(): List<String> {
+        reads++
+        return lines.toList()
+    }
 
     override fun replace(lines: List<String>) {
         rewrites++
@@ -152,6 +156,33 @@ class CallLogTest {
         record(tool = "status_b")
         assertEquals(listOf("status_a", "status_b"), log.entries().map { it["tool"]!!.jsonPrimitive.content })
         assertEquals(2, store.lines.size)
+    }
+
+    @Test
+    fun `a damaged line of any shape is dropped, and never stops a call`() {
+        record(tool = "status_a")
+        store.lines.addAll(listOf("[1,2]", "\"text\"", "{}", """{"time":7}""", """{"time":"yesterday"}""", "null"))
+        now = now.plusSeconds(61)
+        record(tool = "status_b")
+        assertEquals(listOf("status_a", "status_b"), log.entries().map { it["tool"]!!.jsonPrimitive.content })
+    }
+
+    @Test
+    fun `on writes the log is pruned at most once a minute, unless it grows past its cap`() {
+        record()
+        record()
+        record()
+        assertEquals(1, store.reads, "only the first write in a minute reads the log")
+        now = now.plusSeconds(60)
+        record()
+        assertEquals(2, store.reads)
+        val other = MemoryStore()
+        val small = CallLog(other, clock = { now }, maxLines = 3)
+        repeat(3) { small.record("status_t", null, null, CallLog.Outcome.ANSWERED, null) }
+        assertEquals(1, other.reads, "at the cap, but not past it: no prune")
+        small.record("status_t", null, null, CallLog.Outcome.ANSWERED, null)
+        assertEquals(2, other.reads, "past the cap: pruned within the minute")
+        assertEquals(3, other.lines.size)
     }
 
     @Test
