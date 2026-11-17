@@ -1,0 +1,5 @@
+# PhoneAgentTest before PhoneAgent exists:
+BUILD FAILED in 1s
+e: core/PhoneAgentTest.kt:165:21 Unresolved reference 'PhoneAgent'.
+e: core/PhoneAgentTest.kt:179:28 Unresolved reference 'PhoneAgent'.
+e: core/PhoneAgentTest.kt:68:25 Unresolved reference 'PhoneAgent'.
