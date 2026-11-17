@@ -34,7 +34,10 @@ class AgentInfo(
     /** The paired hub's name now, or null before pairing. */
     fun hub(): String? = place.hub()
 
-    fun report(): JsonObject = JsonObject(
+    fun report(): JsonObject = report(plugins.usesNow())
+
+    /** The answer, with what each plugin uses as [uses] read it. */
+    fun report(uses: List<List<String>>): JsonObject = JsonObject(
         mapOf(
             "protocol" to JsonPrimitive(PROTOCOL),
             "machine" to JsonPrimitive(machine),
@@ -42,7 +45,7 @@ class AgentInfo(
             "hub" to JsonPrimitive(place.hub()),
             "tools" to JsonArray(plugins.offered().map { JsonPrimitive(it) }),
             "version" to JsonPrimitive(version),
-            "plugins" to plugins.entries(),
+            "plugins" to plugins.entries(uses),
             "privacy" to privacyReport(settings),
         ),
     )

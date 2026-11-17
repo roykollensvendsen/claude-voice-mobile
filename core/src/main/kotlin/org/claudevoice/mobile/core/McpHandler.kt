@@ -118,9 +118,11 @@ class McpHandler(
      * refusal that names the plugin, and is logged, rather than a report the hub would refuse.
      */
     private fun about(asked: Asked): JsonObject {
-        val unknown = info.plugins.unknownUse()
+        // Read once: a plugin may change what it uses at any time, and the check and the report must agree.
+        val uses = info.plugins.usesNow()
+        val unknown = info.plugins.unknownUse(uses)
         return if (unknown == null) {
-            asked.came(CallLog.Outcome.ANSWERED, answered(info.report()))
+            asked.came(CallLog.Outcome.ANSWERED, answered(info.report(uses)))
         } else {
             asked.came(
                 CallLog.Outcome.REFUSED,

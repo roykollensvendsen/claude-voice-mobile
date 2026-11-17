@@ -1,0 +1,5 @@
+# McpHandlerTest with the read-once test, before the change:
+McpHandlerTest > a call waiting behind four stuck ones is dropped unrun when its time is up, and its id stays free() FAILED
+McpHandlerTest > what a plugin uses is read once per agent_info, so a change between reads never breaks the answer() FAILED
+35 tests completed, 2 failed
+BUILD FAILED in 13s
