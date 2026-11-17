@@ -107,9 +107,28 @@ class McpHandler(
         val plugin = info.plugins.owner(name)
         return when {
             // Reads only, so it is answered at once, with no call id kept.
-            name == AgentInfo.TOOL -> asked.came(CallLog.Outcome.ANSWERED, answered(info.report()))
+            name == AgentInfo.TOOL -> about(asked)
             plugin == null -> asked.came(CallLog.Outcome.REFUSED, refusal("The phone offers no tool $name."))
             else -> ran(plugin, name, arguments, callIdIn(params), asked)
+        }
+    }
+
+    /**
+     * `agent_info`, unless a plugin now says it uses a name the protocol does not know: then a
+     * refusal that names the plugin, and is logged, rather than a report the hub would refuse.
+     */
+    private fun about(asked: Asked): JsonObject {
+        val unknown = info.plugins.unknownUse()
+        return if (unknown == null) {
+            asked.came(CallLog.Outcome.ANSWERED, answered(info.report()))
+        } else {
+            asked.came(
+                CallLog.Outcome.REFUSED,
+                refusal(
+                    "The phone's plugin $unknown reports a use the protocol does not know, " +
+                        "so the phone cannot say what it offers.",
+                ),
+            )
         }
     }
 
