@@ -4,6 +4,7 @@ import android.app.Application
 import android.os.Build
 import java.io.File
 import java.io.IOException
+import java.net.InetAddress
 import kotlin.concurrent.thread
 import org.claudevoice.mobile.core.CallLog
 import org.claudevoice.mobile.core.FileHubStore
@@ -12,6 +13,7 @@ import org.claudevoice.mobile.core.AgentInfo
 import org.claudevoice.mobile.core.PhoneAgent
 import org.claudevoice.mobile.core.Plugins
 import org.claudevoice.mobile.core.SettingsKeeper
+import org.claudevoice.mobile.core.hubName
 import org.claudevoice.mobile.core.suggestedMachine
 import org.claudevoice.mobile.plugins.status.StatusPlugin
 
@@ -36,7 +38,10 @@ class App : Application() {
         // Until the pairing screen lets the owner confirm it, the name is the one suggested.
         val machine = suggestedMachine(Build.MODEL.orEmpty())
         val version = packageManager.getPackageInfo(packageName, 0).versionName ?: UNKNOWN_VERSION
-        PhoneAgent(hub, calls, { address -> address.canonicalHostName.takeIf { it != address.hostAddress } }) { place ->
+        val nameOf = { address: InetAddress ->
+            hubName(address.canonicalHostName.orEmpty(), address.hostAddress.orEmpty())
+        }
+        PhoneAgent(hub, calls, nameOf) { place ->
             AgentInfo(plugins, version, machine, settings.settings, place)
         }
     }
