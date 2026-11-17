@@ -3,14 +3,17 @@ package org.claudevoice.mobile.core
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
 import java.time.Duration
 import java.time.Instant
 import java.time.format.DateTimeParseException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.jsonObject
 
 /** Where the log's lines are kept: the core sees only this, the app gives it the file. */
 interface LogStore {
@@ -41,7 +44,15 @@ class FileLogStore(private val file: File) : LogStore {
 
     override fun replace(lines: List<String>) {
         val next = File(file.parentFile, "${file.name}.new")
-        next.writeText(lines.joinToString("") { "$it\n" }, Charsets.UTF_8)
+        // Written through to the disk before the rename, so a power cut cannot leave an empty log.
+        Files.write(
+            next.toPath(),
+            lines.joinToString("") { "$it\n" }.toByteArray(Charsets.UTF_8),
+            StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.SYNC,
+        )
         if (!next.renameTo(file)) throw IOException("could not put ${next.name} in place of ${file.name}")
     }
 }
@@ -50,17 +61,24 @@ class FileLogStore(private val file: File) : LogStore {
  * The log of every call to a tool, kept on the phone only, as ADR-CVM-003 sets it: the time in
  * UTC, the tool, the hub, the caller and what came of it. Never a call's inputs or its answer.
  *
- * Lines older than [KEEP], and all but the newest [maxLines], go whenever a line is written,
- * when [prune] is called at the app's start, and when [entries] is read for the screen, so a
- * quiet phone keeps nothing longer either. A text the hub sent, a caller or a tool name, is cut
- * to [TEXT_LIMIT] characters without control characters, and every line is encoded as JSON, so
- * nothing the hub sends can break a line or grow the log.
+ * Lines older than [KEEP], and all but the newest [maxLines], go when [prune] is called at the
+ * app's start, when [entries] is read for the screen, and on a write: at most once a minute, or
+ * sooner if the log has grown past [maxLines], so a call does not read the whole file each time.
+ * A quiet phone keeps nothing longer either. A damaged line, of any shape, is dropped.
+ *
+ * A text the hub sent, a caller or a tool name, is cut to [TEXT_LIMIT] characters without
+ * control characters, and every line is encoded as JSON, so nothing the hub sends can break a
+ * line or grow the log.
  */
 class CallLog(
     private val store: LogStore,
     private val clock: (() -> Instant)? = null,
     private val maxLines: Int = MAX_LINES,
 ) {
+    /** When the log was last pruned, and how many lines it has had since, counting writes. */
+    private var pruned: Instant? = null
+    private var count = 0
+
     /** What came of a call, by the names the record gives them. */
     enum class Outcome(val wire: String) {
         ANSWERED("answered"),
@@ -86,27 +104,41 @@ class CallLog(
             ),
         )
         try {
-            store.append(line.toString())
-            prune()
+            write(line.toString())
         } catch (_: IOException) {
             // A log that cannot be written must not stop the call it is about.
         }
     }
 
+    /** Appends [line], and prunes when [due]. */
+    private fun write(line: String) {
+        store.append(line)
+        count++
+        if (due()) prune()
+    }
+
+    /** Whether a write should prune: past the cap, or no prune in the last minute. */
+    private fun due(): Boolean = count > maxLines || !prunedLately()
+
+    private fun prunedLately(): Boolean = pruned?.isAfter(now().minus(PRUNE_EVERY)) == true
+
     /** Drops what is too old or too many, and rewrites the file only when something went. */
     @Synchronized
     fun prune() {
         val all = store.lines()
-        val since = now().minus(KEEP)
+        val now = now()
+        val since = now.minus(KEEP)
         val kept = all.filter { timeOf(it)?.isAfter(since) == true }.takeLast(maxLines)
         if (kept.size != all.size) store.replace(kept)
+        pruned = now
+        count = kept.size
     }
 
     /** Every call still kept, oldest first, for the owner's screen. */
     @Synchronized
     fun entries(): List<JsonObject> {
         prune()
-        return store.lines().map { Json.parseToJsonElement(it) as JsonObject }
+        return store.lines().map { Json.parseToJsonElement(it).jsonObject }
     }
 
     /** Deletes the whole log, as the owner may at once. */
@@ -127,11 +159,23 @@ class CallLog(
         /** The longest a text from the hub is kept. */
         const val TEXT_LIMIT = 64
 
-        /** The line's time, or null for a line a crash cut short. */
-        private fun timeOf(line: String): Instant? = try {
-            Instant.parse((Json.parseToJsonElement(line) as JsonObject).getValue("time").jsonPrimitive.content)
+        /** On a write, the log is pruned at most this often, unless it has grown past its cap. */
+        val PRUNE_EVERY: Duration = Duration.ofMinutes(1)
+
+        /** The line's time, or null for any line that is not one this log wrote: cut short, or damaged. */
+        private fun timeOf(line: String): Instant? {
+            val time = ((parsedOrNull(line) as? JsonObject)?.get("time") as? JsonPrimitive)?.takeIf { it.isString }
+            return time?.let { instantOrNull(it.content) }
+        }
+
+        private fun parsedOrNull(line: String): JsonElement? = try {
+            Json.parseToJsonElement(line)
         } catch (_: SerializationException) {
             null
+        }
+
+        private fun instantOrNull(text: String): Instant? = try {
+            Instant.parse(text)
         } catch (_: DateTimeParseException) {
             null
         }
