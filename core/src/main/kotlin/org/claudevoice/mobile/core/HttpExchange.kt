@@ -124,6 +124,7 @@ class HttpExchange(
         @Suppress("MagicNumber", "CyclomaticComplexMethod")
         fun reason(status: Int) = when (status) {
             200 -> "OK"
+            202 -> "Accepted"
             400 -> "Bad Request"
             401 -> "Unauthorized"
             403 -> "Forbidden"

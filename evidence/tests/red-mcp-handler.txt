@@ -1,0 +1,28 @@
+# McpHandlerTest and PluginsTest against a stub handler that answers 500, and the registry before the
+# naming rules (./gradlew :core:test --tests "*McpHandlerTest" --tests "*PluginsTest"):
+  McpHandlerTest > a notification is accepted with 202 and an empty body() FAILED
+  McpHandlerTest > a method the phone does not know is refused as not found() FAILED
+  McpHandlerTest > a call past the limit answers that it may still finish, and keeps its id() FAILED
+  McpHandlerTest > ping answers an empty result() FAILED
+  McpHandlerTest > a call that never ran keeps its id free for the retry() FAILED
+  McpHandlerTest > an id that is a string comes back as the same string() FAILED
+  McpHandlerTest > a refusal is an error answer with the plugin's words() FAILED
+  McpHandlerTest > calls without an id each run, as from a version 0 hub() FAILED
+  McpHandlerTest > when the kept ids are full of young ones, a new call is refused and none is forgotten() FAILED
+  McpHandlerTest > a plugin that throws is an error answer, and only the exception's class reaches the log() FAILED
+  McpHandlerTest > a tool the phone does not offer is an error answer that names it() FAILED
+  McpHandlerTest > a call whose name or arguments have the wrong shape is invalid params() FAILED
+  McpHandlerTest > a call with no arguments runs with none() FAILED
+  McpHandlerTest > tools list offers every plugin's tools with their inputs() FAILED
+  McpHandlerTest > initialize names the phone, offers tools, and keeps the protocol version the hub asked for() FAILED
+  McpHandlerTest > a body that is not JSON is refused with 400 and a parse error with no id() FAILED
+  McpHandlerTest > a call with an id runs once, and its second send is refused as a duplicate() FAILED
+  McpHandlerTest > a batch, or a body that is no JSON-RPC message, is refused with 400() FAILED
+  McpHandlerTest > a call answers the plugin's structured answer, and the same as text() FAILED
+  McpHandlerTest > an id is remembered for ten minutes and then may run again() FAILED
+  McpHandlerTest > initialize answers with its own latest version when it does not know the hub's() FAILED
+  PluginsTest > a tool's own part is lowercase letters, digits and underscores, and not empty() FAILED
+  PluginsTest > a plugin's name follows the protocol's rule() FAILED
+  PluginsTest > two plugins may not share a name() FAILED
+  30 tests completed, 24 failed
+  BUILD FAILED in 8s

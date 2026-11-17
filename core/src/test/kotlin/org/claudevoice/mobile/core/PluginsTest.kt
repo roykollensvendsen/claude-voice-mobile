@@ -39,6 +39,28 @@ class PluginsTest {
     }
 
     @Test
+    fun `a plugin's name follows the protocol's rule`() {
+        for (bad in listOf("Status", "1status", "sta-tus", "", "s".repeat(33))) {
+            assertThrows<IllegalArgumentException>(bad) { Plugins(listOf(plugin(bad, "${bad}_x"))) }
+        }
+        Plugins(listOf(plugin("s".repeat(32), "${"s".repeat(32)}_x"), plugin("earbuds_2", "earbuds_2_mode")))
+    }
+
+    @Test
+    fun `a tool's own part is lowercase letters, digits and underscores, and not empty`() {
+        for (bad in listOf("status_", "status_Ring", "status_ring-now", "status_ring now")) {
+            assertThrows<IllegalArgumentException>(bad) { Plugins(listOf(plugin("status", bad))) }
+        }
+    }
+
+    @Test
+    fun `two plugins may not share a name`() {
+        assertThrows<IllegalArgumentException> {
+            Plugins(listOf(plugin("status", "status_ring"), plugin("status", "status_battery")))
+        }
+    }
+
+    @Test
     fun `no tool may take a setting only the phone changes as an input`() {
         for (setting in listOf("microphone", "location_log", "direct_calls", "camera")) {
             val input = buildJsonObject {
