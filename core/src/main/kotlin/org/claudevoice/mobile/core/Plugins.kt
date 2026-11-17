@@ -54,8 +54,7 @@ class Plugins(private val plugins: List<Plugin>) {
     /** What it uses is named as the protocol names things, once each; it confirms only with its own tools. */
     private fun checkReach(plugin: Plugin) {
         val uses = plugin.uses
-        val badUses = uses.filterNot { USE.matches(it) }
-        require(badUses.isEmpty() && uses.toSet().size == uses.size) { "${plugin.name} uses $uses" }
+        require(usesKnown(uses)) { "${plugin.name} uses $uses" }
         val own = plugin.tools.map { it.name }
         val confirms = plugin.confirms
         require(own.containsAll(confirms) && confirms.toSet().size == confirms.size) {
@@ -63,13 +62,21 @@ class Plugins(private val plugins: List<Plugin>) {
         }
     }
 
-    private companion object {
+    internal companion object {
         /** As agent-protocol names a plugin: lowercase letters, digits and underscores, from a letter, at most 32. */
         val PLUGIN_NAME = Regex("[a-z][a-z0-9_]{0,31}")
         val TOOL_PART = Regex("[a-z0-9_]+")
 
-        /** As agent-protocol names what a plugin uses: the same rule as a plugin's name. */
-        val USE = PLUGIN_NAME
+        /**
+         * What a plugin may say it uses: the nine names protocol version 1 knows. A later version
+         * may add more, but a plugin built for this one using a name the hub cannot know is a typo.
+         */
+        val USES = setOf(
+            "microphone", "camera", "location", "calls", "contacts", "notifications", "media", "sensors", "usage",
+        )
+
+        /** Every name known, and none twice. */
+        fun usesKnown(uses: List<String>) = USES.containsAll(uses) && uses.toSet().size == uses.size
     }
 }
 
@@ -97,12 +104,19 @@ private fun inputNames(schema: JsonElement): List<String> =
 
 private fun strings(names: List<String>) = JsonArray(names.map { JsonPrimitive(it) })
 
-/** One plugin as `agent_info` reports it, with what it uses read now. */
-private fun entry(plugin: Plugin) = JsonObject(
-    mapOf(
-        "name" to JsonPrimitive(plugin.name),
-        "tools" to strings(plugin.tools.map { it.name }),
-        "confirms" to strings(plugin.confirms),
-        "uses" to strings(plugin.uses),
-    ),
-)
+/**
+ * One plugin as `agent_info` reports it, with what it uses read now and checked again: a plugin
+ * may change it while running. A name the hub cannot know fails the answer loudly, never sent.
+ */
+private fun entry(plugin: Plugin): JsonObject {
+    val uses = plugin.uses
+    check(Plugins.usesKnown(uses)) { "${plugin.name} now uses $uses" }
+    return JsonObject(
+        mapOf(
+            "name" to JsonPrimitive(plugin.name),
+            "tools" to strings(plugin.tools.map { it.name }),
+            "confirms" to strings(plugin.confirms),
+            "uses" to strings(uses),
+        ),
+    )
+}

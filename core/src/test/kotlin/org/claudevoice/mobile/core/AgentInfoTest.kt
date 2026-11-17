@@ -66,4 +66,15 @@ class AgentInfoTest {
         keeper.setLocationLog(true)
         assertEquals("""{"microphone":"after-warning","location_log":true}""", info.report()["privacy"].toString())
     }
+
+    @Test
+    fun `the phone's name follows the protocol's rule for a machine name`() {
+        for (bad in listOf("Phone-a", "1phone", "phone_a", "", "p".repeat(33), "phone a")) {
+            org.junit.jupiter.api.assertThrows<IllegalArgumentException>(bad) {
+                AgentInfo(Plugins(listOf(status)), "0.1.0", bad, keeper.settings, place)
+            }
+        }
+        AgentInfo(Plugins(listOf(status)), "0.1.0", "p".repeat(32), keeper.settings, place)
+        AgentInfo(Plugins(listOf(status)), "0.1.0", "phone-2", keeper.settings, place)
+    }
 }
