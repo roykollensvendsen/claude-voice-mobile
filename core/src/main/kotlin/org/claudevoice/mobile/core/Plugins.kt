@@ -32,10 +32,18 @@ class Plugins(private val plugins: List<Plugin>) {
     }
 
     /** Each plugin's entry in `agent_info`, as protocol version 1's `plugin.json` gives it. */
-    fun entries(): JsonArray = JsonArray(plugins.map { entry(it) })
+    fun entries(): JsonArray = entries(usesNow())
+
+    /** The entries from [uses], read once by [usesNow], so the check and the report agree. */
+    fun entries(uses: List<List<String>>): JsonArray =
+        JsonArray(plugins.zip(uses) { plugin, own -> entry(plugin, own) })
+
+    /** What each plugin says it uses now, in the plugins' order, read once. */
+    fun usesNow(): List<List<String>> = plugins.map { it.uses }
 
     /** The first plugin that now says it uses a name the protocol does not know, or null when none does. */
-    fun unknownUse(): String? = plugins.firstOrNull { !usesKnown(it.uses) }?.name
+    fun unknownUse(uses: List<List<String>>): String? =
+        plugins.zip(uses).firstOrNull { (_, own) -> !usesKnown(own) }?.first?.name
 
     fun offered(): List<String> = tools().map { it.name }
 
@@ -114,8 +122,7 @@ private fun strings(names: List<String>) = JsonArray(names.map { JsonPrimitive(i
  * One plugin as `agent_info` reports it, with what it uses read now and checked again: a plugin
  * may change it while running. A name the hub cannot know fails the answer loudly, never sent.
  */
-private fun entry(plugin: Plugin): JsonObject {
-    val uses = plugin.uses
+private fun entry(plugin: Plugin, uses: List<String>): JsonObject {
     check(Plugins.usesKnown(uses)) { "${plugin.name} now uses $uses" }
     return JsonObject(
         mapOf(

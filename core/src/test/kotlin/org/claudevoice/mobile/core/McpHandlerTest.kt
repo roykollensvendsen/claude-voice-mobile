@@ -411,10 +411,11 @@ class McpHandlerTest {
         val fifth = result(call("status_block", id = "q-5"), quick)
         assertTrue(isError(fifth))
         assertTrue("did not run" in text(fifth), text(fifth))
-        // The four held calls passed their limit too, while running, so they are late.
-        assertEquals(listOf("late", "late", "late", "late", "not_run"), outcomes().sorted())
         unblocked.countDown()
         stuck.forEach { it.join(5_000) }
+        // The four held calls passed their limit too, while running, so they are late. Read only
+        // once their threads have ended: each logs when its own wait ends, in no set order.
+        assertEquals(listOf("late", "late", "late", "late", "not_run"), outcomes().sorted())
         Thread.sleep(300)
         assertEquals(4, blocks.get(), "the fifth never reached the plugin, even once a thread was free")
         assertFalse(isError(result(call("status_block", id = "q-5"), quick)), "its retry runs")
@@ -493,5 +494,30 @@ class McpHandlerTest {
         assertTrue("phone" in text(refused), text(refused))
         assertFalse("micropone" in text(refused), "the plugin's own words are not passed on")
         assertEquals(listOf("answered", "refused"), outcomes())
+    }
+
+    @Test
+    fun `what a plugin uses is read once per agent_info, so a change between reads never breaks the answer`() {
+        val reads = AtomicInteger()
+        val phone = object : Plugin {
+            override val name = "phone"
+
+            // Known at the first read, unknown at any later one.
+            override val uses get() = if (reads.incrementAndGet() == 1) listOf("calls") else listOf("micropone")
+            override val confirms = listOf<String>()
+            override val tools = listOf(Tool("phone_call", "", battery.input))
+
+            override suspend fun call(tool: String, arguments: JsonObject) = ToolResult.Answer(JsonObject(emptyMap()))
+        }
+        val plugins = Plugins(listOf(status, phone))
+        reads.set(0)
+        val info = AgentInfo(plugins, "0.1.0", "phone-a", SettingsKeeper().settings, place)
+        val answer = post(call("agent_info"), McpHandler(info, log = log))
+        assertEquals(200, answer.status)
+        val result = Json.parseToJsonElement(String(answer.body)).jsonObject["result"]!!.jsonObject
+        assertFalse(isError(result))
+        val entry = result["structuredContent"]!!.jsonObject["plugins"]!!.jsonArray[1].jsonObject
+        assertEquals("""["calls"]""", entry["uses"].toString())
+        assertEquals(1, reads.get())
     }
 }
