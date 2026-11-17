@@ -119,7 +119,7 @@ class McpHandler(
         }
         CallOutcome.Late -> refusal("$tool took longer than $limitSeconds seconds. It may still finish on the phone.")
         CallOutcome.NotRun -> {
-            callId?.let { ids.release(it) }
+            ids.release(callId)
             refusal("The phone was too busy to start $tool in $limitSeconds seconds, so it did not run.")
         }
         is CallOutcome.Broke -> {

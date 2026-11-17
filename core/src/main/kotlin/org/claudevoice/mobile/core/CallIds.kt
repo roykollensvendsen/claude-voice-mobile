@@ -35,9 +35,9 @@ class CallIds(
         }
     }
 
-    /** Frees [id] again, for a call that was claimed but never ran, so its retry may run. */
+    /** Frees [id] again, for a call that was claimed but never ran, so its retry may run. No id, nothing to free. */
     @Synchronized
-    fun release(id: String) {
+    fun release(id: String?) {
         ran.remove(id)
     }
 
