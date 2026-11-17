@@ -26,8 +26,7 @@ class NoBackupTest {
         .parse(file)
 
     private val application: Element by lazy {
-        val path = System.getProperty("mergedManifest")
-        assertNotNull("the build passes the merged manifest's path", path)
+        val path = checkNotNull(System.getProperty("mergedManifest")) { "the build passes the merged manifest's path" }
         xml(File(path)).getElementsByTagName("application").item(0) as Element
     }
 
@@ -41,7 +40,8 @@ class NoBackupTest {
     fun cloud_backup_and_transfer_to_a_new_phone_exclude_every_place_the_app_keeps_data() {
         val rules = application.getAttributeNS(android, "dataExtractionRules")
         assertEquals("@xml/data_extraction_rules", rules)
-        val file = File(System.getProperty("resources"), "xml/data_extraction_rules.xml")
+        val resources = checkNotNull(System.getProperty("resources")) { "the build passes the res folder" }
+        val file = File(resources, "xml/data_extraction_rules.xml")
         val root = xml(file).documentElement
         for (section in listOf("cloud-backup", "device-transfer")) {
             val found = root.getElementsByTagName(section).item(0) as Element?
