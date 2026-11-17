@@ -27,6 +27,10 @@ class AgentInfo(
     private val settings: PhoneSettings,
     private val place: AgentPlace,
 ) {
+    init {
+        require(MACHINE.matches(machine)) { "the machine name '$machine' breaks the protocol's rule" }
+    }
+
     /** The paired hub's name now, or null before pairing. */
     fun hub(): String? = place.hub()
 
@@ -49,5 +53,8 @@ class AgentInfo(
 
         /** The tool's own name; no plugin may take it. */
         const val TOOL = "agent_info"
+
+        /** As agent-protocol names a machine: lowercase letters, digits and hyphens, from a letter, at most 32. */
+        private val MACHINE = Regex("[a-z][a-z0-9-]{0,31}")
     }
 }
