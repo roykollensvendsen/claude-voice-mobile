@@ -14,6 +14,7 @@ import org.claudevoice.mobile.core.McpJson.obj
 import org.claudevoice.mobile.core.McpJson.refusal
 import org.claudevoice.mobile.core.McpJson.refused
 import org.claudevoice.mobile.core.McpJson.replied
+import org.claudevoice.mobile.pluginapi.Tool
 import org.claudevoice.mobile.pluginapi.ToolResult
 
 /**
@@ -33,8 +34,7 @@ import org.claudevoice.mobile.pluginapi.ToolResult
  * the class of an exception a plugin threw, never its message.
  */
 class McpHandler(
-    private val plugins: Plugins,
-    private val softwareVersion: String,
+    private val info: AgentInfo,
     clock: (() -> Long)? = null,
     callLimit: Duration = CALL_LIMIT,
     keptIds: Int = CallIds.CAPACITY,
@@ -73,13 +73,13 @@ class McpHandler(
         return obj(
             "protocolVersion" to JsonPrimitive(asked?.takeIf { it in KNOWN } ?: LATEST),
             "capabilities" to obj("tools" to obj()),
-            "serverInfo" to obj("name" to JsonPrimitive(SERVER_NAME), "version" to JsonPrimitive(softwareVersion)),
+            "serverInfo" to obj("name" to JsonPrimitive(SERVER_NAME), "version" to JsonPrimitive(info.version)),
         )
     }
 
     private fun listed(): JsonObject = obj(
         "tools" to JsonArray(
-            plugins.tools().map {
+            (listOf(ABOUT) + info.plugins.tools()).map {
                 obj(
                     "name" to JsonPrimitive(it.name),
                     "description" to JsonPrimitive(it.description),
@@ -92,11 +92,21 @@ class McpHandler(
     private fun called(params: JsonObject?): McpReply {
         val name = (params?.get("name") as? JsonPrimitive)?.takeIf { it.isString }?.content
         val arguments = params?.get("arguments") ?: obj()
-        val plugin = name?.let { plugins.owner(it) }
+        return if (name == null || arguments !is JsonObject) {
+            McpReply.Error(INVALID_PARAMS, NEEDS_NAME)
+        } else {
+            McpReply.Result(chosen(name, arguments, params))
+        }
+    }
+
+    /** The tool asked for: `agent_info`, a plugin's, or none. */
+    private fun chosen(name: String, arguments: JsonObject, params: JsonObject): JsonObject {
+        val plugin = info.plugins.owner(name)
         return when {
-            name == null || arguments !is JsonObject -> McpReply.Error(INVALID_PARAMS, NEEDS_NAME)
-            plugin == null -> McpReply.Result(refusal("The phone offers no tool $name."))
-            else -> McpReply.Result(ran(plugin, name, arguments, callIdIn(params)))
+            // Reads only, so it is answered at once, with no call id kept.
+            name == AgentInfo.TOOL -> answered(info.report())
+            plugin == null -> refusal("The phone offers no tool $name.")
+            else -> ran(plugin, name, arguments, callIdIn(params))
         }
     }
 
@@ -132,6 +142,12 @@ class McpHandler(
         const val LATEST = "2025-06-18"
         private val KNOWN = setOf("2025-03-26", LATEST)
         const val SERVER_NAME = "claude-voice-mobile"
+        private val ABOUT = Tool(
+            AgentInfo.TOOL,
+            "What this phone is: its name, address and hub, the tools and plugins it offers, what each uses, " +
+                "and its privacy settings.",
+            JsonObject(mapOf("type" to JsonPrimitive("object"))),
+        )
         const val DUPLICATE_CALL = "duplicate_call"
         const val CALL_ID = "claude-voice/call_id"
         val CALL_LIMIT: Duration = Duration.ofSeconds(20)

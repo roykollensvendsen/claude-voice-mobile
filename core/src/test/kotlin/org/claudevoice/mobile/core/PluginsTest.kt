@@ -5,6 +5,7 @@ import org.claudevoice.mobile.pluginapi.Tool
 import org.claudevoice.mobile.pluginapi.ToolResult
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -12,9 +13,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class PluginsTest {
-    private fun plugin(name: String, vararg tools: String) =
+    private fun plugin(name: String, vararg tools: String) = plugin(name, tools.toList())
+
+    private fun plugin(name: String, tools: List<String>, uses: List<String> = listOf(), confirms: List<String> = listOf()) =
         object : Plugin {
             override val name = name
+            override val uses = uses
+            override val confirms = confirms
             override val tools = tools.map { Tool(it, "", JsonObject(mapOf())) }
 
             override suspend fun call(tool: String, arguments: JsonObject) = ToolResult.Answer(JsonObject(mapOf()))
@@ -70,6 +75,8 @@ class PluginsTest {
             val sneaky =
                 object : Plugin {
                     override val name = "status"
+                    override val uses = listOf<String>()
+                    override val confirms = listOf<String>()
                     override val tools = listOf(Tool("status_set", "", input))
 
                     override suspend fun call(tool: String, arguments: JsonObject) = ToolResult.Answer(JsonObject(mapOf()))
@@ -92,11 +99,71 @@ class PluginsTest {
             val sneaky =
                 object : Plugin {
                     override val name = "status"
+                    override val uses = listOf<String>()
+                    override val confirms = listOf<String>()
                     override val tools = listOf(Tool("status_set", "", input))
 
                     override suspend fun call(tool: String, arguments: JsonObject) = ToolResult.Answer(JsonObject(mapOf()))
                 }
             assertThrows<IllegalArgumentException>(input.toString()) { Plugins(listOf(sneaky)) }
         }
+    }
+
+    @Test
+    fun `no plugin may offer agent_info, which the core answers for the whole phone`() {
+        // A plugin named "agent" with a tool "info" would otherwise take the name.
+        assertThrows<IllegalArgumentException> { Plugins(listOf(plugin("agent", "agent_info"))) }
+    }
+
+    @Test
+    fun `a confirming tool must be one of the plugin's own tools`() {
+        assertThrows<IllegalArgumentException> {
+            Plugins(listOf(plugin("phone", listOf("phone_call"), confirms = listOf("phone_confirm"))))
+        }
+        assertThrows<IllegalArgumentException> {
+            Plugins(listOf(plugin("phone", listOf("phone_call"), confirms = listOf("phone_call", "phone_call"))))
+        }
+        Plugins(listOf(plugin("phone", listOf("phone_call", "phone_confirm"), confirms = listOf("phone_confirm"))))
+    }
+
+    @Test
+    fun `what a plugin uses follows the protocol's rule for a name, once each`() {
+        for (bad in listOf(listOf("Microphone"), listOf("lo-cation"), listOf(""), listOf("calls", "calls"))) {
+            assertThrows<IllegalArgumentException>(bad.toString()) {
+                Plugins(listOf(plugin("phone", listOf("phone_call"), uses = bad)))
+            }
+        }
+        Plugins(listOf(plugin("phone", listOf("phone_call"), uses = listOf("calls", "contacts", "a_later_thing"))))
+    }
+
+    @Test
+    fun `each plugin's entry for agent_info names its tools, what confirms a yes, and what it uses`() {
+        val plugins = Plugins(
+            listOf(
+                plugin("status", "status_battery", "status_ring"),
+                plugin("phone", listOf("phone_call", "phone_confirm"), listOf("calls", "contacts"), listOf("phone_confirm")),
+            ),
+        )
+        assertEquals(
+            """[{"name":"status","tools":["status_battery","status_ring"],"confirms":[],"uses":[]},""" +
+                """{"name":"phone","tools":["phone_call","phone_confirm"],"confirms":["phone_confirm"],"uses":["calls","contacts"]}]""",
+            plugins.entries().toString(),
+        )
+    }
+
+    @Test
+    fun `an entry reads what a plugin uses at the time it is asked`() {
+        val reach = mutableListOf<String>()
+        val phone = object : Plugin {
+            override val name = "phone"
+            override val uses get() = reach.toList()
+            override val confirms = listOf<String>()
+            override val tools = listOf(Tool("phone_call", "", JsonObject(mapOf())))
+
+            override suspend fun call(tool: String, arguments: JsonObject) = ToolResult.Answer(JsonObject(mapOf()))
+        }
+        val plugins = Plugins(listOf(phone))
+        reach.add("calls")
+        assertEquals("""["calls"]""", plugins.entries().single().jsonObject["uses"].toString())
     }
 }
