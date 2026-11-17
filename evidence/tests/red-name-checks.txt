@@ -1,0 +1,6 @@
+# PluginsTest and AgentInfoTest with the name-check tests, before the change:
+AgentInfoTest > the phone's name follows the protocol's rule for a machine name() FAILED
+PluginsTest > a name a plugin starts to use while running is checked again when the hub asks() FAILED
+PluginsTest > what a plugin uses is one of the nine names protocol version 1 knows, once each() FAILED
+19 tests completed, 3 failed
+BUILD FAILED in 6s

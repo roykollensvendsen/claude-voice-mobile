@@ -127,13 +127,31 @@ class PluginsTest {
     }
 
     @Test
-    fun `what a plugin uses follows the protocol's rule for a name, once each`() {
-        for (bad in listOf(listOf("Microphone"), listOf("lo-cation"), listOf(""), listOf("calls", "calls"))) {
+    fun `what a plugin uses is one of the nine names protocol version 1 knows, once each`() {
+        val bads = listOf(listOf("Microphone"), listOf("micropone"), listOf("a_later_thing"), listOf(""), listOf("calls", "calls"))
+        for (bad in bads) {
             assertThrows<IllegalArgumentException>(bad.toString()) {
                 Plugins(listOf(plugin("phone", listOf("phone_call"), uses = bad)))
             }
         }
-        Plugins(listOf(plugin("phone", listOf("phone_call"), uses = listOf("calls", "contacts", "a_later_thing"))))
+        val nine = listOf("microphone", "camera", "location", "calls", "contacts", "notifications", "media", "sensors", "usage")
+        Plugins(listOf(plugin("phone", listOf("phone_call"), uses = nine)))
+    }
+
+    @Test
+    fun `a name a plugin starts to use while running is checked again when the hub asks`() {
+        val reach = mutableListOf<String>()
+        val phone = object : Plugin {
+            override val name = "phone"
+            override val uses get() = reach.toList()
+            override val confirms = listOf<String>()
+            override val tools = listOf(Tool("phone_call", "", JsonObject(mapOf())))
+
+            override suspend fun call(tool: String, arguments: JsonObject) = ToolResult.Answer(JsonObject(mapOf()))
+        }
+        val plugins = Plugins(listOf(phone))
+        reach.add("micropone")
+        assertThrows<IllegalStateException> { plugins.entries() }
     }
 
     @Test
