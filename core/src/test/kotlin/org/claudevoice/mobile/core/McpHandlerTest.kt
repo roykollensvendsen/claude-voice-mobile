@@ -47,18 +47,28 @@ class McpHandlerTest {
 
     private val runs = AtomicInteger()
     private val released = CountDownLatch(1)
+    private val blocking = CountDownLatch(4)
+    private val unblocked = CountDownLatch(1)
+    private val blocks = AtomicInteger()
     private val failures = mutableListOf<String>()
     private var now = 0L
 
     private val status = object : Plugin {
         override val name = "status"
-        override val tools = listOf("hang", "break", "later", "later_break", "slow").map { Tool("status_$it", "", battery.input) }
+        override val tools = listOf("hang", "break", "later", "later_break", "slow", "block").map { Tool("status_$it", "", battery.input) }
             .let { listOf(battery, ring) + it }
 
         override suspend fun call(tool: String, arguments: JsonObject): ToolResult {
             runs.incrementAndGet()
             return when (tool) {
                 "status_battery" -> ToolResult.Answer(buildJsonObject { put("percent", 81) })
+                "status_block" -> {
+                    // Holds its thread, as a plugin that blocks instead of suspending would.
+                    blocks.incrementAndGet()
+                    blocking.countDown()
+                    unblocked.await(5, TimeUnit.SECONDS)
+                    ToolResult.Answer(JsonObject(emptyMap()))
+                }
                 "status_hang" -> {
                     released.await(5, TimeUnit.SECONDS)
                     ToolResult.Answer(buildJsonObject { put("late", true) })
@@ -166,7 +176,7 @@ class McpHandlerTest {
     fun `tools list offers every plugin's tools with their inputs`() {
         val tools = result(rpc("tools/list"))["tools"]!!.jsonArray.map { it.jsonObject }
         assertEquals(
-            listOf("status_battery", "status_ring", "status_hang", "status_break", "status_later", "status_later_break", "status_slow"),
+            listOf("status_battery", "status_ring", "status_hang", "status_break", "status_later", "status_later_break", "status_slow", "status_block"),
             tools.map { it["name"]!!.jsonPrimitive.content },
         )
         assertEquals(ring.input, tools[1]["inputSchema"])
@@ -233,6 +243,7 @@ class McpHandlerTest {
         assertEquals(McpHandler.INVALID_REQUEST, refusedWith("""{"jsonrpc":"1.0","id":1,"method":"ping"}"""))
         assertEquals(McpHandler.INVALID_REQUEST, refusedWith("""{"jsonrpc":"2.0","id":1}"""))
         assertEquals(McpHandler.INVALID_REQUEST, refusedWith("""{"jsonrpc":"2.0","id":{},"method":"ping"}"""))
+        assertEquals(McpHandler.INVALID_REQUEST, refusedWith("""{"jsonrpc":"2.0","id":true,"method":"ping"}"""))
     }
 
     @Test
@@ -291,7 +302,10 @@ class McpHandlerTest {
 
     @Test
     fun `a call past the limit answers that it may still finish, and keeps its id`() {
-        val quick = handler(limit = Duration.ofMillis(100))
+        // A first call loads the classes and starts a thread, so the hang starts at once and the
+        // limit catches it running, not still waiting for a thread.
+        result(call("status_battery"))
+        val quick = handler(limit = Duration.ofMillis(1_000))
         val late = result(call("status_hang", id = "h-1"), quick)
         assertTrue(isError(late))
         assertTrue("may still" in text(late), text(late))
@@ -344,7 +358,7 @@ class McpHandlerTest {
     }
 
     @Test
-    fun `an interrupted wait answers that the call may still finish, and keeps the interrupt`() {
+    fun `an interrupted wait is answered as late or not run, and keeps the interrupt`() {
         Thread.currentThread().interrupt()
         val late = try {
             result(call("status_hang"))
@@ -352,7 +366,8 @@ class McpHandlerTest {
             assertTrue(Thread.interrupted(), "the flag is kept, and cleared here")
             released.countDown()
         }
-        assertTrue("may still" in text(late), text(late))
+        // Interrupted before any thread took the call, it is cancelled; after, it may still finish.
+        assertTrue("may still" in text(late) || "did not run" in text(late), text(late))
     }
 
     @Test
@@ -365,5 +380,21 @@ class McpHandlerTest {
             result(call("status_battery", id = "d"), plain)
             assertTrue(isError(result(call("status_battery", id = "d"), plain)))
         }
+    }
+
+    @Test
+    fun `a call waiting behind four stuck ones is dropped unrun when its time is up, and its id stays free`() {
+        val quick = handler(limit = Duration.ofMillis(100))
+        val stuck = (1..4).map { thread { result(call("status_block"), quick) } }
+        assertTrue(blocking.await(5, TimeUnit.SECONDS), "all four threads are held")
+        val fifth = result(call("status_block", id = "q-5"), quick)
+        assertTrue(isError(fifth))
+        assertTrue("did not run" in text(fifth), text(fifth))
+        unblocked.countDown()
+        stuck.forEach { it.join(5_000) }
+        Thread.sleep(300)
+        assertEquals(4, blocks.get(), "the fifth never reached the plugin, even once a thread was free")
+        assertFalse(isError(result(call("status_block", id = "q-5"), quick)), "its retry runs")
+        assertEquals(5, blocks.get())
     }
 }
