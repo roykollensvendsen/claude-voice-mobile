@@ -472,4 +472,26 @@ class McpHandlerTest {
             }
         }
     }
+
+    @Test
+    fun `a plugin that starts to report an unknown use makes agent_info refuse, naming it, and the refusal is logged`() {
+        val reach = mutableListOf<String>()
+        val phone = object : Plugin {
+            override val name = "phone"
+            override val uses get() = reach.toList()
+            override val confirms = listOf<String>()
+            override val tools = listOf(Tool("phone_call", "", battery.input))
+
+            override suspend fun call(tool: String, arguments: JsonObject) = ToolResult.Answer(JsonObject(emptyMap()))
+        }
+        val info = AgentInfo(Plugins(listOf(status, phone)), "0.1.0", "phone-a", SettingsKeeper().settings, place)
+        val withPhone = McpHandler(info, log = log)
+        assertFalse(isError(result(call("agent_info"), withPhone)))
+        reach.add("micropone")
+        val refused = result(call("agent_info"), withPhone)
+        assertTrue(isError(refused))
+        assertTrue("phone" in text(refused), text(refused))
+        assertFalse("micropone" in text(refused), "the plugin's own words are not passed on")
+        assertEquals(listOf("answered", "refused"), outcomes())
+    }
 }

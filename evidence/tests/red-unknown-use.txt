@@ -1,0 +1,4 @@
+# McpHandlerTest with the unknown-use test, before the change:
+McpHandlerTest > a plugin that starts to report an unknown use makes agent_info refuse, naming it, and the refusal is logged() FAILED
+34 tests completed, 1 failed
+BUILD FAILED in 9s

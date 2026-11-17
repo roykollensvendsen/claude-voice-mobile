@@ -34,6 +34,9 @@ class Plugins(private val plugins: List<Plugin>) {
     /** Each plugin's entry in `agent_info`, as protocol version 1's `plugin.json` gives it. */
     fun entries(): JsonArray = JsonArray(plugins.map { entry(it) })
 
+    /** The first plugin that now says it uses a name the protocol does not know, or null when none does. */
+    fun unknownUse(): String? = plugins.firstOrNull { !usesKnown(it.uses) }?.name
+
     fun offered(): List<String> = tools().map { it.name }
 
     /** Every tool, in the order the plugins and their tools were given. */
