@@ -1,0 +1,26 @@
+# The call-log tests with stubs in place (CallLogTest, FileLogStoreTest, McpHandlerTest), before the code:
+CallLogTest > a caller is cut to 64 characters and loses control characters, and cannot break a line() FAILED
+CallLogTest > a line just 30 days old stays() FAILED
+CallLogTest > a line holds the time in UTC, the tool, the hub, the caller and what came of it, and nothing else() FAILED
+CallLogTest > a line cut short by a crash is dropped, the rest kept() FAILED
+CallLogTest > no caller and no hub, as from a version 0 hub, are written as null() FAILED
+CallLogTest > a tool name the hub sent is cleaned the same way() FAILED
+CallLogTest > the log keeps 30 days and 5 000 lines, as the owner chose() FAILED
+CallLogTest > the seven outcomes have the names the record gives them() FAILED
+CallLogTest > a line older than 30 days goes when a line is written() FAILED
+CallLogTest > at most the newest lines are kept, the oldest go first() FAILED
+CallLogTest > the default clock is the wall clock() FAILED
+CallLogTest > a cut never leaves half of a character that takes two() FAILED
+FileLogStoreTest > lines are appended one by one and read back in order() FAILED
+FileLogStoreTest > a rewrite that cannot rename says so() FAILED
+FileLogStoreTest > a rewrite goes through a new file renamed over the old, and leaves no new file behind() FAILED
+FileLogStoreTest > an empty line, as a crash may leave, is not read as a line() FAILED
+McpHandlerTest > a call waiting behind four stuck ones is dropped unrun when its time is up, and its id stays free() FAILED
+McpHandlerTest > a call past the limit answers that it may still finish, and keeps its id() FAILED
+McpHandlerTest > when the kept ids are full of young ones, a new call is refused and none is forgotten() FAILED
+McpHandlerTest > a plugin that throws is an error answer, and only the exception's class reaches the log() FAILED
+McpHandlerTest > every call is logged with its tool, the hub, the caller and what came of it() FAILED
+McpHandlerTest > a call with an id runs once, and its second send is refused as a duplicate() FAILED
+McpHandlerTest > a plugin that suspends and is resumed elsewhere answers as usual, or as broken() FAILED
+233 tests completed, 23 failed
+BUILD FAILED in 15s

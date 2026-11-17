@@ -2,6 +2,7 @@ package org.claudevoice.mobile.core
 
 import java.net.InetAddress
 import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
@@ -16,6 +17,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
@@ -50,7 +52,14 @@ class McpHandlerTest {
     private val blocking = CountDownLatch(4)
     private val unblocked = CountDownLatch(1)
     private val blocks = AtomicInteger()
-    private val failures = mutableListOf<String>()
+    private val store = MemoryStore()
+    private val log = CallLog(store, clock = { Instant.parse("2026-11-17T12:00:00Z") })
+
+    private fun outcomes() = log.entries().map { it["outcome"]!!.jsonPrimitive.content }
+
+    /** The error class of each broken call, as the log keeps it. */
+    private val failures get() = log.entries().filter { it["outcome"]!!.jsonPrimitive.content == "broke" }
+        .map { it["error"]!!.jsonPrimitive.content }
     private var now = 0L
 
     private val status = object : Plugin {
@@ -109,7 +118,7 @@ class McpHandlerTest {
         clock = { now },
         callLimit = limit,
         keptIds = keptIds,
-        failed = { failures.add(it) },
+        log = log,
     )
 
     private val handler = handler()
@@ -122,11 +131,11 @@ class McpHandlerTest {
     private fun rpc(method: String, params: String = "{}", id: String = "1") =
         """{"jsonrpc":"2.0","id":$id,"method":"$method","params":$params}"""
 
-    private fun call(tool: String, id: String? = null, arguments: String = "{}") = rpc(
-        "tools/call",
-        if (id == null) """{"name":"$tool","arguments":$arguments}"""
-        else """{"name":"$tool","arguments":$arguments,"_meta":{"claude-voice/call_id":"$id"}}""",
-    )
+    private fun call(tool: String, id: String? = null, arguments: String = "{}", caller: String? = null): String {
+        val meta = listOfNotNull(id?.let { "\"claude-voice/call_id\":\"$it\"" }, caller?.let { "\"claude-voice/caller\":\"$it\"" })
+        val metaPart = if (meta.isEmpty()) "" else ""","_meta":{${meta.joinToString(",")}}"""
+        return rpc("tools/call", """{"name":"$tool","arguments":$arguments$metaPart}""")
+    }
 
     private fun answered(body: String, to: McpHandler = handler): JsonObject {
         val answer = post(body, to)
@@ -270,6 +279,7 @@ class McpHandlerTest {
         assertEquals("duplicate_call", again["structuredContent"]!!.jsonObject["code"]!!.jsonPrimitive.content)
         assertTrue(again["structuredContent"]!!.jsonObject["error"]!!.jsonPrimitive.content.isNotBlank())
         assertEquals(1, runs.get())
+        assertEquals(listOf("answered", "duplicate"), outcomes())
     }
 
     @Test
@@ -304,6 +314,7 @@ class McpHandlerTest {
         val busy = result(call("status_battery", id = "c"), small)
         assertTrue(isError(busy))
         assertEquals(2, runs.get())
+        assertEquals("busy", outcomes().last())
         assertTrue(isError(result(call("status_battery", id = "a"), small)), "a is still kept")
         now = Duration.ofMinutes(10).toMillis()
         assertFalse(isError(result(call("status_battery", id = "c"), small)), "old ones go first")
@@ -318,6 +329,7 @@ class McpHandlerTest {
         val late = result(call("status_hang", id = "h-1"), quick)
         assertTrue(isError(late))
         assertTrue("may still" in text(late), text(late))
+        assertEquals("late", outcomes().last())
         released.countDown()
         assertTrue(isError(result(call("status_hang", id = "h-1"), quick)), "the retry is refused")
     }
@@ -385,7 +397,7 @@ class McpHandlerTest {
         Thread.sleep(20)
         val second = CallIds.monotonicMillis()
         assertTrue(second - first in 20L..2_000L, "${second - first}")
-        McpHandler(about()).let { plain ->
+        McpHandler(about(), log = CallLog(MemoryStore())).let { plain ->
             result(call("status_battery", id = "d"), plain)
             assertTrue(isError(result(call("status_battery", id = "d"), plain)))
         }
@@ -399,6 +411,8 @@ class McpHandlerTest {
         val fifth = result(call("status_block", id = "q-5"), quick)
         assertTrue(isError(fifth))
         assertTrue("did not run" in text(fifth), text(fifth))
+        // The four held calls passed their limit too, while running, so they are late.
+        assertEquals(listOf("late", "late", "late", "late", "not_run"), outcomes().sorted())
         unblocked.countDown()
         stuck.forEach { it.join(5_000) }
         Thread.sleep(300)
@@ -421,5 +435,41 @@ class McpHandlerTest {
         assertFalse(isError(answer))
         assertEquals(about().report(), answer["structuredContent"])
         assertEquals(0, runs.get())
+    }
+
+    @Test
+    fun `every call is logged with its tool, the hub, the caller and what came of it`() {
+        result(call("status_battery", caller = "voice"))
+        result(call("status_ring", caller = "laptop-a/billing"))
+        result(call("status_none"))
+        result(call("agent_info", caller = "voice"))
+        val lines = log.entries()
+        assertEquals(listOf("answered", "refused", "refused", "answered"), outcomes())
+        assertEquals(
+            listOf("status_battery", "status_ring", "status_none", "agent_info"),
+            lines.map { it["tool"]!!.jsonPrimitive.content },
+        )
+        assertEquals(listOf("voice", "laptop-a/billing", null, "voice"), lines.map { (it["caller"] as? JsonPrimitive)?.contentOrNull })
+        assertEquals("laptop-a", lines.first()["hub"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `a request that is no call is not logged`() {
+        result(rpc("tools/list"))
+        post("not json")
+        errorCode(rpc("tools/call", """{"arguments":{}}"""))
+        assertTrue(store.lines.isEmpty())
+    }
+
+    @Test
+    fun `the log never holds a call's inputs or its answer`() {
+        result(call("status_ring", arguments = """{"seconds":7}"""))
+        result(call("status_battery"))
+        result(call("status_break"))
+        for (line in store.lines) {
+            for (secret in listOf("seconds", "7}", "silent", "percent", "81", "private")) {
+                assertFalse(secret in line, "$secret in $line")
+            }
+        }
     }
 }

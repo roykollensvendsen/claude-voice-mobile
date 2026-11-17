@@ -27,6 +27,9 @@ class AgentInfo(
     private val settings: PhoneSettings,
     private val place: AgentPlace,
 ) {
+    /** The paired hub's name now, or null before pairing. */
+    fun hub(): String? = place.hub()
+
     fun report(): JsonObject = JsonObject(
         mapOf(
             "protocol" to JsonPrimitive(PROTOCOL),
