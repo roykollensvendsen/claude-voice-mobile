@@ -1,0 +1,56 @@
+package org.claudevoice.mobile.core
+
+import java.io.File
+import java.io.IOException
+import java.net.InetAddress
+import java.nio.file.Files
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+
+class FileHubStoreTest {
+    private val dir: File = Files.createTempDirectory("hub").toFile()
+    private val file = File(dir, "hub.json")
+
+    @Test
+    fun `no file yet is no hub`() {
+        assertNull(FileHubStore(file).read())
+    }
+
+    @Test
+    fun `what is written is read back after a restart, and no new file is left behind`() {
+        FileHubStore(file).write("""{"name":"hub-a"}""")
+        assertEquals("""{"name":"hub-a"}""", FileHubStore(file).read())
+        assertEquals(listOf("hub.json"), dir.list()!!.toList())
+    }
+
+    @Test
+    fun `a new pairing replaces the old one whole`() {
+        val store = FileHubStore(file)
+        store.write("""{"name":"hub-a","address":"100.64.0.1"}""")
+        store.write("""{"name":"hub-b"}""")
+        assertEquals("""{"name":"hub-b"}""", store.read())
+    }
+
+    @Test
+    fun `a write that cannot be put in place says so, and the hub before is kept`() {
+        val store = FileHubStore(file)
+        store.write("""{"name":"hub-a"}""")
+        File(dir, "hub.json.new").apply { mkdir(); File(this, "x").writeText("") }
+        assertThrows<IOException> { store.write("""{"name":"hub-b"}""") }
+        assertEquals("""{"name":"hub-a"}""", store.read())
+    }
+
+    @Test
+    fun `the gate built on it still knows its hub after a restart`() {
+        val phone = InetAddress.getByName("100.64.0.2")
+        val first = KeptGate(FileHubStore(file), own = phone, port = 8812, machine = "phone-a")
+        val hub = InetAddress.getByName("100.64.0.1")
+        check(first.paired(PairResult.Paired(keyHash = ByteArray(32) { 1 }, hubName = "hub-a", hubAddress = hub, key = "k")))
+        val again = KeptGate(FileHubStore(file), own = phone, port = 8812, machine = "phone-a")
+        assertEquals("hub-a", again.hubName)
+        assertEquals(hub, again.hubAddress)
+        assertNull(again.problem)
+    }
+}

@@ -5,6 +5,7 @@ import java.io.File
 import java.io.IOException
 import kotlin.concurrent.thread
 import org.claudevoice.mobile.core.CallLog
+import org.claudevoice.mobile.core.FileHubStore
 import org.claudevoice.mobile.core.FileLogStore
 import org.claudevoice.mobile.core.Plugins
 import org.claudevoice.mobile.plugins.status.StatusPlugin
@@ -15,6 +16,9 @@ class App : Application() {
 
     /** The log of every call, in the app's private files, kept out of backups (ADR-CVM-003). */
     val calls by lazy { CallLog(FileLogStore(File(filesDir, CALLS_FILE))) }
+
+    /** The paired hub, in the folder Android never backs up, so a new phone pairs again (ADR-CVM-003). */
+    val hub by lazy { FileHubStore(File(noBackupFilesDir, HUB_FILE)) }
 
     override fun onCreate() {
         super.onCreate()
@@ -30,5 +34,6 @@ class App : Application() {
 
     private companion object {
         const val CALLS_FILE = "calls.jsonl"
+        const val HUB_FILE = "hub.json"
     }
 }

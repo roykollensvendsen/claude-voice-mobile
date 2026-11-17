@@ -3,8 +3,6 @@ package org.claudevoice.mobile.core
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.nio.file.Files
-import java.nio.file.StandardOpenOption
 import java.time.Duration
 import java.time.Instant
 import java.time.format.DateTimeParseException
@@ -42,19 +40,9 @@ class FileLogStore(private val file: File) : LogStore {
     override fun lines(): List<String> =
         if (file.exists()) file.readLines(Charsets.UTF_8).filter { it.isNotEmpty() } else emptyList()
 
-    override fun replace(lines: List<String>) {
-        val next = File(file.parentFile, "${file.name}.new")
-        // Written through to the disk before the rename, so a power cut cannot leave an empty log.
-        Files.write(
-            next.toPath(),
-            lines.joinToString("") { "$it\n" }.toByteArray(Charsets.UTF_8),
-            StandardOpenOption.CREATE,
-            StandardOpenOption.TRUNCATE_EXISTING,
-            StandardOpenOption.WRITE,
-            StandardOpenOption.SYNC,
-        )
-        if (!next.renameTo(file)) throw IOException("could not put ${next.name} in place of ${file.name}")
-    }
+    // Written through to the disk before the rename, so a power cut cannot leave an empty log.
+    override fun replace(lines: List<String>) =
+        replaceWhole(file, lines.joinToString("") { "$it\n" }.toByteArray(Charsets.UTF_8))
 }
 
 /**
