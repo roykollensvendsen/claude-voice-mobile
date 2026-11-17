@@ -2,7 +2,6 @@ package org.claudevoice.mobile.core
 
 import java.io.File
 import java.io.IOException
-import java.nio.file.Files
 import java.time.Duration
 import java.time.Instant
 import kotlinx.serialization.json.Json
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 
 /** A store in memory that counts how often the whole log is rewritten. */
 class MemoryStore : LogStore {
@@ -211,9 +211,12 @@ class CallLogTest {
 }
 
 class FileLogStoreTest {
-    private val dir: File = Files.createTempDirectory("calls").toFile()
-    private val file = File(dir, "calls.jsonl")
-    private val store = FileLogStore(file)
+    /** A folder of its own for each test, which JUnit deletes afterwards. */
+    @TempDir
+    lateinit var dir: File
+
+    private val file get() = File(dir, "calls.jsonl")
+    private val store get() = FileLogStore(file)
 
     @Test
     fun `no file yet is an empty log`() {

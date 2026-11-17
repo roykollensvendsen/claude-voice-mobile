@@ -1,0 +1,4 @@
+# Folders left in the temp folder by one run of FileHubStoreTest and FileLogStoreTest, before the change:
+before: 1239
+after: 1249
+left by the run: 10
