@@ -78,3 +78,29 @@ class AgentInfoTest {
         AgentInfo(Plugins(listOf(status)), "0.1.0", "phone-2", keeper.settings, place)
     }
 }
+
+class SuggestedMachineTest {
+    @org.junit.jupiter.api.Test
+    fun `a phone model becomes a name the protocol takes`() {
+        val cases = mapOf(
+            "Pixel 8 Pro" to "pixel-8-pro",
+            "SM-S921B" to "sm-s921b",
+            "  Galaxy  S24 (Ultra) " to "galaxy-s24-ultra",
+            "9T" to "t",
+            "ZTE Blade" to "zte-blade",
+            "Ünïcode 5" to "n-code-5",
+            "a".repeat(40) to "a".repeat(32),
+            "abc-" + "d".repeat(27) + "-x" to "abc-" + "d".repeat(27),
+        )
+        for ((model, name) in cases) {
+            org.junit.jupiter.api.Assertions.assertEquals(name, suggestedMachine(model), model)
+        }
+    }
+
+    @org.junit.jupiter.api.Test
+    fun `a model with nothing usable is just phone`() {
+        for (model in listOf("", "   ", "123", "---", "中文")) {
+            org.junit.jupiter.api.Assertions.assertEquals("phone", suggestedMachine(model), model)
+        }
+    }
+}

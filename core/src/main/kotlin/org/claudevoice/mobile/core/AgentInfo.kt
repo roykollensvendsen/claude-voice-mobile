@@ -23,7 +23,7 @@ interface AgentPlace {
 class AgentInfo(
     val plugins: Plugins,
     val version: String,
-    private val machine: String,
+    val machine: String,
     private val settings: PhoneSettings,
     private val place: AgentPlace,
 ) {
@@ -61,3 +61,20 @@ class AgentInfo(
         private val MACHINE = Regex("[a-z][a-z0-9-]{0,31}")
     }
 }
+
+/**
+ * A machine name made from the phone's [model], for the owner to confirm before the first
+ * pairing: lower case, a dash for anything else, starting with a letter, at most 32 characters.
+ * "phone" when nothing usable is left. Two phones of one model get the same suggestion, which
+ * is why the owner confirms it.
+ */
+fun suggestedMachine(model: String): String {
+    val dashed = model.lowercase().replace(Regex("[^a-z0-9]+"), "-")
+    val name = dashed.replace(LEADING, "").take(MACHINE_LENGTH).trimEnd('-')
+    return name.ifEmpty { "phone" }
+}
+
+private const val MACHINE_LENGTH = 32
+
+/** Whatever comes before the first letter. */
+private val LEADING = Regex("^[^a-z]+")

@@ -1,0 +1,4 @@
+# SuggestedMachineTest before suggestedMachine exists:
+BUILD FAILED in 2s
+e: core/AgentInfoTest.kt:102:68 Unresolved reference 'suggestedMachine'.
+e: core/AgentInfoTest.kt:95:65 Unresolved reference 'suggestedMachine'.
