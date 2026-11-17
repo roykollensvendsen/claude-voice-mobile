@@ -1,0 +1,6 @@
+# HubNameTest before hubName exists:
+BUILD FAILED in 2s
+e: core/HubNameTest.kt:11:34 Unresolved reference 'hubName'.
+e: core/HubNameTest.kt:12:34 Unresolved reference 'hubName'.
+e: core/HubNameTest.kt:13:34 Unresolved reference 'hubName'.
+e: core/HubNameTest.kt:19:24 Unresolved reference 'hubName'.

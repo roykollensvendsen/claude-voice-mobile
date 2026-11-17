@@ -99,3 +99,11 @@ class HubCheckBackoff {
         val LONGEST: Duration = Duration.ofMinutes(15)
     }
 }
+
+/**
+ * The hub's name from a reverse lookup of its tailnet [address]: the first label of the MagicDNS
+ * name, as the laptop's own agent gives it (`laptop-a.tail1234.ts.net` → `laptop-a`). Null when
+ * the lookup gave the address back, as it does without MagicDNS, or gave nothing.
+ */
+fun hubName(lookedUp: String, address: String): String? =
+    lookedUp.takeIf { it != address }?.substringBefore('.')?.ifEmpty { null }
