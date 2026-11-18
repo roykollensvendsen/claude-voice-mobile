@@ -39,7 +39,10 @@ class MainActivity : Activity() {
         val device = spinner(MuteService.DEVICES.map { it.first }) {}
         root.addView(label("Measurement"))
         root.addView(measure)
-        root.addView(button("Start the test service") { send(Intent(this, MuteService::class.java)) })
+        root.addView(row(
+            button("Start the test service") { send(Intent(this, MuteService::class.java)) },
+            button("Stop it") { stopService(Intent(this, MuteService::class.java)) },
+        ))
         root.addView(button("Mute / unmute (phone)") { send(action(MuteService.TOGGLE).putExtra(MuteService.SOURCE, "phone")) })
         root.addView(label("Stand-in: the Claude app's source and device"))
         root.addView(source)
@@ -56,10 +59,21 @@ class MainActivity : Activity() {
                     .putExtra(MuteService.DEVICE, MuteService.DEVICES[device.selectedItemPosition].second),
             )
         })
-        root.addView(button("Earbud media session on / off") {
-            sessionOn = !sessionOn
-            send(action(MuteService.SESSION).putExtra(MuteService.ON, sessionOn))
-        })
+        root.addView(row(
+            button("Earbud session on / off") {
+                sessionOn = !sessionOn
+                send(action(MuteService.SESSION).putExtra(MuteService.ON, sessionOn).putExtra(MuteService.SILENT_TRACK, true))
+            },
+            button("…without silent track") {
+                sessionOn = !sessionOn
+                send(action(MuteService.SESSION).putExtra(MuteService.ON, sessionOn).putExtra(MuteService.SILENT_TRACK, false))
+            },
+        ))
+        root.addView(label("Mute (B): flip the switch in Quick Settings, then mark it here"))
+        root.addView(row(
+            button("B on") { send(action(MuteService.SWITCH_B).putExtra(MuteService.ON, true)) },
+            button("B off") { send(action(MuteService.SWITCH_B).putExtra(MuteService.ON, false)) },
+        ))
         root.addView(button("M1c: start a word schedule at the next minute") { send(action(MuteService.SCHEDULE)) })
         root.addView(label("M6: a random tone, then say which you heard"))
         root.addView(row(

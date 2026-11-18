@@ -7,7 +7,11 @@ recorded here, with the date and the phone. The logs, numbers, recordings and
 transcripts stay outside the repository, as the record says.
 
 Mute (A) is `setMicrophoneMute` from the test app. Mute (B) is the owner's own
-switch for microphone access.
+switch for microphone access, marked by hand in the test app.
+
+An M1c "missed" word may be the speech engine splitting or respelling a
+made-up word, not the mute. Such a run is read by hand from the judge's list
+of other words before its result is written here.
 
 | Measurement | Path | Mute | Date | Phone | Result |
 |---|---|---|---|---|---|

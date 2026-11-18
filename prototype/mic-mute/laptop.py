@@ -10,6 +10,7 @@ outside the repository: results never go into git.
 """
 
 import argparse
+import datetime as dt
 import math
 import pathlib
 import random
@@ -27,6 +28,7 @@ VOWELS = "aeiou"
 SLOTS = 12
 SLOT_S = 10.0
 RATE = 48_000
+WORD_S = 1.5  # how long a word takes to say, judged at its start and its end
 
 
 def made_up_words(count: int, seed: int) -> list[str]:
@@ -60,12 +62,61 @@ def read_schedule(log: str) -> tuple[str, str]:
     return pattern, starts
 
 
-def judge(pattern: str, words: list[str], transcript: str) -> dict[str, object]:
-    """M1c: no muted word in the transcript, and every unmuted one, so the test could have failed."""
+def phone_events(log: str) -> list[tuple[float, str]]:
+    """Each mute and unmute in the phone's log, by either way, as (seconds since the epoch, event)."""
+    found = re.findall(r"^(\S+Z) \S+ \S+ (mute|unmute|mute-restored|b-on|b-off)\b", log, re.MULTILINE)
+    return [(dt.datetime.fromisoformat(at).timestamp(), event) for at, event in found]
+
+
+def muted_at(events: list[tuple[float, str]], at: float) -> bool:
+    """Whether the phone was muted at ``at``: by the app's own mute (A) or the owner's switch (B)."""
+    app = switch = False
+    for when, event in events:
+        if when > at:
+            break
+        if event in {"mute", "unmute", "mute-restored"}:
+            app = event == "mute"
+        else:
+            switch = event == "b-on"
+    return app or switch
+
+
+def check_start(log: str, laptop_start: float) -> None:
+    """Refuse unless the phone's word schedule, if there is one, began at the laptop's minute."""
+    if "m1c-schedule" not in log:
+        return  # a run under the owner's switch has no schedule, only marks
+    _, starts = read_schedule(log)
+    phone = dt.datetime.fromisoformat(starts).timestamp()
+    if phone != laptop_start:
+        laptop = dt.datetime.fromtimestamp(laptop_start, dt.UTC).isoformat()
+        message = f"the phone's schedule began at {starts}, the laptop's words at {laptop}"
+        raise ValueError(message)
+
+
+def judge(
+    words: list[tuple[float, str]], events: list[tuple[float, str]], transcript: str
+) -> dict[str, object]:
+    """M1c from each word's time: no muted word heard, every unmuted one heard.
+
+    A word whose mute state changed while it was said is judged neither way, and makes the run
+    unclear. Every other word in the transcript is listed, so the owner can see a muted word
+    the speech engine spelt differently before a pass is written down.
+    """
     said = set(re.findall(r"[a-z]+", transcript.lower()))
-    leaked = [w for w, mark in zip(words, pattern, strict=False) if mark == "M" and w in said]
-    missed = [w for w, mark in zip(words, pattern, strict=False) if mark != "M" and w not in said]
-    return {"verdict": "fail" if leaked or missed else "pass", "leaked": leaked, "missed": missed}
+    leaked: list[str] = []
+    missed: list[str] = []
+    straddled: list[str] = []
+    for at, word in words:
+        start, end = muted_at(events, at), muted_at(events, at + WORD_S)
+        if start != end:
+            straddled.append(word)
+        elif start and word in said:
+            leaked.append(word)
+        elif not start and word not in said:
+            missed.append(word)
+    verdict = "fail" if leaked or missed else "unclear" if straddled else "pass"
+    others = sorted(said - {word for _, word in words})
+    return {"verdict": verdict, "leaked": leaked, "missed": missed, "straddled": straddled, "others": others}
 
 
 def _say(text: str) -> None:
@@ -103,18 +154,19 @@ def _speak_words(seed: int) -> None:
         log.write(f"start {start:.0f} seed {seed}\n")
         for i, at in enumerate(slot_times(start, SLOTS)):
             time.sleep(max(0.0, at - time.time()))
+            said_at = time.time()  # when the word starts; the judge checks it and WORD_S later
             subprocess.run([_tool("espeak-ng"), words[i]], check=True)  # noqa: S603 - a made-up word
-            log.write(f"{i} {time.time():.3f} {words[i]}\n")
+            log.write(f"{i} {said_at:.3f} {words[i]}\n")
             log.flush()
     _say(f"done; the words and their times are in {out}")
 
 
 def _judge(phone_log: pathlib.Path, words_file: pathlib.Path, transcript: pathlib.Path) -> None:
-    pattern, starts = read_schedule(phone_log.read_text())
+    log = phone_log.read_text()
     lines = words_file.read_text().splitlines()
-    words = [line.split()[2] for line in lines[1:]]
-    _say(f"schedule {pattern} from {starts}; laptop {lines[0]}")
-    _say(str(judge(pattern, words, transcript.read_text())))
+    check_start(log, float(lines[0].split()[1]))
+    words = [(float(line.split()[1]), line.split()[2]) for line in lines[1:]]
+    _say(str(judge(words, phone_events(log), transcript.read_text())))
 
 
 def _tool(name: str) -> str:

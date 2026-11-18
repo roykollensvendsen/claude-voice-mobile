@@ -35,3 +35,20 @@ That first run found two faults, fixed before this commit:
 
 The emulator proves the app runs. It proves nothing about the owner's phone, which is what the
 measurements are for.
+
+After review:
+
+- **The phone is never left muted.** The phone-wide mute outlives the app. The app now
+  remembers whether it set the mute, and lifts it when the service stops or the app is swiped
+  away. It never lifts a mute someone else set. The tests cover the three cases.
+- **The owner's switch can be measured.** An app cannot read it, so the tester marks it on
+  and off by hand. A marked switch counts as muted, as the app's own mute does, with a test.
+- **M1c is judged by each word's time.** The judge reads the mutes from the phone's log by
+  either way, so it works for mute (B) too. A word said across a change is judged neither way.
+  The judge also lists every other word for the owner to read, and refuses a phone start in
+  a different minute from the laptop's. Each has a test, seen red.
+- **The media session can run without its silent track,** and the log says which.
+
+Tried on the emulator after these changes: muted, then "Stop it". The log said `mute-restored
+on=service-stop now=false`, and Android's own audio state went from muted by the app to not
+muted. The switch marks and the session without its silent track logged as they should.
