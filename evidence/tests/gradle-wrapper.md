@@ -12,7 +12,11 @@ Now:
 - `gradlew` and `gradlew.bat` are what Gradle 8.11.1's own wrapper task writes. That task was run
   through the genuine jar, so the look-alike script played no part. The same two files are in
   `prototype/audio-focus/`.
-- They were compared with the copies in Gradle's repository at tag `v8.11.1`. The only
+- They were compared with the copies in Gradle's repository at tag `v8.11.1`:
+  <https://github.com/gradle/gradle/blob/v8.11.1/gradlew>,
+  <https://github.com/gradle/gradle/blob/v8.11.1/gradlew.bat> and
+  <https://github.com/gradle/gradle/blob/v8.11.1/gradle/wrapper/gradle-wrapper.jar>. The jar's
+  checksum there is the one pinned here. The only
   difference is a default Java option that Gradle's own build sets for itself
   (`-Dfile.encoding=UTF-8`), plus the batch file's line endings. The wrapper task's output is
   what Gradle publishes for projects.
