@@ -78,11 +78,14 @@ not logged (ADR-CVM-003).
 **One-time codes never leave the phone.** Before a message enters the queue,
 the module masks it, and it masks too much rather than too little:
 
-- from a short-code or letter-named sender, every run of 4 to 8 digits;
+- from a short-code or letter-named sender, every run of 4 to 8 digits. A
+  short code is a sender of at most 6 digits with no "+". A longer one is
+  often an ordinary number written without its country code;
 - from any sender, a run of digits near a code word, before or after it, on
-  the same line or the next. The code words are matched in any case and
-  inside longer words: "code", "kode", "otp", "one-time", "passcode",
-  "verification", "bekreftelse", "passord", "pin", "engangskode",
+  the code word's own line, the line before it or the line after it, so
+  "123456" above "is your code" is masked too. The code words are matched in
+  any case and inside longer words: "code", "kode", "otp", "one-time",
+  "passcode", "verification", "bekreftelse", "passord", "pin", "engangskode",
   "sikkerhetskode", "logg inn", "login", "bankid" and "token".
 
 A masked message is sent as "a one-time code from <sender>", with `masked:
@@ -170,10 +173,11 @@ it keeps the time, caller and outcome of each call, never a number or a text.
   silence.
 - Tests, written first, as plain JVM tests with fakes for Android's classes:
   - masking, on a set of real-shaped samples with made-up numbers. Bank,
-    delivery and login texts are masked, including a code before its word
-    and a word on the line before the code. Texts with dates or prices are
-    listed too. How many of them were masked goes in the CI run's artifact,
-    never in the repository;
+    delivery and login texts are masked, including a code before its word,
+    a word on the line before the code, and a code on the line before its
+    word. A sender of 6 digits counts as a short code, and one of 7 does
+    not. Texts with dates or prices are listed too. How many of them were
+    masked goes in the CI run's artifact, never in the repository;
   - `smsstore`: nothing it offers `sms_send` returns a text, a list or a
     count;
   - the queue: the order, the cursor's acknowledgement, a lost answer sent
