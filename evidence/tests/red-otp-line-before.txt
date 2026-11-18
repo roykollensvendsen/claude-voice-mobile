@@ -1,0 +1,4 @@
+OneTimeCodesTest > from a number, a digit counts on a code word's own line, the line before or the line after() FAILED
+28 tests completed, 1 failed
+> Task :plugins:sms:rules:test FAILED
+BUILD FAILED in 21s

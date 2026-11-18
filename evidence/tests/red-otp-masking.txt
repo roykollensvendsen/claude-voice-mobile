@@ -1,0 +1,23 @@
+OneTimeCodesTest > every code word ADR-CVM-010 lists hides a digit beside it() FAILED
+OneTimeCodesTest > from a short code a run counts from four digits to eight() FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [1] a bank's code FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [2] a delivery's pick-up code FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [3] a code before its word FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [4] the word on the line before the code FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [5] four digits from a short code FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [6] fullwidth digits FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [7] Arabic-Indic digits from a named sender FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [8] a pin from a number FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [9] a code split by dashes FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [10] a code word in capitals FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [11] BankID FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [12] logg inn with a no-break space FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [13] a code on the next line after a Windows line end FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [14] a long run of groups, each of four digits FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [15] a message whose sender is unknown FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [16] a code word with a short number glued to it FAILED
+OneTimeCodesTest > a run of digits counts only near a code word, on its line or the next, from a number() FAILED
+OneTimeCodesTest > a sender is a short code with at most six digits and no plus() FAILED
+27 tests completed, 20 failed
+> Task :plugins:sms:rules:test FAILED
+BUILD FAILED in 18s

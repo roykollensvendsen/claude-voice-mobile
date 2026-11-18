@@ -19,8 +19,8 @@ and its test, and `status` depending on it. Then it was removed. In that run:
 
 - `projects` listed `:plugins:status:rules` under `:plugins:status`, with the default pick;
 - `check` passed;
-- `:plugins:status:rules:pitest` made 3 mutants and caught 2;
+- `:plugins:status:rules:pitest` ran and wrote its report;
 - `scripts/levels.py` ran in full, and listed `plugins/status/rules` as a part of its own in
-  `mutants_by_module`, with its one survivor in `survivors`;
+  `mutants_by_module` and in `survivors`;
 - with the app depending on it, `checkLayers` failed: ":app depends on :plugins:status:rules;
   the app wires a plugin's entry, never its rules".
