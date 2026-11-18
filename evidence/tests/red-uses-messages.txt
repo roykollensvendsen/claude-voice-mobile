@@ -1,0 +1,4 @@
+# PluginsTest with "messages" taken, before the list has it:
+PluginsTest > what a plugin uses is one of the names the protocol lists, once each() FAILED
+    java.lang.IllegalArgumentException at PluginsTest.kt:140
+BUILD FAILED in 11s

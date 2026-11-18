@@ -127,7 +127,7 @@ class PluginsTest {
     }
 
     @Test
-    fun `what a plugin uses is one of the nine names protocol version 1 knows, once each`() {
+    fun `what a plugin uses is one of the names the protocol lists, once each`() {
         val bads = listOf(listOf("Microphone"), listOf("micropone"), listOf("a_later_thing"), listOf(""), listOf("calls", "calls"))
         for (bad in bads) {
             assertThrows<IllegalArgumentException>(bad.toString()) {
@@ -136,6 +136,8 @@ class PluginsTest {
         }
         val nine = listOf("microphone", "camera", "location", "calls", "contacts", "notifications", "media", "sensors", "usage")
         Plugins(listOf(plugin("phone", listOf("phone_call"), uses = nine)))
+        // The next version's name for text messages, which the sms plugins need (ADR-CVM-010).
+        Plugins(listOf(plugin("sms", listOf("sms_since"), uses = listOf("messages"))))
     }
 
     @Test
