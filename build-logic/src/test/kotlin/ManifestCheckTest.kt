@@ -52,7 +52,7 @@ class ManifestCheckTest {
                 ),
             )
         assertEquals(
-            listOf("the app asks for android.permission.SEND_SMS, which neither the app nor a module it took declares"),
+            listOf("the app asks for android.permission.SEND_SMS, which no module in the build declares; declare it in the src/main/AndroidManifest.xml of the module that needs it"),
             ManifestCheck.undeclared(merged, listOf(app)),
         )
     }
@@ -64,7 +64,7 @@ class ManifestCheckTest {
                 manifest("""<application><service android:name=".S" android:foregroundServiceType="camera" /></application>"""),
             )
         assertEquals(
-            listOf("the app runs a service of type camera, which neither the app nor a module it took declares"),
+            listOf("the app runs a service of type camera, which no module in the build declares; declare it in the src/main/AndroidManifest.xml of the module that needs it"),
             ManifestCheck.undeclared(merged, listOf(app)),
         )
     }
@@ -82,5 +82,30 @@ class ManifestCheckTest {
                 ),
             )
         assertEquals(listOf<String>(), ManifestCheck.undeclared(merged, listOf(app, sms)))
+    }
+
+    @Test
+    fun `a line that removes a permission declares nothing`() {
+        val removing =
+            ManifestEntries.of(
+                """
+                <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+                    xmlns:tools="http://schemas.android.com/tools">
+                    <uses-permission android:name="android.permission.WAKE_LOCK" tools:node="remove" />
+                    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+                </manifest>
+                """.trimIndent(),
+            )
+        assertEquals(setOf("android.permission.RECEIVE_SMS"), removing.permissions)
+    }
+
+    @Test
+    fun `the application id in a declared permission is the build's own, as in the merged manifest`() {
+        val declared =
+            ManifestEntries.of(
+                manifest("""<uses-permission android:name="${'$'}{applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />"""),
+                applicationId = "org.claudevoice.mobile",
+            )
+        assertEquals(setOf("org.claudevoice.mobile.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"), declared.permissions)
     }
 }

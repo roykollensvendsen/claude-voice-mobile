@@ -69,8 +69,9 @@ knows. Each module brings its own permissions and foreground service types in
 its own manifest. Android merges every included module's manifest into the
 app's, libraries' entries too, so the guarantee is only for a module left out
 of the build. **A CI job checks it:** it reads the app's merged manifest and
-fails when a permission or service type in it is not declared by a module in
-the property's list, or by the app itself. It runs twice: on the default list, and
+fails when a permission or service type in it is not declared in the
+`src/main` manifest of a module in the build: the app, the fixed modules, or a
+plugin the property picked. It runs twice: on the default list, and
 on a list of every module, so that a module's entries are checked even when
 the default leaves it out. That list is `-PcvPlugins=all`, which takes every
 folder under `plugins/`, so a new plugin cannot be left out of it. The
