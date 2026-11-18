@@ -38,6 +38,7 @@ decision nobody writes down.
 | [ADR-CVM-007](ADR-CVM-007-modules-each-install-picks.md) | Modules each install picks when built and switches at run time, and capabilities below the plugins | Proposed |
 | [ADR-CVM-008](ADR-CVM-008-a-microphone-mute-that-holds.md) | A microphone mute that holds: measured first, then a capability with headset adapters | Proposed |
 | [ADR-CVM-009](ADR-CVM-009-how-the-phone-knows-its-hub.md) | How the phone knows its hub: the address and key kept at pairing, checked on every request | Decided |
+| [ADR-CVM-010](ADR-CVM-010-reading-and-sending-text-messages.md) | Reading and sending text messages: a masked queue the hub pulls, and drafts with an undo delay | Proposed |
 
 What is deliberately left undone, and what would make each worth doing, is
 [`deferred.md`](deferred.md). A thing left undone with no trigger is a thing
