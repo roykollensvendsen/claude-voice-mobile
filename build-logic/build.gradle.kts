@@ -11,6 +11,10 @@ dependencies {
 
 gradlePlugin {
     plugins {
+        create("modules") {
+            id = "claudevoice.modules"
+            implementationClass = "ModulesPlugin"
+        }
         create("layers") {
             id = "claudevoice.layers"
             implementationClass = "LayersPlugin"

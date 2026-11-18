@@ -17,5 +17,10 @@ dependencyResolutionManagement {
     }
 }
 
+plugins {
+    // Includes the plugins -PcvPlugins picks, `status` alone by default (ADR-CVM-007).
+    id("claudevoice.modules")
+}
+
 rootProject.name = "claude-voice-mobile"
-include(":core", ":plugin-api", ":app", ":plugins:status")
+include(":core", ":plugin-api", ":app")
