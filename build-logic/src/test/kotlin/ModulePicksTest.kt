@@ -24,6 +24,22 @@ class ModulePicksTest {
     }
 
     @Test
+    fun `a name the protocol would refuse fails the build, even when its folder exists`() {
+        val refused = assertThrows<IllegalArgumentException> { ModulePicks.picked("status,Sms-2", known + "Sms-2") }
+        assertEquals(
+            "cvPlugins names Sms-2, which is not a plugin name: a small letter, then at most 31 small letters, digits or _",
+            refused.message,
+        )
+    }
+
+    @Test
+    fun `a name of 32 characters is taken, and one of 33 is refused`() {
+        val longest = "a" + "b".repeat(31)
+        assertEquals(listOf(longest), ModulePicks.picked(longest, setOf(longest, longest + "c")))
+        assertThrows<IllegalArgumentException> { ModulePicks.picked(longest + "c", setOf(longest, longest + "c")) }
+    }
+
+    @Test
     fun `an empty list fails the build rather than build an app with no plugin`() {
         val refused = assertThrows<IllegalArgumentException> { ModulePicks.picked(" , ", known) }
         assertTrue(refused.message!!.startsWith("cvPlugins names no plugin"), refused.message)

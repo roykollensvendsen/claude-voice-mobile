@@ -1,0 +1,5 @@
+ModulePicksTest > a name the protocol would refuse fails the build, even when its folder exists() FAILED
+ModulePicksTest > a name of 32 characters is taken, and one of 33 is refused() FAILED
+21 tests completed, 2 failed
+> Task :test FAILED
+BUILD FAILED in 23s
