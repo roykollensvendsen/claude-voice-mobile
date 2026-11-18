@@ -69,10 +69,11 @@ class MainActivity : Activity() {
                 send(action(MuteService.SESSION).putExtra(MuteService.ON, sessionOn).putExtra(MuteService.SILENT_TRACK, false))
             },
         ))
-        root.addView(label("Mute (B): flip the switch in Quick Settings, then mark it here"))
+        // The marks must always sit inside the real mute, or the stand-in hears the tone while marked muted.
+        root.addView(label("Mute (B): switch it off in Quick Settings, then tap B on. Tap B off, then switch it back on. Flip at the start of a slot, between words."))
         root.addView(row(
-            button("B on") { send(action(MuteService.SWITCH_B).putExtra(MuteService.ON, true)) },
-            button("B off") { send(action(MuteService.SWITCH_B).putExtra(MuteService.ON, false)) },
+            button("B on (after switching off)") { send(action(MuteService.SWITCH_B).putExtra(MuteService.ON, true)) },
+            button("B off (before switching on)") { send(action(MuteService.SWITCH_B).putExtra(MuteService.ON, false)) },
         ))
         root.addView(button("M1c: start a word schedule at the next minute") { send(action(MuteService.SCHEDULE)) })
         root.addView(label("M6: a random tone, then say which you heard"))
@@ -85,10 +86,16 @@ class MainActivity : Activity() {
         ))
         root.addView(label("M2 and M3: what the Claude app did"))
         root.addView(row(note("Claude paused"), note("Call ended"), note("Claude gave the word"), note("Claude lost it")))
-        root.addView(button("Save the log to Downloads") {
-            val name = EventLog.saveToDownloads(this)
-            EventLog.add("log-saved", mapOf("name" to (name ?: "failed")))
-        })
+        root.addView(row(
+            button("Save the log to Downloads") {
+                val name = EventLog.saveToDownloads(this)
+                EventLog.add("log-saved", mapOf("name" to (name ?: "failed")))
+            },
+            button("Clear the log") {
+                EventLog.clear()
+                EventLog.add("log-cleared")
+            },
+        ))
         lines = TextView(this).apply { textSize = 11f; setTextIsSelectable(true) }
         root.addView(lines)
         setContentView(ScrollView(this).apply { addView(root) })

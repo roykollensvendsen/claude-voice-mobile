@@ -49,6 +49,12 @@ object EventLog {
         return name
     }
 
+    /** Empties the log, after it has been saved, so each run's judge reads that run alone. */
+    @Synchronized
+    fun clear() {
+        file?.writeText("")
+    }
+
     @Synchronized fun listen(listener: (String) -> Unit) { listeners += listener }
     @Synchronized fun unlisten(listener: (String) -> Unit) { listeners -= listener }
 }
