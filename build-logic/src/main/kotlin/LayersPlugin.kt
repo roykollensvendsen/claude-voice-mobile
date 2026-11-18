@@ -38,7 +38,7 @@ abstract class CheckLayers : DefaultTask() {
     fun check() {
         val broken = LayerRules.violations(edges.get())
         if (broken.isNotEmpty()) {
-            throw GradleException("The layer rules of ADR-CVM-003 are broken:\n" + broken.joinToString("\n") { "  $it" })
+            throw GradleException("The layer rules of ADR-CVM-003 and ADR-CVM-007 are broken:\n" + broken.joinToString("\n") { "  $it" })
         }
     }
 }
