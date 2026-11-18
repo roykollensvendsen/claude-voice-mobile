@@ -1,0 +1,8 @@
+# LayerRulesTest with capabilities, before LayerRules knows them:
+LayerRulesTest > a plugin wires no adapter, the app does() FAILED
+LayerRulesTest > a capability depends on no module of ours() FAILED
+LayerRulesTest > an adapter depends only on the capability it adapts() FAILED
+LayerRulesTest > a plugin may use a capability, and an adapter its own capability() FAILED
+LayerRulesTest > a plugin depends only on the plugin api() FAILED
+LayerRulesTest > the core never depends on a capability() FAILED
+BUILD FAILED in 13s
