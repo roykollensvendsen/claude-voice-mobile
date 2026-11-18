@@ -33,7 +33,10 @@ def _mutate():
 def marked_rules() -> set[str]:
     """Every rule the source marks, by the words the marker gives it."""
     found = set()
-    for source in sorted((ROOT / "src").rglob("*.py")):
+    # The app's own code is Kotlin, guarded by Pitest; the rules marked here live in the
+    # repository's scripts, and src/ is read too, should Python code ever be added there.
+    sources = [*(ROOT / "src").rglob("*.py"), *(ROOT / "scripts").glob("*.py")]
+    for source in sorted(sources):
         for line in source.read_text().splitlines():
             match = MARKER.search(line)
             if match:

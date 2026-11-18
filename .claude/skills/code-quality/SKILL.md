@@ -82,7 +82,7 @@ uv run pytest -q --cov                         # coverage, with the lines no tes
 uv run pytest -q --durations=15                # the slowest tests
 uv run ruff check . && uv run mypy src         # lint and type errors
 uv run python scripts/mutate.py                # each rule switched off in turn
-uv run python scripts/mutate.py --write evidence/tests/rule-mutations.md   # the same, kept as evidence
+uv run python scripts/mutate.py --write /tmp/rule-mutations.md   # the same, as a page; never committed, CI keeps its own
 ```
 
 For every Python function's complexity score, not only the ones over ruff's

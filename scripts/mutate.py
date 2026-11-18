@@ -6,7 +6,10 @@ nothing. Where a rule is written before its test, the test is run red first.
 Where a rule already exists, this is the substitute. Every rule lives in
 scripts/mutations.toml, one row each. Run it from the repository root:
 
-    uv run python scripts/mutate.py [--write evidence/tests/rule-mutations.md]
+    uv run python scripts/mutate.py [--write /tmp/rule-mutations.md]
+
+The report is a measurement, so it is written outside the checkout and never
+committed; CI keeps its own run's report as the artifact `rule-mutations`.
 
 A kill is not enough on its own. A mutation breaks whatever it breaks, and it
 can break a test for an incidental reason — a documented example whose output
@@ -271,7 +274,7 @@ def report(results: list[tuple[str, int, str, bool]], survived: list[str], lucky
     return f"""# Every rule, turned off in turn
 
 *Run {dt.datetime.now(dt.UTC).date()} by `python scripts/mutate.py --write
-evidence/tests/rule-mutations.md`, which is how to repeat it. The script
+<a path outside the checkout>`, which is how to repeat it. The script
 restores every file it touched before it exits.*
 
 Green on a first run proves nothing: a test that has never been red tests
