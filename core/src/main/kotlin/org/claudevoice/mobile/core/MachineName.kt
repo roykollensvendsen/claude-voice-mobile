@@ -29,10 +29,11 @@ enum class Confirmed {
  * [store] as `{"version":1,"name":"…"}`. It is a setting of the phone alone: only the owner's
  * screen confirms it, and no tool the app offers reaches it.
  *
- * Once kept, it is the name the agent is built under and the hub approves. So a different name
- * is refused here, in the core, whatever screen asks, paired or not. With no name kept, as when
- * the file was lost, a name is taken again even if a hub is paired: the phone is never stuck,
- * and a hub refuses a name it did not approve.
+ * Once kept, it is the name the agent is built under and reports. So a different name is
+ * refused here, in the core, whatever screen asks, paired or not. With no name kept, as when
+ * the file was lost, a name is taken again even if a hub is paired, so the phone is never
+ * stuck. That opens nothing: the hub does not trust this name. It knows the phone by its
+ * tailnet node and its pairing key, and calls it by a name of its own.
  */
 class MachineName(private val store: TextStore) {
     @Volatile

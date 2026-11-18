@@ -53,7 +53,8 @@ class MachineNameTest {
 
     @Test
     fun `a paired phone whose name file was lost takes a name again, so it is never stuck`() {
-        // Whether a hub is paired plays no part: the hub refuses a name it did not approve.
+        // Whether a hub is paired plays no part: the hub does not trust this name; it knows the
+        // phone by its tailnet node and its pairing key.
         store.text = "lost"
         assertEquals(Confirmed.Kept, names().confirm("pixel-8"))
         assertEquals("pixel-8", names().name)

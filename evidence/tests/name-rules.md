@@ -12,9 +12,10 @@ Three notes on #108:
   Changing it means clearing the app's data.
 - **claude-voice-mobile-architect (2) and quality f1.** If `hub.json` survived and
   `machine.json` was lost, every confirm answered "paired under another name", and the phone was
-  stuck. Now, with no name kept, a name is taken again even while paired. A hub refuses a name
-  it did not approve, so this opens nothing. With that, `MachineName` no longer needs to know
-  about the pairing at all.
+  stuck. Now, with no name kept, a name is taken again even while paired. This opens nothing,
+  because the hub does not trust the name `agent_info` gives: it knows the phone by its tailnet
+  node and its pairing key, and calls it by a name of its own (voice-architect, on #109). With
+  that, `MachineName` no longer needs to know about the pairing at all.
 - **quality n1.** The screen's two rules, shown only while the phone has no name and ended only
   by a kept name, are now `NameAnswer.shown` and `NameAnswer.ends`, with tests. `NameStep` is
   left as wiring.
