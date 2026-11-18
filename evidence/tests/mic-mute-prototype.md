@@ -56,3 +56,7 @@ muted. The switch marks and the session without its silent track logged as they 
 The marks for the owner's switch must sit inside the real mute: "B on" after turning access
 off, "B off" before turning it back on. Otherwise, in the gap, the app counts the phone as
 muted while the stand-in still hears the tone. The screen and the README now say so.
+
+The test app's `gradlew` and `gradlew.bat` are Gradle 8.11.1's own, as the repository's are in
+#120, whose test pins every wrapper's checksum. The same files go in either way round, so neither
+merge order breaks main.
