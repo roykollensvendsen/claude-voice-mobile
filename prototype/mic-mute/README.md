@@ -32,8 +32,27 @@ A foreground service holds everything while the Claude app is in front:
 - **The word schedule (M1c):** from the next whole minute, twelve 10-second
   slots, a third to two thirds of them muted, chosen at random and written to
   the log. It is never shown on the screen or said aloud.
+- **The owner's switch (B):** no app can read it, so the tester flips it in
+  Quick Settings and then taps "B on" or "B off". From the mark, M1a and M1b
+  judge as they do for the app's own mute (A). For M1c under B, the owner
+  flips it at their own times, not shown to anyone, and marks each one. The
+  laptop's judge reads the mutes from those marks. M5 watches mute (A) only.
+- **The silent track:** the media session can run with or without it. A
+  pass with it is a pass for that trick only, so M2 is run once without it
+  too, which shows whether the product would have to play silence all day.
+  The log says which.
 - **The tones (M6):** a random one of the two, on the call or the media
   stream. The tester answers on the screen which they heard.
+
+**Stopping never leaves the phone muted.** The mute is phone-wide and
+outlives the app. When the service stops or the app is swiped away, a mute
+this app set is lifted, and the log says `mute-restored`. A mute someone else
+set is left alone. If the microphone still seems muted afterwards, open the
+test app, start the service and tap "Mute / unmute" until the notification
+says "Microphone open", or restart the phone.
+
+`m4-delay` errs long by the recording's own input delay: it is measured to
+when the silent sample reached the app, not to when the microphone stopped.
 
 Every event goes to logcat (tag `MicMuteProto`), to a file in the app's
 private storage, and to the screen, with times to a millisecond. "Save the
@@ -47,8 +66,16 @@ laptop. On the laptop it goes in
 same whole minute as the phone and says one made-up word in the middle of
 each slot. It writes the words and their times to the folder above.
 Afterwards it judges M1c from the phone's log, that file and the Claude
-app's transcript. M1c passes only when no muted word reached the transcript
-and every unmuted one did.
+app's transcript, by each word's time and the mutes the phone logged, by
+either way. M1c passes only when no muted word reached the transcript and
+every unmuted one did. A word said across a mute or an unmute is judged
+neither way, and makes the run unclear. The judge also lists every other word in
+the transcript. The owner reads that list before a pass is written down,
+since a muted word the speech engine spelt differently would not match.
+
+The judge refuses a run whose phone schedule began in a different minute
+from the laptop's words. The phone's and the laptop's clocks must agree to
+within a second; both set from the network do.
 
 <!-- not run: plays sound on the laptop's speaker -->
 ```

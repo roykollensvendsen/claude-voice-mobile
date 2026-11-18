@@ -148,4 +148,34 @@ class MeasureTest {
         assertNull(clock.feed(ShortArray(10) { 500 }))
         assertEquals(10L, clock.feed(ShortArray(100)))
     }
+
+    @Test
+    fun a_mute_this_app_set_is_lifted_when_the_service_stops() {
+        val owner = MuteOwner()
+        owner.mutedByUs()
+        assertTrue(owner.restoreOnStop(currentlyMuted = true))
+    }
+
+    @Test
+    fun a_mute_this_app_did_not_set_is_left_alone_when_the_service_stops() {
+        val owner = MuteOwner()
+        assertFalse(owner.restoreOnStop(currentlyMuted = true))
+        owner.mutedByUs()
+        owner.unmutedByUs()
+        assertFalse(owner.restoreOnStop(currentlyMuted = true))
+    }
+
+    @Test
+    fun an_unmuted_phone_needs_no_restore() {
+        val owner = MuteOwner()
+        owner.mutedByUs()
+        assertFalse(owner.restoreOnStop(currentlyMuted = false))
+    }
+
+    @Test
+    fun the_owners_switch_marked_on_counts_as_muted_as_the_apps_own_mute_does() {
+        assertEquals(false, Muting.expected(appMuted = false, switchMarkedOn = false))
+        assertEquals(true, Muting.expected(appMuted = true, switchMarkedOn = false))
+        assertEquals(true, Muting.expected(appMuted = false, switchMarkedOn = true))
+    }
 }

@@ -104,9 +104,9 @@ object Percentile {
 
 /** M5: any unmute seen while the test app holds the mute is a leak, however short. */
 class MuteWatch {
-    var leaks = 0
+    @Volatile var leaks = 0
         private set
-    private var expectMuted = false
+    @Volatile private var expectMuted = false
 
     fun expect(muted: Boolean) {
         expectMuted = muted
@@ -176,4 +176,31 @@ object Tones {
             (sin(phase) * 8_000).toInt().toShort()
         }
     }
+}
+
+/**
+ * The phone-wide mute outlives this app: a service stopped or swiped away while muted would leave
+ * the owner's phone muted for calls. So the app remembers whether it set the mute, and lifts it
+ * on stopping, but never lifts a mute someone else set.
+ */
+class MuteOwner {
+    @Volatile private var ours = false
+
+    fun mutedByUs() {
+        ours = true
+    }
+
+    fun unmutedByUs() {
+        ours = false
+    }
+
+    fun restoreOnStop(currentlyMuted: Boolean): Boolean = ours && currentlyMuted
+}
+
+/**
+ * Mute (B), the owner's own switch for microphone access, cannot be read by an app. The tester
+ * marks it on and off by hand, and a marked switch counts as muted, as the app's own mute does.
+ */
+object Muting {
+    fun expected(appMuted: Boolean, switchMarkedOn: Boolean): Boolean = appMuted || switchMarkedOn
 }
