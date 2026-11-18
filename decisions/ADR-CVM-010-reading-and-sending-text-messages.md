@@ -38,7 +38,12 @@ says so, and the owner decides that part.
   for the sent-before check below.
 - `capabilities/smsstore` reads the phone's own message store and turns
   numbers into E.164 form, which is the full international form with the
-  country prefix. Both plugins use it, and neither uses the other.
+  country prefix. Both plugins use it, and neither uses the other. To
+  `sms_send` it answers one question only: "has the owner sent a message to
+  this E.164 number?", as a yes or no. It never hands it a message, a list or
+  a count. So code in the send path that keeps to the capability cannot read
+  a one-time code. The app holds `READ_SMS` as a whole, though, so this keeps
+  the code in order and is no security wall (ADR-CVM-007).
 
 Each has its own build flag and its own switch, and both are off when first
 installed. A build with `sms` alone holds no permission to send.
@@ -74,8 +79,11 @@ not logged (ADR-CVM-003).
 the module masks it, and it masks too much rather than too little:
 
 - from a short-code or letter-named sender, every run of 4 to 8 digits;
-- from any sender, a run of digits within a few words of "code", "kode",
-  "verification", "bekreftelse", "passord", "pin" or "engangskode".
+- from any sender, a run of digits near a code word, before or after it, on
+  the same line or the next. The code words are matched in any case and
+  inside longer words: "code", "kode", "otp", "one-time", "passcode",
+  "verification", "bekreftelse", "passord", "pin", "engangskode",
+  "sikkerhetskode", "logg inn", "login", "bankid" and "token".
 
 A masked message is sent as "a one-time code from <sender>", with `masked:
 true`. The whole message is still in the phone's own text app, where the
@@ -122,7 +130,17 @@ answers "too late, it was sent at 14.02".
 
 **A held message survives nothing.** It lives only in the app's memory. When
 the app stops, restarts or crashes, the message is stopped and never sent
-later.
+later. When a hold starts, the phone writes a marker with the token and the
+time, and nothing else. On the next start, a marker still there becomes a
+"stopped: the app restarted" outcome. So a crash is reported, not silent.
+
+**`sms_send_outcomes(cursor)`** tells the laptop how each held message ended,
+so its whats_new can say "sent at 14.02" or "stopped, not sent". It is
+`sms_send`'s own poll, with the same cursor, acknowledgement and resend as
+`sms_since`. A phone with sending on and reading off still reports outcomes.
+Each item holds the token, the outcome (`sent`, `stopped` or `failed`), the
+time and a reason in words. It never holds a number or a text. The laptop
+marks it as a poll, so an empty answer is counted, not logged.
 
 **The undo delay** is a phone-only setting (ADR-CVM-003). It defaults to 10
 seconds and has a floor of 5 seconds in the code. No tool reads or changes it.
@@ -152,8 +170,12 @@ it keeps the time, caller and outcome of each call, never a number or a text.
   silence.
 - Tests, written first, as plain JVM tests with fakes for Android's classes:
   - masking, on a set of real-shaped samples with made-up numbers. Bank,
-    delivery and login texts are masked. Texts with dates or prices are listed
-    too, and the test reports how many of them were masked;
+    delivery and login texts are masked, including a code before its word
+    and a word on the line before the code. Texts with dates or prices are
+    listed too. How many of them were masked goes in the CI run's artifact,
+    never in the repository;
+  - `smsstore`: nothing it offers `sms_send` returns a text, a list or a
+    count;
   - the queue: the order, the cursor's acknowledgement, a lost answer sent
     again, the 500 and 7-day drops and their count, a lost key, and nothing in
     a backup;
@@ -164,6 +186,9 @@ it keeps the time, caller and outcome of each call, never a number or a text.
     same number with and without its prefix matches;
   - the race: cancel and the timer fire together over many runs, each ending
     in exactly one outcome; and a stopped app sends nothing;
+  - outcomes: each is given exactly once after its acknowledgement, a kill
+    during the hold gives a "stopped" outcome after the restart, and the
+    outcome store holds no number or text;
   - the delay: below 5 seconds is refused when the setting is saved;
   - a build without `sms_send` has no `SEND_SMS` in its merged manifest.
 
