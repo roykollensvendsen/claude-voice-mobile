@@ -1,7 +1,8 @@
 /**
  * The layer rules of ADR-CVM-003, with ADR-CVM-007's capabilities:
  * - the core never depends on a plugin or a capability;
- * - a plugin depends on the plugin interface and on capabilities, and on nothing else;
+ * - a plugin depends on the plugin interface and on capabilities, and on nothing else; never on an
+ *   adapter, which the app wires;
  * - a capability depends on no module of ours, and an adapter only on the capability it adapts;
  * - no plugin depends on another;
  * - the app is the only module that sees them all.
@@ -69,6 +70,7 @@ object LayerRules {
         when (target) {
             Layer.API, Layer.CAPABILITY -> null
             Layer.PLUGIN -> "$from depends on $to; no plugin depends on another"
+            Layer.ADAPTER -> "$from depends on $to; a plugin never depends on an adapter; the app wires adapters"
             else -> "$from depends on $to; a plugin depends only on $API and capabilities"
         }
 }

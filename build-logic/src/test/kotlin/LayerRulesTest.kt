@@ -127,8 +127,27 @@ class LayerRulesTest {
     @Test
     fun `a plugin wires no adapter, the app does`() {
         assertEquals(
-            listOf(":plugins:micmute depends on :capabilities:mute:acme; a plugin depends only on :plugin-api and capabilities"),
+            listOf(":plugins:micmute depends on :capabilities:mute:acme; a plugin never depends on an adapter; the app wires adapters"),
             brokenWith(":plugins:micmute" to ":capabilities:mute:acme"),
+        )
+    }
+
+    @Test
+    fun `the core never depends on an adapter either`() {
+        assertEquals(
+            listOf(":core depends on :capabilities:mute:acme; the core never depends on a capability"),
+            brokenWith(":core" to ":capabilities:mute:acme"),
+        )
+    }
+
+    @Test
+    fun `an adapter depends on neither the plugin interface nor the core`() {
+        assertEquals(
+            listOf(
+                ":capabilities:mute:acme depends on :core; an adapter depends only on the capability it adapts",
+                ":capabilities:mute:acme depends on :plugin-api; an adapter depends only on the capability it adapts",
+            ),
+            brokenWith(":capabilities:mute:acme" to ":plugin-api", ":capabilities:mute:acme" to ":core"),
         )
     }
 }

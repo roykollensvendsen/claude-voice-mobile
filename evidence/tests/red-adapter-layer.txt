@@ -1,0 +1,9 @@
+## The new message, before the code: red
+LayerRulesTest > a plugin wires no adapter, the app does() FAILED
+21 tests completed, 1 failed
+## The core's adapter rule and the adapter rule switched off: the two guarding tests go red
+LayerRulesTest > a plugin wires no adapter, the app does() FAILED
+LayerRulesTest > the core never depends on an adapter either() FAILED
+LayerRulesTest > an adapter depends only on the capability it adapts() FAILED
+LayerRulesTest > an adapter depends on neither the plugin interface nor the core() FAILED
+21 tests completed, 4 failed
