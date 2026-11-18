@@ -1,0 +1,4 @@
+# Gradle's own wrapper scripts, kept byte for byte (tests/test_gradle_wrapper.py pins them).
+gradlew text eol=lf
+*.bat text eol=crlf
+*.jar binary

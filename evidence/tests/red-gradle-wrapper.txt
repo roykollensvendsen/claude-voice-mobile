@@ -1,0 +1,10 @@
+E       AssertionError: assert {'.', 'protot...ype/mic-mute'} <= {'.', 'prototype/audio-focus'}
+tests/test_gradle_wrapper.py:30: AssertionError
+E           AssertionError: gradlew is not Gradle's
+tests/test_gradle_wrapper.py:38: AssertionError
+E           AssertionError: prototype/audio-focus/gradlew is not Gradle's
+tests/test_gradle_wrapper.py:38: AssertionError
+FAILED tests/test_gradle_wrapper.py::test_the_repository_and_both_prototypes_have_a_wrapper
+FAILED tests/test_gradle_wrapper.py::test_each_wrapper_file_is_gradles_own[.]
+FAILED tests/test_gradle_wrapper.py::test_each_wrapper_file_is_gradles_own[prototype/audio-focus]
+3 failed in 0.55s
