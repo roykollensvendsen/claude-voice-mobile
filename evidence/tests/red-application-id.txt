@@ -1,0 +1,5 @@
+## androidx.core added, its permission undeclared
+> the app asks for org.claudevoice.mobile.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION, which no module in the build declares; declare it in the src/main/AndroidManifest.xml of the module that needs it
+BUILD FAILED in 5s
+## declared in the app's manifest with the placeholder
+BUILD SUCCESSFUL in 3s

@@ -1,0 +1,6 @@
+ManifestCheckTest > a line that removes a permission declares nothing() FAILED
+ManifestCheckTest > a service type no module declares fails the check() FAILED
+ManifestCheckTest > a permission no module declares fails the check() FAILED
+ManifestCheckTest > the application id in a declared permission is the build's own, as in the merged manifest() FAILED
+33 tests completed, 4 failed
+BUILD FAILED in 35s

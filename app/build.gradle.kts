@@ -90,6 +90,10 @@ abstract class CheckMergedManifest : DefaultTask() {
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val declared: ConfigurableFileCollection
 
+    // Fills `${applicationId}` in the declared manifests, as the merge does in the merged one.
+    @get:Input
+    abstract val applicationId: Property<String>
+
     @get:OutputFile
     abstract val report: RegularFileProperty
 
@@ -97,7 +101,7 @@ abstract class CheckMergedManifest : DefaultTask() {
     fun check() {
         val found = ManifestCheck.undeclared(
             ManifestEntries.of(merged.get().asFile.readText()),
-            declared.files.map { ManifestEntries.of(it.readText()) },
+            declared.files.map { ManifestEntries.of(it.readText(), applicationId.get()) },
         )
         report.get().asFile.writeText(found.joinToString("\n", postfix = "\n"))
         if (found.isNotEmpty()) throw GradleException(found.joinToString("\n"))
@@ -111,6 +115,7 @@ androidComponents {
             description = "Fails when the merged manifest asks for what no module this build took declares."
             merged.set(variant.artifacts.get(com.android.build.api.artifact.SingleArtifact.MERGED_MANIFEST))
             declared.from(rootProject.subprojects.map { it.file("src/main/AndroidManifest.xml") }.filter { it.isFile })
+            applicationId.set(variant.applicationId)
             report.set(layout.buildDirectory.file("reports/manifest/${variant.name}.txt"))
         }
         tasks.named("check") { dependsOn(task) }
