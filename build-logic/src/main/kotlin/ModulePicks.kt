@@ -7,10 +7,18 @@ object ModulePicks {
     const val PROPERTY = "cvPlugins"
     const val DEFAULT = "status"
 
+    /** The protocol's pattern for a plugin's name; the folder, package and name are one string. */
+    private val NAME = Regex("[a-z][a-z0-9_]{0,31}")
+
     /** The plugins [given] names, in order and once each; refused when a name is not in [known]. */
     fun picked(given: String?, known: Set<String>): List<String> {
         val names = (given ?: DEFAULT).split(',').map { it.trim() }.filter { it.isNotEmpty() }.distinct()
         require(names.isNotEmpty()) { "$PROPERTY names no plugin; give at least one, such as $DEFAULT" }
+        names.firstOrNull { !NAME.matches(it) }?.let {
+            throw IllegalArgumentException(
+                "$PROPERTY names $it, which is not a plugin name: a small letter, then at most 31 small letters, digits or _",
+            )
+        }
         val unknown = names.filterNot { it in known }
         require(unknown.isEmpty()) {
             "$PROPERTY names ${unknown.joinToString()}, which is not a module; " +
