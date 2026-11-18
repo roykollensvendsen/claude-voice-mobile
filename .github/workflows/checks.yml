@@ -142,6 +142,15 @@ jobs:
       # and its manifest entries are checked even when the default list leaves it out.
       - name: The app's gate, with every plugin
         run: ./gradlew -PcvPlugins=all check --console=plain
+      # ADR-CVM-010: how many listed texts with dates or prices the one-time-code masking hid.
+      # The count stays with the run and is never committed.
+      - name: Keep the masking's count of listed texts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: otp-masking
+          path: plugins/sms/rules/build/reports/otp-masking
+          if-no-files-found: ignore   # a run that failed before the tests has nothing to keep
 
   # The app's code health, for the bridge's code-health page. scripts/ratchet.py measures it
   # with scripts/levels.py and fails when a measure got worse than the base, unless the

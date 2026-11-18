@@ -1,0 +1,5 @@
+        assert "libs.plugins.kotlin.jvm" in applied
+>       assert "libs.plugins.pitest" in applied
+E       AssertionError: assert 'libs.plugins.pitest' in 'plugins {\n    alias(libs.plugins.kotlin.jvm)\n    alias(libs.plugins.android.library)\n'
+FAILED tests/test_rules_modules.py::test_a_rules_module_applies_the_jvm_and_pitest_plugins_and_no_android_one[sms]
+1 failed, 2 passed in 0.07s
