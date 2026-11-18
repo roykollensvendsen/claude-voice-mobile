@@ -1,0 +1,4 @@
+> Task :compileTestKotlin FAILED
+e: build-logic/src/test/kotlin/ModulePicksTest.kt:70:25 Unresolved reference: included
+e: build-logic/src/test/kotlin/ModulePicksTest.kt:70:72 Unresolved reference: it
+e: build-logic/src/test/kotlin/ModulePicksTest.kt:70:87 Unresolved reference: it

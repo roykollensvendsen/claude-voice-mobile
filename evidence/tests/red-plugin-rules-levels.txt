@@ -1,0 +1,3 @@
+FAILED tests/test_levels.py::test_the_parts_measured_are_found_by_walking_the_plugins_folder
+FAILED tests/test_levels.py::test_every_measure_builds_with_every_plugin_picked
+2 failed, 19 passed in 0.09s

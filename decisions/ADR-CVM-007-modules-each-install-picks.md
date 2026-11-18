@@ -54,6 +54,11 @@ knows nothing of the hub. The layer rules become:
 The CI check that enforces the layer rules learns the new kind in the same pull
 request that adds the first capability.
 
+**A plugin may keep its decisions in one pure-JVM submodule, `plugins/<name>/rules`,**
+so they are tested off the phone and mutated like the core. It depends on no
+module of ours, and only its own plugin depends on it. Picking the plugin brings
+it along; it is never a plugin of its own.
+
 **A capability is reusable outside this app.** It has a package of its own, uses
 no type from `core`, `plugin-api` or the protocol, and has its own tests. It
 stays a module in this repository until a second project wants it. Moving it to

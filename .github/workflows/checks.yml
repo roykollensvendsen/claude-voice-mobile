@@ -197,6 +197,7 @@ jobs:
           path: |
             core/build/reports/pitest
             plugin-api/build/reports/pitest
+            plugins/*/rules/build/reports/pitest
           if-no-files-found: ignore   # plugin-api may have no mutants at all
       - name: Keep main's levels with this run
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !cancelled()

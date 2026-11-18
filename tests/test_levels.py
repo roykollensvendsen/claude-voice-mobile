@@ -214,3 +214,44 @@ def test_two_files_of_one_name_in_different_packages_keep_their_own_count(tmp_pa
 def test_a_module_report_that_should_be_there_stops_the_per_module_measure(tmp_path):
     with pytest.raises(SystemExit):
         levels.mutants_by_module({"core": tmp_path / "missing.xml"}, may_be_missing=set())
+
+
+def _module(root: pathlib.Path, path: str) -> None:
+    (root / path).mkdir(parents=True, exist_ok=True)
+    (root / path / "build.gradle.kts").write_text("")
+
+
+def test_the_parts_measured_are_found_by_walking_the_plugins_folder(tmp_path):
+    for path in ("plugins/status", "plugins/sms", "plugins/sms/rules", "plugins/notes"):
+        _module(tmp_path, path)
+    (tmp_path / "plugins" / "empty").mkdir()  # a folder with no build file is no plugin
+    (tmp_path / "plugins" / "notes" / "rules").mkdir()  # nor are rules with no build file
+    parts = levels.parts(tmp_path)
+    assert parts.modules == (
+        "core",
+        "plugin-api",
+        "app",
+        "plugins/notes",
+        "plugins/sms",
+        "plugins/status",
+        "plugins/sms/rules",
+    )
+    assert parts.mutated == ("core", "plugin-api", "plugins/sms/rules")
+    assert parts.results == (
+        ("core", "test"),
+        ("plugin-api", "test"),
+        ("app", "testDebugUnitTest"),
+        ("plugins/notes", "testDebugUnitTest"),
+        ("plugins/sms", "testDebugUnitTest"),
+        ("plugins/status", "testDebugUnitTest"),
+        ("plugins/sms/rules", "test"),
+    )
+    assert parts.test_tasks[-1] == ":plugins:sms:rules:test"
+    assert parts.test_tasks[3] == ":plugins:notes:testDebugUnitTest"
+
+
+def test_every_measure_builds_with_every_plugin_picked(monkeypatch):
+    seen = []
+    monkeypatch.setattr(levels.subprocess, "run", lambda args, **_: seen.append(args))
+    levels.gradle("check")
+    assert "-PcvPlugins=all" in seen[0], seen[0]

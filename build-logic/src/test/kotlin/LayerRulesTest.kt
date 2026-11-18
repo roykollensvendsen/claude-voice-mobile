@@ -150,4 +150,65 @@ class LayerRulesTest {
             brokenWith(":capabilities:mute:acme" to ":plugin-api", ":capabilities:mute:acme" to ":core"),
         )
     }
+
+    // ADR-CVM-007's rules modules: a plugin's decisions in plain Kotlin, at :plugins:<name>:rules.
+    // No plugin has one yet, so these are fixtures here.
+    private val withRules =
+        skeleton + mapOf(
+            ":app" to listOf(":core", ":plugin-api", ":plugins:status", ":plugins:sms"),
+            ":plugins:sms" to listOf(":plugin-api", ":plugins:sms:rules"),
+            ":plugins:sms:rules" to listOf(),
+        )
+
+    private fun brokenWithRules(vararg edge: Pair<String, String>): List<String> {
+        val edges = withRules.mapValues { it.value.toMutableList() }.toMutableMap()
+        for ((from, to) in edge) edges.getOrPut(from) { mutableListOf() }.add(to)
+        return LayerRules.violations(edges)
+    }
+
+    @Test
+    fun `a plugin may depend on its own rules`() {
+        assertEquals(listOf<String>(), LayerRules.violations(withRules))
+    }
+
+    @Test
+    fun `a plugin never depends on another plugin's rules`() {
+        assertEquals(
+            listOf(":plugins:status depends on :plugins:sms:rules; a plugin depends only on its own rules"),
+            brokenWithRules(":plugins:status" to ":plugins:sms:rules"),
+        )
+    }
+
+    @Test
+    fun `a plugin's rules depend on no module of ours`() {
+        assertEquals(
+            listOf(
+                ":plugins:sms:rules depends on :capabilities:mute; a plugin's rules depend on no module of ours",
+                ":plugins:sms:rules depends on :core; a plugin's rules depend on no module of ours",
+                ":plugins:sms:rules depends on :plugin-api; a plugin's rules depend on no module of ours",
+            ),
+            brokenWithRules(
+                ":plugins:sms:rules" to ":plugin-api",
+                ":plugins:sms:rules" to ":core",
+                ":plugins:sms:rules" to ":capabilities:mute",
+            ).filter { it.startsWith(":plugins:sms:rules") },
+        )
+    }
+
+    @Test
+    fun `neither the core nor the app depends on a plugin's rules`() {
+        assertEquals(
+            listOf(
+                ":app depends on :plugins:sms:rules; the app wires a plugin's entry, never its rules",
+                ":core depends on :plugins:sms:rules; the core never depends on a plugin's rules",
+            ),
+            brokenWithRules(":core" to ":plugins:sms:rules", ":app" to ":plugins:sms:rules"),
+        )
+    }
+
+    @Test
+    fun `a module inside a plugin other than its rules is in no layer`() {
+        val found = brokenWithRules(":plugins:sms:extra" to ":plugin-api")
+        assertTrue(found.single().startsWith(":plugins:sms:extra is in no layer"), found.toString())
+    }
 }
