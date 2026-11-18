@@ -80,13 +80,18 @@ class Plugins(private val plugins: List<Plugin>) {
 
         /**
          * What a plugin in this app may say it uses: the nine names protocol version 1 gives as
-         * examples. This is stricter than v1, whose `plugin.json` only sets a pattern and lets a
-         * hub show a name it does not know as unknown. It is this app's own rule: its plugins are
-         * built for v1, so a name outside the nine can only be a typo. A later version's names
-         * are added here when the app moves to it.
+         * examples, and the names the protocol's next version adds. This is stricter than v1, whose
+         * `plugin.json` only sets a pattern and lets a hub show a name it does not know as
+         * unknown. It is this app's own rule: a name outside the list can only be a typo. A name is
+         * added here only once the protocol lists it.
+         *
+         * `messages`, "reads or sends the owner's text messages", is listed in claude-voice's
+         * `docs/agent-protocol/next-version.md`. The `sms` plugins use it (ADR-CVM-010). v1's
+         * `uses` is open, so the name already travels; a v1 hub shows it as one it does not know.
          */
         val USES = setOf(
             "microphone", "camera", "location", "calls", "contacts", "notifications", "media", "sensors", "usage",
+            "messages",
         )
 
         /** Every name known, and none twice. */
