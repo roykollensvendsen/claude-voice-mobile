@@ -10,7 +10,8 @@ Two keys are measured more narrowly than in claude-voice:
 
 - `mutants` replaces `mutation`. In claude-voice `mutation` counts rules proven by a
   test, and this repository has no rule rows yet; `mutants` is Pitest's mutants caught,
-  in :core and :plugin-api only, because Pitest cannot run Android unit tests.
+  in :core, :plugin-api and each plugin's rules module only, because Pitest cannot run
+  Android unit tests.
 - `duplication` leaves out lines that say nothing on their own: imports, the package
   line, and lines of brackets only.
 - `type_errors` counts Kotlin compiler warnings, because a build with a type error is
@@ -22,6 +23,7 @@ Two keys are measured more narrowly than in claude-voice:
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import re
 import subprocess
@@ -31,8 +33,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-MODULES = ("core", "plugin-api", "app", "plugins/status")
-MUTATED = ("core", "plugin-api")  # Pitest cannot run Android unit tests
+# Every plugin is measured, the ones the default build leaves out too (ADR-CVM-007).
+ALL_PLUGINS = "-PcvPlugins=all"
 # Modules whose classes are all data-only, so Pitest makes no mutants there and writes no
 # report. tests/test_levels.py checks each holds nothing else.
 NO_MUTANTS = ("plugin-api",)
@@ -42,14 +44,44 @@ BLOCK = 6  # lines in a row that count as a copied block, as in claude-voice
 NOISE = re.compile(r"^(?:import |package )|^[{}()\[\];,.]+$")
 COMPLEXITY_RULE = "detekt.CyclomaticComplexMethod"
 COMPLEXITY = re.compile(r"\(complexity: (\d+)\)")
-# Where each test task above writes its results; other variants' results are left out.
-RESULTS = (
-    ("core", "test"),
-    ("plugin-api", "test"),
-    ("app", "testDebugUnitTest"),
-    ("plugins/status", "testDebugUnitTest"),
-)
-TEST_TASKS = (":core:test", ":plugin-api:test", ":app:testDebugUnitTest", ":plugins:status:testDebugUnitTest")
+
+
+@dataclasses.dataclass(frozen=True)
+class Parts:
+    """What is measured: the modules, those Pitest mutates, and each test task's results."""
+
+    modules: tuple[str, ...]
+    mutated: tuple[str, ...]
+    results: tuple[tuple[str, str], ...]
+
+    @property
+    def test_tasks(self) -> tuple[str, ...]:
+        """The Gradle task behind each of `results`: `plugins/sms/rules` runs `:plugins:sms:rules:test`."""
+        return tuple(":" + module.replace("/", ":") + ":" + task for module, task in self.results)
+
+
+def parts(root: Path) -> Parts:
+    """The parts, found by walking `plugins/`, so a new plugin or rules module is never left out.
+
+    A plugin is a folder there with a build file, and an Android library. Its rules module,
+    `plugins/<name>/rules`, is plain Kotlin, so Pitest mutates it as it does the core.
+    """
+    folder = root / "plugins"
+    plugins = sorted(
+        f"plugins/{d.name}" for d in folder.iterdir() if d.is_dir() and (d / "build.gradle.kts").is_file()
+    )
+    rules = [f"{p}/rules" for p in plugins if (root / p / "rules" / "build.gradle.kts").is_file()]
+    return Parts(
+        modules=("core", "plugin-api", "app", *plugins, *rules),
+        mutated=("core", "plugin-api", *rules),  # Pitest cannot run Android unit tests
+        results=(
+            ("core", "test"),
+            ("plugin-api", "test"),
+            ("app", "testDebugUnitTest"),
+            *((p, "testDebugUnitTest") for p in plugins),
+            *((r, "test") for r in rules),
+        ),
+    )
 
 
 def _parse(path: Path) -> ET.Element:
@@ -261,9 +293,10 @@ def layer_violations(output: str, *, ok: bool) -> int:
     return sum(1 for line in after.splitlines() if line.startswith("  ") and line.strip())
 
 
-def _gradle(*args: str) -> subprocess.CompletedProcess[str]:
+def gradle(*args: str) -> subprocess.CompletedProcess[str]:
+    """Runs Gradle on the tree with every plugin picked, so each one and its rules are measured."""
     return subprocess.run(  # noqa: S603 - fixed arguments
-        [str(ROOT / "gradlew"), "--console=plain", *args],
+        [str(ROOT / "gradlew"), "--console=plain", ALL_PLUGINS, *args],
         cwd=ROOT,
         capture_output=True,
         text=True,
@@ -301,22 +334,28 @@ def pitest(module: str) -> Path:
 
 def measure() -> dict[str, object]:
     """Every measure, from the tree as it is."""
-    compiled = _must(_gradle("--rerun-tasks", "compileTestKotlin", "compileDebugUnitTestKotlin"), "Compiling")
+    found = parts(ROOT)
+    compiled = _must(gradle("--rerun-tasks", "compileTestKotlin", "compileDebugUnitTestKotlin"), "Compiling")
     started = time.monotonic()
-    _must(_gradle(*(a for task in TEST_TASKS for a in (task, "--rerun"))), "The tests")
+    _must(gradle(*(a for task in found.test_tasks for a in (task, "--rerun"))), "The tests")
     seconds = round(time.monotonic() - started, 1)
-    reports = ("koverXmlReport", "detektMeasure", *(f":{m}:pitest" for m in MUTATED), "lintDebug")
-    _must(_gradle(*reports), "Measuring")
-    layers = _gradle("checkLayers")
-    sources = [ROOT / m / "src" / "main" for m in MODULES]
+    reports = (
+        "koverXmlReport",
+        "detektMeasure",
+        *(":" + m.replace("/", ":") + ":pitest" for m in found.mutated),
+        "lintDebug",
+    )
+    _must(gradle(*reports), "Measuring")
+    layers = gradle("checkLayers")
+    sources = [ROOT / m / "src" / "main" for m in found.modules]
     detekt = ROOT / "build" / "reports" / "detekt" / "measure.xml"
-    lint = [ROOT / m / "build" / "reports" / "lint-results-debug.xml" for m in MODULES]
-    pitests = {m: pitest(m) for m in MUTATED}
+    lint = [ROOT / m / "build" / "reports" / "lint-results-debug.xml" for m in found.modules]
+    pitests = {m: pitest(m) for m in found.mutated}
     missing = {pitest(m) for m in NO_MUTANTS}
     levels = {
         "coverage": coverage(ROOT / "build" / "reports" / "kover" / "report.xml"),
-        "mutants": mutants([pitest(m) for m in MUTATED], {pitest(m) for m in NO_MUTANTS}),
-        "tests": passed_tests([ROOT / m / "build" / "test-results" / t for m, t in RESULTS]),
+        "mutants": mutants([pitest(m) for m in found.mutated], {pitest(m) for m in NO_MUTANTS}),
+        "tests": passed_tests([ROOT / m / "build" / "test-results" / t for m, t in found.results]),
         "lint_errors": detekt_findings(detekt) + android_lint_errors(lint),
         "type_errors": compiler_warnings(compiled.stdout + compiled.stderr),
         "cycles": cycles(sources),

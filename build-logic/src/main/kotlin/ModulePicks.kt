@@ -13,6 +13,13 @@ object ModulePicks {
     /** The protocol's pattern for a plugin's name; the folder, package and name are one string. */
     private val NAME = Regex("[a-z][a-z0-9_]{0,31}")
 
+    /**
+     * The Gradle paths a build includes for the [picked] plugins: each plugin, and its rules
+     * module (`plugins/<name>/rules`) when it has one. A rules module is never picked on its own.
+     */
+    fun included(picked: List<String>, hasRules: (String) -> Boolean): List<String> =
+        picked.flatMap { name -> listOfNotNull(":plugins:$name", ":plugins:$name:rules".takeIf { hasRules(name) }) }
+
     /** The plugins [given] names, in order and once each; refused when a name is not in [known]. */
     fun picked(given: String?, known: Set<String>): List<String> {
         require(ALL !in known) { "a plugin folder is named $ALL, the word for every plugin; rename the folder" }

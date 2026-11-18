@@ -62,4 +62,12 @@ class ModulePicksTest {
         val refused = assertThrows<IllegalArgumentException> { ModulePicks.picked(" , ", known) }
         assertTrue(refused.message!!.startsWith("cvPlugins names no plugin"), refused.message)
     }
+
+    @Test
+    fun `a picked plugin brings its rules along, and an unpicked one does not`() {
+        assertEquals(
+            listOf(":plugins:sms", ":plugins:sms:rules", ":plugins:status"),
+            ModulePicks.included(listOf("sms", "status"), hasRules = { it == "sms" || it == "micmute" }),
+        )
+    }
 }

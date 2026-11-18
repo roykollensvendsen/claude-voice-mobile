@@ -1,0 +1,7 @@
+LayerRulesTest > a plugin never depends on another plugin's rules() FAILED
+LayerRulesTest > a plugin may depend on its own rules() FAILED
+LayerRulesTest > a plugin's rules depend on no module of ours() FAILED
+LayerRulesTest > neither the core nor the app depends on a plugin's rules() FAILED
+LayerRulesTest > a module inside a plugin other than its rules is in no layer() FAILED
+38 tests completed, 5 failed
+BUILD FAILED in 36s
