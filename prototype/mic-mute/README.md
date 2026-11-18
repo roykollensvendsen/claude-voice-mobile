@@ -32,11 +32,19 @@ A foreground service holds everything while the Claude app is in front:
 - **The word schedule (M1c):** from the next whole minute, twelve 10-second
   slots, a third to two thirds of them muted, chosen at random and written to
   the log. It is never shown on the screen or said aloud.
-- **The owner's switch (B):** no app can read it, so the tester flips it in
-  Quick Settings and then taps "B on" or "B off". From the mark, M1a and M1b
-  judge as they do for the app's own mute (A). For M1c under B, the owner
-  flips it at their own times, not shown to anyone, and marks each one. The
-  laptop's judge reads the mutes from those marks. M5 watches mute (A) only.
+- **The owner's switch (B):** no app can read it, so the tester marks it by
+  hand, and **the marks must always sit inside the real mute**. To mute,
+  turn microphone access off in Quick Settings, then tap "B on". To unmute,
+  tap "B off" first, then turn access back on. In the other order the
+  stand-in hears the tone while marked muted, and the run fails for the
+  wrong reason. From the mark, M1a and M1b judge as they do for the app's
+  own mute (A). For M1c under B, the owner flips the switch at their own
+  times, not shown to anyone, each time at the start of a slot, between
+  words. Each change is marked in the order above, and the laptop's judge
+  reads the mutes from those marks. M5 watches mute (A) only.
+- **One run per log for M1c under B:** the judge checks the last word
+  schedule in the log, so tap "Save the log to Downloads" and then "Clear
+  the log" between an (A) run and a (B) run.
 - **The silent track:** the media session can run with or without it. A
   pass with it is a pass for that trick only, so M2 is run once without it
   too, which shows whether the product would have to play silence all day.

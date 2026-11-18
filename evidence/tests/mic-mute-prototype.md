@@ -52,3 +52,7 @@ After review:
 Tried on the emulator after these changes: muted, then "Stop it". The log said `mute-restored
 on=service-stop now=false`, and Android's own audio state went from muted by the app to not
 muted. The switch marks and the session without its silent track logged as they should.
+
+The marks for the owner's switch must sit inside the real mute: "B on" after turning access
+off, "B off" before turning it back on. Otherwise, in the gap, the app counts the phone as
+muted while the stand-in still hears the tone. The screen and the README now say so.
