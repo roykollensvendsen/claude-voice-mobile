@@ -33,8 +33,11 @@ architect's word. Gradle's test task writes the count to
 only the test task passes the report's path.
 
 Pitest mutates the masker, and its score goes to the code-health page, never into the
-repository. The mutants it leaves are in code that Kotlin inlines from its standard library
-(`any`, `count`, `getOrElse`), on line numbers past the file's end.
+repository. The first version used Kotlin's inlined `any` and `count`. Pitest's mutants in that
+inlined code sat on line numbers past the file's end, where no test could reach them, and the
+quality ratchet refused them. So the checks are plain loops and patterns now, each comparison a
+line of the file's own. The code-word pattern is the words joined as they are, with no lambda in
+the class's set-up, which Pitest cannot run again.
 
 A rules module stays plain Kotlin and mutated only while its build file says so, so
 `tests/test_rules_modules.py` reads every `plugins/*/rules` build file in the tree. Each must

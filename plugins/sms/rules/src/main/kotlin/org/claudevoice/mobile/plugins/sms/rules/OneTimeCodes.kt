@@ -44,6 +44,9 @@ object OneTimeCodes {
     private val LINE_END = Regex("\r\n|\n|\r")
     private val SPACES = Regex("(?U)\\s+")
     private val DIGIT = Regex("\\p{Nd}")
+    private val LETTER = Regex("\\p{L}")
+    // The words hold no character a pattern treats as special, so they are joined as they are.
+    private val CODE_WORD = Regex(WORDS.joinToString("|"))
 
     // A run of digits on its own, and the same with single spaces, dots or dashes between groups.
     private val PLAIN_RUN = Regex("\\p{Nd}+")
@@ -61,8 +64,8 @@ object OneTimeCodes {
     fun namedOrShort(sender: String): Boolean {
         val trimmed = plain(sender).trim()
         return trimmed.isEmpty() ||
-            trimmed.any { it.isLetter() } ||
-            (!trimmed.contains('+') && trimmed.count { it.isDigit() } <= SHORT_CODE_DIGITS)
+            LETTER.containsMatchIn(trimmed) ||
+            (!trimmed.contains('+') && DIGIT.findAll(trimmed).count() <= SHORT_CODE_DIGITS)
     }
 
     private fun plain(text: String) = Normalizer.normalize(text, Normalizer.Form.NFKC)
@@ -75,12 +78,20 @@ object OneTimeCodes {
             run.value.count { it.isDigit() } in RUN_DIGITS
         }
 
+    // Plain loops rather than Kotlin's inlined `any`, so each comparison is a line of ours that
+    // Pitest can mutate and a test can catch.
     private fun hasDigitNearWord(body: String): Boolean {
         val lines = body.split(LINE_END).map { it.lowercase().replace(SPACES, " ") }
-        return lines.indices.any { i ->
-            val line = lines[i]
-            WORDS.any { word -> line.contains(word) } &&
-                (i - 1..i + 1).any { near -> DIGIT.containsMatchIn(lines.getOrElse(near) { "" }) }
+        for (i in lines.indices) {
+            if (CODE_WORD.containsMatchIn(lines[i]) && hasDigitOn(lines, i - 1, i + 1)) return true
         }
+        return false
+    }
+
+    private fun hasDigitOn(lines: List<String>, first: Int, last: Int): Boolean {
+        for (near in maxOf(first, 0)..minOf(last, lines.size - 1)) {
+            if (DIGIT.containsMatchIn(lines[near])) return true
+        }
+        return false
     }
 }
