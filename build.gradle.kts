@@ -10,7 +10,10 @@ plugins {
 
 // The measures the code-health page shows (scripts/levels.py reads their reports). They
 // measure only; the gate below does not depend on them.
-val measured = listOf(":core", ":plugin-api", ":app", ":plugins:status")
+// The plugins are the ones -PcvPlugins picked (ADR-CVM-007), so a plugin left out is not measured.
+@Suppress("UNCHECKED_CAST")
+val measured = listOf(":core", ":plugin-api", ":app") +
+    (gradle.extensions.extraProperties["cvPlugins"] as List<String>).map { ":plugins:$it" }
 subprojects {
     if (path in measured) apply(plugin = "org.jetbrains.kotlinx.kover")
 }

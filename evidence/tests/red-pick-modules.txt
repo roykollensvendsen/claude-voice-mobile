@@ -1,0 +1,10 @@
+# ModulePicksTest, before ModulePicks exists:
+e: build-logic/src/test/kotlin/ModulePicksTest.kt:12:40 Unresolved reference: ModulePicks
+e: build-logic/src/test/kotlin/ModulePicksTest.kt:17:47 Unresolved reference: ModulePicks
+e: build-logic/src/test/kotlin/ModulePicksTest.kt:22:64 Unresolved reference: ModulePicks
+e: build-logic/src/test/kotlin/ModulePicksTest.kt:28:64 Unresolved reference: ModulePicks
+BUILD FAILED in 4s
+# BuiltPluginsTest, before the app checks a plugin's name against its folder:
+e: app/BuiltPluginsTest.kt:25:28 Unresolved reference 'BuiltPlugin'.
+e: app/BuiltPluginsTest.kt:30:73 Unresolved reference 'BuiltPlugin'.
+BUILD FAILED in 2s

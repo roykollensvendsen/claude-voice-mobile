@@ -17,11 +17,10 @@ import org.claudevoice.mobile.core.Plugins
 import org.claudevoice.mobile.core.SettingsKeeper
 import org.claudevoice.mobile.core.hubName
 import org.claudevoice.mobile.core.suggestedMachine
-import org.claudevoice.mobile.plugins.status.StatusPlugin
 
 /** The app: the one place that knows which plugins there are, and hands them to the core. */
 class App : Application() {
-    val plugins by lazy { Plugins(listOf(StatusPlugin())) }
+    val plugins by lazy { Plugins(BUILT_PLUGINS.map { (folder, build) -> BuiltPlugin.named(folder, build(this)) }) }
 
     /** The log of every call, in the app's private files, kept out of backups (ADR-CVM-003). */
     val calls by lazy { CallLog(FileLogStore(File(filesDir, CALLS_FILE))) }
