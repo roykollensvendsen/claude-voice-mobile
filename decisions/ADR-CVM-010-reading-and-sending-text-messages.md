@@ -79,8 +79,11 @@ not logged (ADR-CVM-003).
 the module masks it, and it masks too much rather than too little:
 
 - from a short-code or letter-named sender, every run of 4 to 8 digits. A
-  short code is a sender of at most 6 digits with no "+". A longer one is
-  often an ordinary number written without its country code;
+  short code is a sender of at most 6 digits with no "+". This narrows the
+  rule: a sender of 7 or 8 digits with no "+" is often an ordinary number
+  written without its country code. Counting it as a short code would mask
+  the digits in every contact's texts. So a bare code from such a sender,
+  with no code word near it, goes out unmasked;
 - from any sender, a run of digits near a code word, before or after it, on
   the code word's own line, the line before it or the line after it, so
   "123456" above "is your code" is masked too. The code words are matched in
@@ -176,7 +179,9 @@ it keeps the time, caller and outcome of each call, never a number or a text.
     delivery and login texts are masked, including a code before its word,
     a word on the line before the code, and a code on the line before its
     word. A sender of 6 digits counts as a short code, and one of 7 does
-    not. Texts with dates or prices are listed too. How many of them were
+    not. An 8-digit sender's bare code with no code word is listed as
+    passing unmasked, so the count shows what the bound gives up. Texts with
+    dates or prices are listed too. How many of them were
     masked goes in the CI run's artifact, never in the repository;
   - `smsstore`: nothing it offers `sms_send` returns a text, a list or a
     count;
