@@ -46,6 +46,8 @@ ignore = ["D203", "D213", "COM812", "ISC001", "CPY001", "D401"]
 # A test's name is its docstring, its fixtures need no annotations, and a bare
 # assert is the point of pytest.
 "tests/*" = ["S101", "ANN", "D1", "PLR2004", "INP001", "S603", "S607"]
+# A test app's helper script is run by path, never imported as a package.
+"prototype/*" = ["INP001"]
 
 [tool.mypy]
 python_version = "3.12"
