@@ -138,6 +138,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
       - name: The app's gate
         run: ./gradlew check --console=plain
+      # ADR-CVM-007: the same gate with every plugin folder built in, so each plugin's tests run
+      # and its manifest entries are checked even when the default list leaves it out.
+      - name: The app's gate, with every plugin
+        run: ./gradlew -PcvPlugins=all check --console=plain
 
   # The app's code health, for the bridge's code-health page. scripts/ratchet.py measures it
   # with scripts/levels.py and fails when a measure got worse than the base, unless the

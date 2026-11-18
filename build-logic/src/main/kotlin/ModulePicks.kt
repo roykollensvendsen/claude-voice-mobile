@@ -7,12 +7,18 @@ object ModulePicks {
     const val PROPERTY = "cvPlugins"
     const val DEFAULT = "status"
 
+    /** Every plugin folder, as CI builds it, so no plugin's entries go unchecked. */
+    const val ALL = "all"
+
     /** The protocol's pattern for a plugin's name; the folder, package and name are one string. */
     private val NAME = Regex("[a-z][a-z0-9_]{0,31}")
 
     /** The plugins [given] names, in order and once each; refused when a name is not in [known]. */
     fun picked(given: String?, known: Set<String>): List<String> {
-        val names = (given ?: DEFAULT).split(',').map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        require(ALL !in known) { "a plugin folder is named $ALL, the word for every plugin; rename the folder" }
+        val listed = (given ?: DEFAULT).split(',').map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        // `all` is expanded first, so every folder it takes goes through the same name check.
+        val names = if (listed == listOf(ALL)) known.sorted() else listed
         require(names.isNotEmpty()) { "$PROPERTY names no plugin; give at least one, such as $DEFAULT" }
         names.firstOrNull { !NAME.matches(it) }?.let {
             throw IllegalArgumentException(

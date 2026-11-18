@@ -78,6 +78,45 @@ androidComponents {
     onVariants { variant -> variant.sources.java?.addGeneratedSourceDirectory(builtPlugins, BuiltPlugins::out) }
 }
 
+// ADR-CVM-007: the merged manifest asks only for what the app or a module this build took declares.
+// The modules are every project in the build, which settings limits to the fixed ones and the
+// plugins -PcvPlugins picked; CI runs this on the default list and on `all`.
+abstract class CheckMergedManifest : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val merged: RegularFileProperty
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val declared: ConfigurableFileCollection
+
+    @get:OutputFile
+    abstract val report: RegularFileProperty
+
+    @TaskAction
+    fun check() {
+        val found = ManifestCheck.undeclared(
+            ManifestEntries.of(merged.get().asFile.readText()),
+            declared.files.map { ManifestEntries.of(it.readText()) },
+        )
+        report.get().asFile.writeText(found.joinToString("\n", postfix = "\n"))
+        if (found.isNotEmpty()) throw GradleException(found.joinToString("\n"))
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        val name = variant.name.replaceFirstChar { it.uppercase() }
+        val task = tasks.register<CheckMergedManifest>("check${name}MergedManifest") {
+            description = "Fails when the merged manifest asks for what no module this build took declares."
+            merged.set(variant.artifacts.get(com.android.build.api.artifact.SingleArtifact.MERGED_MANIFEST))
+            declared.from(rootProject.subprojects.map { it.file("src/main/AndroidManifest.xml") }.filter { it.isFile })
+            report.set(layout.buildDirectory.file("reports/manifest/${variant.name}.txt"))
+        }
+        tasks.named("check") { dependsOn(task) }
+    }
+}
+
 dependencies {
     implementation(project(":core"))
     pickedPlugins.forEach { implementation(project(":plugins:$it")) }

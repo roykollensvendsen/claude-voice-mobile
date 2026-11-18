@@ -1,0 +1,4 @@
+ModulePicksTest > all refuses a folder whose name the protocol would refuse, as naming it would() FAILED
+ModulePicksTest > a plugin folder named all is refused, since all means every plugin() FAILED
+31 tests completed, 2 failed
+BUILD FAILED in 3m 29s

@@ -1,0 +1,6 @@
+* What went wrong:
+> the app asks for android.permission.FOREGROUND_SERVICE, which neither the app nor a module it took declares
+  the app asks for android.permission.RECEIVE_BOOT_COMPLETED, which neither the app nor a module it took declares
+  the app asks for android.permission.WAKE_LOCK, which neither the app nor a module it took declares
+  the app asks for org.claudevoice.mobile.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION, which neither the app nor a module it took declares
+BUILD FAILED in 5s

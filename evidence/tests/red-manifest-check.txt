@@ -1,0 +1,6 @@
+ManifestCheckTest > a manifest's permissions and service types are read, in both permission forms() FAILED
+ManifestCheckTest > a service type no module declares fails the check() FAILED
+ManifestCheckTest > a permission no module declares fails the check() FAILED
+ModulePicksTest > all takes every plugin folder, so a check on it leaves none out() FAILED
+25 tests completed, 4 failed
+BUILD FAILED in 31s

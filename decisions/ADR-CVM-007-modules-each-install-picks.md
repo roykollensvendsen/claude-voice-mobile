@@ -72,7 +72,8 @@ of the build. **A CI job checks it:** it reads the app's merged manifest and
 fails when a permission or service type in it is not declared by a module in
 the property's list, or by the app itself. It runs twice: on the default list, and
 on a list of every module, so that a module's entries are checked even when
-the default leaves it out. The
+the default leaves it out. That list is `-PcvPlugins=all`, which takes every
+folder under `plugins/`, so a new plugin cannot be left out of it. The
 default list in the repository is `status` alone. Anyone's own list, the owner's
 included, goes in their own `~/.gradle/gradle.properties`, outside the
 repository, so nothing in it is tied to one phone, headset or person.

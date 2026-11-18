@@ -36,7 +36,25 @@ class ModulePicksTest {
     fun `a name of 32 characters is taken, and one of 33 is refused`() {
         val longest = "a" + "b".repeat(31)
         assertEquals(listOf(longest), ModulePicks.picked(longest, setOf(longest, longest + "c")))
-        assertThrows<IllegalArgumentException> { ModulePicks.picked(longest + "c", setOf(longest, longest + "c")) }
+        val refused = assertThrows<IllegalArgumentException> { ModulePicks.picked(longest + "c", setOf(longest, longest + "c")) }
+        assertTrue(refused.message!!.startsWith("cvPlugins names ${longest}c, which is not a plugin name"), refused.message)
+    }
+
+    @Test
+    fun `all takes every plugin folder, so a check on it leaves none out`() {
+        assertEquals(listOf("micmute", "sms", "status"), ModulePicks.picked(" all ", known))
+    }
+
+    @Test
+    fun `all refuses a folder whose name the protocol would refuse, as naming it would`() {
+        val refused = assertThrows<IllegalArgumentException> { ModulePicks.picked("all", known + "Sms-2") }
+        assertTrue(refused.message!!.startsWith("cvPlugins names Sms-2, which is not a plugin name"), refused.message)
+    }
+
+    @Test
+    fun `a plugin folder named all is refused, since all means every plugin`() {
+        val refused = assertThrows<IllegalArgumentException> { ModulePicks.picked("status", known + "all") }
+        assertEquals("a plugin folder is named all, the word for every plugin; rename the folder", refused.message)
     }
 
     @Test
