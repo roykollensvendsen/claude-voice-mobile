@@ -26,6 +26,13 @@ rather than too little. `plugins/sms/rules`, the text-message plugin's first rul
   is in `red-otp-more-chars.txt`. A fourth sample pins that digits split by a zero-width space
   count as one run, so "12<ZWSP>34" from a short code is hidden. It was green from the start,
   because dropping the invisible character already joins them.
+- An accent inside a code word, typed as its own mark or as a ready-made letter such as "ó",
+  used to let a code through. The text is now split into letters and marks (NFKD) and every
+  combining mark is dropped, so "códe" reads as "code". That also covers the marks that were
+  named one by one before, and every variation selector, the supplementary ones included. Both
+  architects and quality agreed on it. Its red run is in `red-otp-accents.txt`. None of
+  the code words holds an accent, so the cleaning leaves them as they are, and the code-word
+  test sends each one through it.
 - A hidden message is replaced whole by "a one-time code from <sender>". The owner still reads it
   in the phone's own text app.
 
