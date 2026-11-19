@@ -4,13 +4,13 @@ This repository will hold the claude-voice agent for Android: a Kotlin app
 that joins a claude-voice hub the way a second laptop does, and offers the
 phone's own functions as plugins. It is private for now.
 
-## What only Roy decides
+## What only the owner decides
 
 - **Building beyond the prototype plan.** Nothing past
-  [the audio-focus prototype](docs/prototype-audio-focus.md) is built until Roy
+  [the audio-focus prototype](docs/prototype-audio-focus.md) is built until the owner
   has accepted ADR-CV-007 in claude-voice and said yes here.
-- **Installing on a phone.** Putting a build on Roy's phone, or anyone's, needs
-  his yes each time.
+- **Installing on a phone.** Putting a build on the owner's phone, or anyone's, needs
+  their yes each time.
 - **Making the repository public**, and choosing who else can read it.
 - **Changing the protocol.** The agent protocol is specified in claude-voice.
   Propose a change there; never let the app drift from it here.

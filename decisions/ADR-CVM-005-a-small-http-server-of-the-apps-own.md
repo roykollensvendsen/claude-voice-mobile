@@ -3,7 +3,7 @@
 ## Status
 
 Proposed 2026-11-15 by the architect session, at the Android developer's
-question, relayed by the manager session. Settled when Roy merges it.
+question, relayed by the manager session. Settled when the owner merges it.
 
 ## Context
 

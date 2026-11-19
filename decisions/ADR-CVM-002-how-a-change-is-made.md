@@ -2,12 +2,12 @@
 
 ## Status
 
-Proposed 2026-11-08, following Roy's instructions by voice the same day.
+Proposed 2026-11-08, following the owner's instructions by voice the same day.
 
 ## Context
 
-Several Claude Code sessions build this app, each owning one part. Roy
-often follows from his phone, or while driving. claude-voice and claude-voice-ui
+Several Claude Code sessions build this app, each owning one part. The owner
+often follows from their phone, or while driving. claude-voice and claude-voice-ui
 already work tests first, one pull request per change, landed by rebase
 (ADR-CV-005 in claude-voice).
 
@@ -15,9 +15,9 @@ already work tests first, one pull request per change, landed by rebase
 
 - **One session for everything.** Not taken: the protocol would drift with
   whatever the app needed that day.
-- **Roy reviews every merge.** Not taken: he is often away from a screen.
+- **The owner reviews every merge.** Not taken: they are often away from a screen.
 - **Owned parts, tests first, merged when green, with only real choices going to
-  Roy.** **Chosen.**
+  the owner.** **Chosen.**
 
 ## Decision
 
@@ -27,7 +27,7 @@ already work tests first, one pull request per change, landed by rebase
   turns it green.
 - A change reaches `main` through a pull request landed by rebase. It is merged
   when its checks are green and the part's owner agrees.
-- What only Roy decides goes to him as an issue labelled `needs-roy`, and in
+- What only the owner decides goes to them as an issue labelled `needs-roy`, and in
   `STATUS.md`. The list is in `docs/organisation.md`.
 
 ## Consequences

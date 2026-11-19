@@ -4,11 +4,11 @@ Proposed 2026-11-11 by the architect session. The bridge side is the hub
 session's. **Decided 2026-11-15:** the owner said yes, with option a below,
 relayed by the hub session. It is built in the order at the end.
 
-## What Roy wants
+## What the owner wants
 
-When he comes within a set distance of a place he has saved, such as home, the
-phone tells the bridge, and the bridge **asks** him whether to do something:
-"You're nearly home. Open the garage door?" It acts only on his yes. Location
+When the owner comes within a set distance of a place they have saved, such as home, the
+phone tells the bridge, and the bridge **asks** them whether to do something:
+"You're nearly home. Open the garage door?" It acts only on their yes. Location
 alone never opens anything. Places, distances, actions and an on/off switch
 are set per trigger. It works with the phone in the car.
 
@@ -33,7 +33,7 @@ are set per trigger. It works with the phone in the car.
   location permission, which the app asks for only when the first trigger is
   switched on. The phone keeps no positions. The location-logging setting is
   not needed for this, and it stays off unless switched on.
-- **The plugin declares `location` in `uses`**, so Roy sees it when he approves
+- **The plugin declares `location` in `uses`**, so the owner sees it when they approve
   the plugin. The call log keeps that a trigger fired, never where.
 - **One switch turns off every trigger.** It sits in the app and in its
   notification.

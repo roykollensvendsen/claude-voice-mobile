@@ -1,6 +1,6 @@
 # How the work is organised
 
-The app is built by a few Claude Code sessions, each owning one part. Roy is
+The app is built by a few Claude Code sessions, each owning one part. The owner is
 asked only about real choices.
 
 ## The sessions
@@ -12,7 +12,7 @@ asked only about real choices.
 | Hub (`claude-voice-work`, in claude-voice) | the bridge side the phone talks to | lives in claude-voice |
 
 Each session writes and improves its own skill, with the skill-creator skill,
-as it learns. The architect and Android sessions are started only when Roy says
+as it learns. The architect and Android sessions are started only when the owner says
 so.
 
 ## The rules the architect owns
@@ -28,13 +28,13 @@ so.
 
 ## Who decides what
 
-Decided by the sessions themselves, and told to Roy in the next summary:
+Decided by the sessions themselves, and told to the owner in the next summary:
 
 - commits and pushes;
 - merging to `main` when the checks are green and the owner of the part agrees;
 - who does what, and everyday disagreements between sessions.
 
-Only Roy decides, each as an issue labelled `needs-roy`:
+Only the owner decides, each as an issue labelled `needs-roy`:
 
 - building past the audio-focus prototype, until ADR-CV-007 is accepted;
 - installing anything on a phone;
@@ -43,13 +43,13 @@ Only Roy decides, each as an issue labelled `needs-roy`:
 - starting a new session or role, and changing who owns what.
 
 When a call is cheap to undo, the session makes it. When it is not, it goes to
-Roy.
+the owner.
 
 ## Where status lives
 
 1. **Issues and the board.** Labels `role:architect`, `role:android`,
    `role:hub`, `needs-roy`, `blocked`.
 2. **[`STATUS.md`](../STATUS.md)**: one line per session, then one list of what
-   waits for Roy. Each session keeps its own line true.
-3. **What Roy hears**: one short summary in plain Norwegian, through
+   waits for the owner. Each session keeps its own line true.
+3. **What the owner hears**: one short summary in plain Norwegian, through
    `claude-voice-work`.

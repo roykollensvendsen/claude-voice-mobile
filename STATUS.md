@@ -1,16 +1,16 @@
 # Status
 
 One line per session: what it is doing now, what blocks it, and what waits for
-Roy. Each session updates its own line when its status changes. The details are
+the owner. Each session updates its own line when its status changes. The details are
 issues, labelled by role.
 
-| Session | Doing now | Blocked by | Waiting on Roy |
+| Session | Doing now | Blocked by | Waiting on the owner |
 |---|---|---|---|
 | Hub (`claude-voice-work`) | set up this repository; ADR-CV-007 proposed in claude-voice | — | ADR-CV-007, and starting the two sessions below |
-| Architect (`claude-voice-mobile-architect`) | protocol version 1 frozen ([claude-voice #192](https://github.com/roykollensvendsen/claude-voice/pull/192), locked by #209); the app's layers are checked in CI (#12); plugins read the privacy settings and never change them (#35); earbuds first among the plugins, after the core (#26); a plain message when Tailscale is off, decided, built with the core's tailnet listener ([design](docs/design-tailscale-off.md)); proposals for a microphone mute and location triggers; how the phone checks the hub's identity | Roy's answers | 3, 4 and 5 below |
+| Architect (`claude-voice-mobile-architect`) | protocol version 1 frozen ([claude-voice #192](https://github.com/roykollensvendsen/claude-voice/pull/192), locked by #209); the app's layers are checked in CI (#12); plugins read the privacy settings and never change them (#35); earbuds first among the plugins, after the core (#26); a plain message when Tailscale is off, decided, built with the core's tailnet listener ([design](docs/design-tailscale-off.md)); proposals for a microphone mute and location triggers; how the phone checks the hub's identity | the owner's answers | 3, 4 and 5 below |
 | Android developer (`claude-voice-mobile-android`) | audio-focus answer written: music ducks under Claude, the design stands; next the core's tailnet listener with the Tailscale-off message, then the earbuds plugin | — | — |
 
-## Waiting on Roy (one list)
+## Waiting on the owner (one list)
 
 1. Accept or change ADR-CV-007 in claude-voice.
 2. Say whether to start the architect and Android developer sessions.
