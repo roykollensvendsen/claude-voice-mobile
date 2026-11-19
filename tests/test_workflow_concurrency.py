@@ -29,7 +29,11 @@ def started_by_pull_request(workflow: str) -> bool:
 
 PULL_REQUEST_WORKFLOWS = [w for w in WORKFLOWS if started_by_pull_request(w.read_text())]
 
-GROUP = "group: ${{ github.workflow }}-${{ github.ref }}"
+# A pull request's runs share its ref, so a newer push stops the stale one. Every other run is
+# its own group by run_id: one group per ref would let GitHub keep only one waiting run, and a
+# main commit between two others would get none.
+PULL_REQUEST_REF_OR_RUN = "${{ github.event_name == 'pull_request' && github.ref || github.run_id }}"
+GROUP = "group: ${{ github.workflow }}-" + PULL_REQUEST_REF_OR_RUN
 CANCEL = "cancel-in-progress: ${{ github.event_name == 'pull_request' }}"
 
 
