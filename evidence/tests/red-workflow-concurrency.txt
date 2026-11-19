@@ -24,3 +24,10 @@ FAILED tests/test_workflow_concurrency.py::test_every_way_of_naming_pull_request
 FAILED tests/test_workflow_concurrency.py::test_every_way_of_naming_pull_request_counts[a dash list]
 FAILED tests/test_workflow_concurrency.py::test_every_way_of_naming_pull_request_counts[target]
 5 failed, 8 passed in 0.06s
+
+$ uv run pytest -q tests/test_workflow_concurrency.py
+  (the run_id group pinned, against checks.yml still keyed by ref for every run)
+
+E       assert "group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}" in "  group: ${{ github.workflow }}-${{ github.ref }}\n  cancel-in-progress: ${{ github.event_name == 'pull_request' }}\n"
+FAILED tests/test_workflow_concurrency.py::test_a_pull_request_workflow_cancels_only_pull_request_runs[checks.yml]
+1 failed, 12 passed in 0.04s
