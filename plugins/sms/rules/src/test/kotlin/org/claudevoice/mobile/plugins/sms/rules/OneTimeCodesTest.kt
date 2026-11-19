@@ -41,6 +41,10 @@ class OneTimeCodesTest {
             Sample("+4700000008", "Bank⁠ID 778899", "a word joiner inside a code word"),
             Sample("+4700000009", "Your one‑time pass 1234", "a no-break hyphen in one-time"),
             Sample("+4700000009", "Your one–time pass 1234", "an en dash in one-time"),
+            Sample("+4700000013", "Your one−time pass 1234", "a minus sign in one-time"),
+            Sample("+4700000013", "Your co͏de 482913", "a combining grapheme joiner inside a code word"),
+            Sample("+4700000013", "Your co️de 482913", "a variation selector inside a code word"),
+            Sample("2244", "Svar 12​34", "four digits split by a zero-width space, from a short code"),
         )
 
     @ParameterizedTest
