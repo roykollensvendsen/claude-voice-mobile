@@ -82,15 +82,28 @@ and the answer in
 [`docs/plugins/sms/sms-since-answer.json`](../docs/plugins/sms/sms-since-answer.json).
 There is no separate acknowledgement call:
 
-- The cursor means nothing outside the phone, and the bridge passes it back
-  exactly as it came. Passing it acknowledges every message in that answer and
-  its dropped count, and only then does the phone delete them. The bridge's
-  first call passes none.
-- The dropped count is given again with each answer until it is
-  acknowledged, so a lost answer does not lose it either.
+- The cursor means nothing outside the phone. The bridge passes it back
+  exactly as it came, and never reads it, compares it or builds one. Passing
+  it acknowledges every message in that answer and its dropped count, and
+  only then does the phone delete them. The bridge's first call passes none.
+- An answer that carries a message or a dropped count gives a cursor never
+  given before. So the cursor of an earlier answer never acknowledges a later
+  one. The phone clears a dropped count only when a call passes the cursor of
+  an answer that carried it. Until then the count is given again with each
+  answer, so a lost answer does not lose it either. An empty answer with
+  nothing dropped may give back the cursor it was passed.
 - A cursor this phone never gave, as after a reinstall, is not refused. The
   answer says `reset` and starts at the oldest message kept. A message given
   twice keeps its id, so the bridge drops an id it has already seen.
+- An id is an install part and a number. The install part is chosen at
+  random on every install and every clearing of the app's data, so an id
+  never repeats. The bridge can therefore keep the ids it has seen across a
+  reset without dropping a new message.
+- A text is given as its first 2000 characters, with `cut` saying whether
+  more was left out. The whole message is in the phone's own text app.
+- The time carries its offset by a pattern, not only by `format`, which JSON
+  Schema 2020-12 treats as a note. So a bridge whose validator skips
+  `format` still refuses a time without one.
 - The phone refuses only when it may not read messages: the owner has taken
   back `RECEIVE_SMS` or `READ_SMS`. The refusal is protocol version 1's
   `error.json`, with code `permission_missing`, and its `error` says where on
@@ -214,9 +227,12 @@ it keeps the time, caller and outcome of each call, never a number or a text.
   - `smsstore`: nothing it offers `sms_send` returns a text, a list or a
     count;
   - the queue: the order, the cursor's acknowledgement, a lost answer sent
-    again, the 500 and 7-day drops and their count, a lost key, a cursor from
-    another install giving `reset`, and nothing in a backup. Every answer the
-    tool gives in these tests fits `docs/plugins/sms/sms-since-answer.json`;
+    again, the 500 and 7-day drops and their count, a count still given after
+    its answer is lost and an older cursor is passed, a lost key, a cursor from
+    another install giving `reset` and ids with a new install part, a text
+    over 2000 characters cut, and nothing in a backup. Every answer the tool
+    gives in these tests fits `docs/plugins/sms/sms-since-answer.json`, and
+    each masked message in them reads "a one-time code from <sender>";
   - drafts: a new version per change, a stale version refused, a lapsed
     draft dropped, and one draft per recipient;
   - the allowlist: a short code, a foreign number, a premium number, a new

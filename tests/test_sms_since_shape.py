@@ -61,6 +61,8 @@ def scalar_errors(value: object, node: dict) -> list[str]:
     if isinstance(value, str):
         if len(value) < node.get("minLength", 0):
             errors.append(f"{value!r} is too short")
+        if len(value) > node.get("maxLength", len(value)):
+            errors.append(f"{len(value)} characters, more than {node['maxLength']}")
         if "pattern" in node and not re.search(node["pattern"], value):
             errors.append(f"{value!r} does not match {node['pattern']}")
         if node.get("format") == "date-time":
@@ -127,6 +129,10 @@ def test_the_checker_refuses_a_wrong_answer():
         {**good, "messages": [{**message, "received_at": "2026-11-19T14:02:11"}]},
         {**good, "messages": [{**message, "from_kind": "contact"}]},
         {**good, "messages": [{**message, "untrusted": False}]},
+        {**good, "messages": [{**message, "id": "141"}]},
+        {**good, "messages": [{**message, "received_at": "2026-11-19T14:02:11Z"}]},
+        {**good, "messages": [{**message, "text": "x" * 2001, "cut": True}]},
+        {**good, "messages": [{k: v for k, v in message.items() if k != "cut"}]},
         {**good, "messages": [message] * (doc["properties"]["messages"]["maxItems"] + 1)},
     ]
     for answer in wrong:
@@ -141,11 +147,53 @@ def test_a_masked_message_names_only_its_sender():
         assert message["text"] == f"a one-time code from {message['from']}"
 
 
+def test_a_cursor_never_looks_like_a_message_id():
+    """The bridge must not be tempted to build a cursor from the last id it saw."""
+    examples = schema(ANSWER)["examples"]
+    ids = [m["id"] for e in examples for m in e["messages"]]
+    for answer in examples:
+        assert not any(i in answer["cursor"] or answer["cursor"] in i for i in ids), answer["cursor"]
+
+
+def test_an_answer_to_acknowledge_gives_a_cursor_of_its_own():
+    """A lost answer's dropped count must not be cleared by the cursor before it.
+
+    So every answer that carries a message or a dropped count has a cursor no other
+    such answer gives. An empty answer with nothing dropped may give back the cursor
+    it was passed, but a drop-only answer's cursor is given by no other example.
+    """
+    examples = schema(ANSWER)["examples"]
+    carrying = [e for e in examples if e["messages"] or e["dropped"]]
+    cursors = [e["cursor"] for e in carrying]
+    assert len(set(cursors)) == len(cursors), cursors
+    drop_only = [e for e in carrying if not e["messages"]]
+    assert drop_only, "no drop-only example"
+    for answer in drop_only:
+        others = [e["cursor"] for e in examples if e is not answer]
+        assert answer["cursor"] not in others, answer["cursor"]
+
+
+def test_ids_after_a_reset_come_from_another_install():
+    """After a reinstall the bridge keeps the ids it has seen, so a new install never reuses one."""
+    examples = schema(ANSWER)["examples"]
+
+    def installs(answers: list[dict]) -> set[str]:
+        return {m["id"].split("-")[0] for e in answers for m in e["messages"]}
+
+    after = installs([e for e in examples if e["reset"]])
+    before = installs([e for e in examples if not e["reset"]])
+    assert after, "no reset example holds a message"
+    assert before, "no example before a reset holds a message"
+    assert not after & before
+
+
 def test_the_numbers_in_adr_cvm_010_are_the_numbers_in_the_files():
     # The ADR is wrapped, so a phrase may run over a line break.
     adr = " ".join(ADR.read_text().split())
     answer = schema(ANSWER)
     most = answer["properties"]["messages"]["maxItems"]
     assert f"at most {most} messages" in adr
+    longest = answer["$defs"]["message"]["properties"]["text"]["maxLength"]
+    assert f"first {longest} characters" in adr
     for name in (INPUT, ANSWER):
         assert f"docs/plugins/sms/{name}" in adr, f"ADR-CVM-010 does not point to {name}"
