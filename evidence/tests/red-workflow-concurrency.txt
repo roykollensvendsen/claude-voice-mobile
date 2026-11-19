@@ -14,3 +14,13 @@ tests/test_workflow_concurrency.py:35: AssertionError
 =========================== short test summary info ============================
 FAILED tests/test_workflow_concurrency.py::test_a_pull_request_workflow_cancels_only_pull_request_runs[checks.yml]
 1 failed, 1 passed in 0.05s
+
+$ uv run pytest -q tests/test_workflow_concurrency.py
+  (the detector's own tests, against a detector that knew only the block form `  pull_request:`)
+
+FAILED tests/test_workflow_concurrency.py::test_every_way_of_naming_pull_request_counts[a word]
+FAILED tests/test_workflow_concurrency.py::test_every_way_of_naming_pull_request_counts[a list]
+FAILED tests/test_workflow_concurrency.py::test_every_way_of_naming_pull_request_counts[a spaced list]
+FAILED tests/test_workflow_concurrency.py::test_every_way_of_naming_pull_request_counts[a dash list]
+FAILED tests/test_workflow_concurrency.py::test_every_way_of_naming_pull_request_counts[target]
+5 failed, 8 passed in 0.06s
