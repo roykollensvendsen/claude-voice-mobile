@@ -1,0 +1,16 @@
+$ uv run pytest -q tests/test_workflow_concurrency.py
+  (against checks.yml before this change, which cancelled every superseded run, main's too)
+
+___ test_a_pull_request_workflow_cancels_only_pull_request_runs[checks.yml] ____
+
+    @pytest.mark.parametrize("workflow", PULL_REQUEST_WORKFLOWS, ids=lambda w: w.name)
+    def test_a_pull_request_workflow_cancels_only_pull_request_runs(workflow):
+        block = concurrency_block(workflow.read_text())
+        assert GROUP in block
+>       assert CANCEL in block
+E       assert "cancel-in-progress: ${{ github.event_name == 'pull_request' }}" in '  group: ${{ github.workflow }}-${{ github.ref }}\n  cancel-in-progress: true\n'
+
+tests/test_workflow_concurrency.py:35: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_workflow_concurrency.py::test_a_pull_request_workflow_cancels_only_pull_request_runs[checks.yml]
+1 failed, 1 passed in 0.05s
