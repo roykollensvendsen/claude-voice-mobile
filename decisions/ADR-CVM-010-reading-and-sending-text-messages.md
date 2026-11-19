@@ -68,12 +68,33 @@ next answer counts those messages as dropped.
 the order they arrived, and the count dropped since the last call. It gives at
 most 50 messages per answer, and says when more are waiting. A message leaves
 the queue only when a later call passes a cursor at or past it, so an answer
-lost on the way is sent again. Each message carries its sequence number, the
-sender (E.164, or the sender's name for a letter-named sender), the time it
-arrived as an ISO 8601 time with its offset, and its text. The text is marked
-as coming from outside the phone. `sms-bridge` on the laptop calls this tool
-through the hub. It marks the tool as a poll, so an empty answer is counted,
-not logged (ADR-CVM-003).
+lost on the way is sent again. Each message carries an id, the sender (E.164,
+a short code's digits, or the sender's name for a letter-named sender) and
+which of the three it is, the time it arrived as an ISO 8601 time with its
+offset, and its text. The text is marked as coming from outside the phone.
+`sms-bridge` on the laptop calls this tool through the hub. It marks the tool
+as a poll, so an empty answer is counted, not logged (ADR-CVM-003).
+
+The exact shape is in two JSON Schema files, which `sms-bridge` is built
+against: the input in
+[`docs/plugins/sms/sms-since-input.json`](../docs/plugins/sms/sms-since-input.json)
+and the answer in
+[`docs/plugins/sms/sms-since-answer.json`](../docs/plugins/sms/sms-since-answer.json).
+There is no separate acknowledgement call:
+
+- The cursor means nothing outside the phone, and the bridge passes it back
+  exactly as it came. Passing it acknowledges every message in that answer and
+  its dropped count, and only then does the phone delete them. The bridge's
+  first call passes none.
+- The dropped count is given again with each answer until it is
+  acknowledged, so a lost answer does not lose it either.
+- A cursor this phone never gave, as after a reinstall, is not refused. The
+  answer says `reset` and starts at the oldest message kept. A message given
+  twice keeps its id, so the bridge drops an id it has already seen.
+- The phone refuses only when it may not read messages: the owner has taken
+  back `RECEIVE_SMS` or `READ_SMS`. The refusal is protocol version 1's
+  `error.json`, with code `permission_missing`, and its `error` says where on
+  the phone to grant it again.
 
 **One-time codes never leave the phone.** Before a message enters the queue,
 the module masks it, and it masks too much rather than too little:
@@ -193,8 +214,9 @@ it keeps the time, caller and outcome of each call, never a number or a text.
   - `smsstore`: nothing it offers `sms_send` returns a text, a list or a
     count;
   - the queue: the order, the cursor's acknowledgement, a lost answer sent
-    again, the 500 and 7-day drops and their count, a lost key, and nothing in
-    a backup;
+    again, the 500 and 7-day drops and their count, a lost key, a cursor from
+    another install giving `reset`, and nothing in a backup. Every answer the
+    tool gives in these tests fits `docs/plugins/sms/sms-since-answer.json`;
   - drafts: a new version per change, a stale version refused, a lapsed
     draft dropped, and one draft per recipient;
   - the allowlist: a short code, a foreign number, a premium number, a new

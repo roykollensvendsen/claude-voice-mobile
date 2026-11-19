@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/roykollensvendsen/claude-voice-mobile/blob/main/docs/plugins/sms/sms-since-input.json",
+  "title": "sms_since input",
+  "description": "The input of the phone's sms_since tool, as tools/list gives it (ADR-CVM-010). Passing a cursor acknowledges every message up to it: the phone then deletes them, along with the dropped count that answer carried.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "cursor": {
+      "type": ["string", "null"],
+      "minLength": 1,
+      "description": "The cursor from the last answer, passed back exactly as it came. It means nothing outside this phone. Left out, or null, at the bridge's first call: the answer then starts at the oldest message the phone still keeps."
+    }
+  },
+  "examples": [
+    {},
+    {"cursor": null},
+    {"cursor": "q3k9-000142"}
+  ]
+}
