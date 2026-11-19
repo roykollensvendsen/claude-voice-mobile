@@ -36,6 +36,11 @@ class OneTimeCodesTest {
             Sample("Eksempelbank", "Kode 1234 5678 9012", "a long run of groups, each of four digits"),
             Sample("", "Bruk 662211", "a message whose sender is unknown"),
             Sample("+4700000005", "sikkerhetskode=19", "a code word with a short number glued to it"),
+            Sample("+4700000008", "Your co​de 482913", "a zero-width space inside a code word"),
+            Sample("+4700000008", "Din pass­ord: 4410", "a soft hyphen inside a code word"),
+            Sample("+4700000008", "Bank⁠ID 778899", "a word joiner inside a code word"),
+            Sample("+4700000009", "Your one‑time pass 1234", "a no-break hyphen in one-time"),
+            Sample("+4700000009", "Your one–time pass 1234", "an en dash in one-time"),
         )
 
     @ParameterizedTest
