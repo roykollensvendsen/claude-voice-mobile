@@ -91,6 +91,11 @@ the module masks it, and it masks too much rather than too little:
   "passcode", "verification", "bekreftelse", "passord", "pin", "engangskode",
   "sikkerhetskode", "logg inn", "login", "bankid" and "token".
 
+Both rules read a cleaned copy of the text: Unicode's compatibility form
+(NFKC), with invisible characters dropped and every dash or minus sign read
+as "-". A digit is any decimal digit, in any script. The cleaned copy is only
+for matching. What is masked is the original message, whole.
+
 A masked message is sent as "a one-time code from <sender>", with `masked:
 true`. The whole message is still in the phone's own text app, where the
 owner reads the code.

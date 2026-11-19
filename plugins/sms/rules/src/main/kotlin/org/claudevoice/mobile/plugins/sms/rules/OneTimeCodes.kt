@@ -46,8 +46,12 @@ object OneTimeCodes {
     private val SPACES = Regex("(?U)\\s+")
     private val DIGIT = Regex("\\p{Nd}")
     private val LETTER = Regex("\\p{L}")
-    private val FORMAT = Regex("\\p{Cf}")
-    private val DASH = Regex("\\p{Pd}")
+    // Invisible characters: format characters, the combining grapheme joiner and the variation
+    // selectors, which are marks rather than format characters.
+    private val FORMAT = Regex("[\\p{Cf}\\u034F\\uFE00-\\uFE0F]")
+
+    // Dashes, and the minus sign, which is a math symbol rather than a dash.
+    private val DASH = Regex("[\\p{Pd}\\u2212]")
     // The words hold no character a pattern treats as special, so they are joined as they are.
     private val CODE_WORD = Regex(WORDS.joinToString("|"))
 

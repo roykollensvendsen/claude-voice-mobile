@@ -21,6 +21,11 @@ rather than too little. `plugins/sms/rules`, the text-message plugin's first rul
   joiner inside a code word would have let a code through. They are dropped after it, and every
   kind of dash reads as "-", so "one‑time" with a no-break hyphen or an en dash is caught too.
   This was the mobile architect's finding; its red run is in `red-otp-hidden-chars.txt`.
+  Voice-architect then found three characters outside those classes: the minus sign, the
+  combining grapheme joiner and the variation selectors. They are named one by one. Their red run
+  is in `red-otp-more-chars.txt`. A fourth sample pins that digits split by a zero-width space
+  count as one run, so "12<ZWSP>34" from a short code is hidden. It was green from the start,
+  because dropping the invisible character already joins them.
 - A hidden message is replaced whole by "a one-time code from <sender>". The owner still reads it
   in the phone's own text app.
 

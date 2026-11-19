@@ -1,0 +1,12 @@
+$ ./gradlew -PcvPlugins=sms :plugins:sms:rules:test
+  (four new samples in OneTimeCodesTest.codes(), against the masker as #125 left it)
+
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [22] a minus sign in one-time FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [23] a combining grapheme joiner inside a code word FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [24] a variation selector inside a code word FAILED
+38 tests completed, 3 failed
+> Task :plugins:sms:rules:test FAILED
+BUILD FAILED in 40s
+
+The fourth sample, [25] "four digits split by a zero-width space, from a short code", passed:
+it pins behaviour #125 already gave, at the mobile architect's request (n2).
