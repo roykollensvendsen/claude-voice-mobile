@@ -1,0 +1,11 @@
+$ uv run pytest -q tests/test_sms_since_shape.py
+  (the test written first, before docs/plugins/sms/ held either file)
+
+5 failed in 0.16s
+E       FileNotFoundError: [Errno 2] No such file or directory: 'docs/plugins/sms/sms-since-answer.json'
+E       FileNotFoundError: [Errno 2] No such file or directory: 'docs/plugins/sms/sms-since-input.json'
+FAILED tests/test_sms_since_shape.py::test_a_masked_message_names_only_its_sender
+FAILED tests/test_sms_since_shape.py::test_both_files_are_json_schema_with_examples
+FAILED tests/test_sms_since_shape.py::test_every_example_matches_its_schema
+FAILED tests/test_sms_since_shape.py::test_the_checker_refuses_a_wrong_answer
+FAILED tests/test_sms_since_shape.py::test_the_numbers_in_adr_cvm_010_are_the_numbers_in_the_files
