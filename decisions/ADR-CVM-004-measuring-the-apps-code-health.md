@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed 2026-11-15 by the Android developer session, on Roy's yes, relayed by the
+Proposed 2026-11-15 by the Android developer session, on the owner's yes, relayed by the
 manager session, to put this repository on the bridge's code-health page.
 
 ## Context

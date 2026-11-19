@@ -7,7 +7,7 @@ record is.
 
 ## Context
 
-Roy wants his phone to join his claude-voice hub the way a second laptop does,
+The owner wants their phone to join their claude-voice hub the way a second laptop does,
 offering the phone's own functions to the voice. ADR-CV-007 in claude-voice
 weighs how, and why this repository exists. The facts and options are there and
 are not repeated here.

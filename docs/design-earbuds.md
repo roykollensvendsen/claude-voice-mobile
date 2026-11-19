@@ -2,11 +2,11 @@
 
 Proposed 2026-11-09 by the Android developer session, and approved from the
 architecture side by the architect session with the conditions below. Nothing
-is built until Roy says yes, and the architect has placed it in ADR-CVM-003.
+is built until the owner says yes, and the architect has placed it in ADR-CVM-003.
 
-## What Roy wants
+## What the owner wants
 
-Roy jogs with Soundcore P40i earbuds while talking to Claude. He wants to say
+The owner jogs with Soundcore P40i earbuds while talking to Claude. They want to say
 "turn on noise cancelling", "transparency", "what's the battery on my
 earbuds?" and have it done. Today that takes the Soundcore app and both hands.
 
@@ -26,7 +26,7 @@ other plugin depends on it. It is one module, an Android library like
 The plugin owns that link itself. The core does not hand out Bluetooth,
 because the core holds no phone function.
 
-The hub reaches the phone the usual way. Roy speaks to the Claude app, Claude
+The hub reaches the phone the usual way. The owner speaks to the Claude app, Claude
 calls the hub, and the hub calls the plugin on the phone over the tailnet.
 Nothing new is needed in protocol version 1. A plugin offers named tools with
 a JSON schema for their inputs, and answers with a structured answer or a
@@ -41,7 +41,7 @@ Proposed tools:
 | `earbuds_set_equalizer` | one of the P40i's preset names | the preset now set |
 
 Both inputs are a fixed list in the tool's schema. A new mode or preset then
-changes the plugin's fingerprint, and Roy approves the plugin again.
+changes the plugin's fingerprint, and the owner approves the plugin again.
 
 A refusal says in plain words what to do: "the earbuds are not connected",
 "the Soundcore app is holding the earbuds, close it".
@@ -53,7 +53,7 @@ approval of the plugin once.
 
 The plugin declares that it uses none of the phone's sensitive functions.
 Transparency uses the earbuds' own microphones inside the earbuds. Nothing is
-recorded or sent. The plugin's instructions say so, so Roy sees why when he
+recorded or sent. The plugin's instructions say so, so the owner sees why when they
 approves it.
 
 ## Privacy and permissions
@@ -132,6 +132,6 @@ Proposed: `earbuds` comes straight after `status`, as the first plugin built
 in step 3. It is small and does not depend on the playback work. It is also
 used on every run. It cannot come earlier, because nothing can reach the
 phone before step 2. Adding a plugin and changing the order is a change to
-ADR-CVM-003, so it is the architect's to write and Roy's to approve. The
-architect amends that record in place once Roy has answered; ADR-CV-007 does
+ADR-CVM-003, so it is the architect's to write and the owner's to approve. The
+architect amends that record in place once the owner has answered; ADR-CV-007 does
 not change, because the plugin format is generic.

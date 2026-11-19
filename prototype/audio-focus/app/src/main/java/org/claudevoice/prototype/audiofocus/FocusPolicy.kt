@@ -37,7 +37,7 @@ data class Reaction(val volume: Float, val pause: Boolean, val note: String)
 
 /**
  * The prototype's whole behaviour on a focus change. It never pauses: the question is
- * what Android asks for and what Roy hears, so a request to pause is logged, not obeyed.
+ * what Android asks for and what the owner hears, so a request to pause is logged, not obeyed.
  */
 object FocusPolicy {
     /** How loud the player plays while ducked, unless the tester chooses otherwise. */

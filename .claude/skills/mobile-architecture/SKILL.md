@@ -3,7 +3,7 @@ name: mobile-architecture
 description: >-
   How the claude-voice phone app's architect works - the hub-to-agent protocol
   (written in claude-voice at docs/agent-protocol.md with JSON schemas, versioned,
-  frozen only by Roy, never edited once frozen) and the app's layer rules (core never
+  frozen only by the owner, never edited once frozen) and the app's layer rules (core never
   uses a plugin, a plugin uses only plugin-api, no plugin uses another, checked by
   ./gradlew checkLayers). Use whenever the work touches the agent protocol, its
   schemas or version, a new protocol version, the plugin format, the privacy rules on
@@ -35,14 +35,14 @@ The worktree for it is a separate checkout of claude-voice on a `protocol/` bran
    an example breaking it is refused. Rules that need context the schema cannot see
    (which plugin asked) go in the text as a hub or agent obligation.
 4. **Write the switch-over for the version before.** A peer that sends no version
-   is version 0 and is accepted until Roy decides otherwise. Freezing a version and
+   is version 0 and is accepted until the owner decides otherwise. Freezing a version and
    refusing the old one are two separate needs-roy items, so freezing cuts no
    machine off.
 5. **claude-voice-work reviews; it merges.** Every voice repository takes only
    `Co-Authored-By:` trailers, never a `Claude-Session:` line. Do not merge a
-   claude-voice pull request yourself, even when its owner could not: tell Roy.
-6. **Freezing is Roy's.** Open a needs-roy issue in claude-voice-mobile, in plain
-   Norwegian, and add it to STATUS.md. On his yes, record each file's SHA-256 under
+   claude-voice pull request yourself, even when its owner could not: tell the project's owner.
+6. **Freezing is the owner's.** Open a needs-roy issue in claude-voice-mobile, in plain
+   Norwegian, and add it to STATUS.md. On their yes, record each file's SHA-256 under
    its version in `frozen.json`; the test then holds the bytes. Never edit a frozen
    file; copy the folder to `v<N+1>/` and change the copy.
 7. **Adding tests in claude-voice moves its quality ratchet.** Record the new test

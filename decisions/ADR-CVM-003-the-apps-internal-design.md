@@ -2,9 +2,9 @@
 
 ## Status
 
-Proposed 2026-11-08. Settled with Roy Kollen Svendsen by voice on 2026-11-08.
+Proposed 2026-11-08. Settled with the owner by voice on 2026-11-08.
 Amended 2026-11-11: `earbuds` added, and built first among the plugins, as
-Roy decided on #26.
+The owner decided on #26.
 Amended 2026-11-13: the listener's service type is special use,
 not data sync, because of Android 15's six-hour limit.
 Amended 2026-11-17: what the log of every call holds, where it is kept and for
@@ -14,7 +14,7 @@ keeps calls is the owner's choice, made by merging this.
 Amended 2026-11-17, if the owner agrees: a poll that finds nothing is counted
 once a day, not logged line by line.
 Nothing beyond [the audio-focus prototype](../docs/prototype-audio-focus.md) is
-built until he accepts this record.
+built until the owner accepts this record.
 
 What the hub depends on, the agent protocol, the plugin format and the privacy
 rules, is [ADR-CV-007 in claude-voice](https://github.com/roykollensvendsen/claude-voice/blob/main/decisions/ADR-CV-007-a-phone-agent-and-voice-calls.md).
@@ -40,7 +40,7 @@ chose a native Android app.
   another app asks too, Android tells the first to stop or to *duck*: play on,
   quieter. Whether the Claude app's voice mode lets music duck is not documented.
   It is the riskiest assumption here.
-- **Roy wants one app on the phone**, while the companion page stays in
+- **The owner wants one app on the phone**, while the companion page stays in
   claude-voice-ui, a browser window onto the hub from any device.
 
 ## Options considered
@@ -49,7 +49,7 @@ chose a native Android app.
   function reaching into another, or the core growing a feature.
 - **A core module and one module per plugin, in Kotlin, with the dependency rules
   checked in CI.** **Chosen.**
-- **Pausing music while Claude talks.** Not taken: Roy asked for music and
+- **Pausing music while Claude talks.** Not taken: the owner asked for music and
   Claude's voice to run together.
 - **Copying the companion page into the app.** Not taken: two copies of the page
   would drift. The app shows the hub's page in a web view instead.
@@ -159,7 +159,7 @@ assumes.
 - `phone` places and ends ordinary calls through Android's Telecom service, with
   the permission to place calls. Android's own call screen shows the call.
 - A number on the phone's own list is called straight away. Any other number
-  from the hub waits for Roy's spoken yes, as ADR-CV-007 sets.
+  from the hub waits for the owner's spoken yes, as ADR-CV-007 sets.
 
 **The companion page shows inside the app.** A screen of the app opens the hub's
 page in a web view, signed in like the browser. The page's code stays in
@@ -183,7 +183,7 @@ plugins.
 
 - **Each phone function can be added, removed or left out** without touching the
   others.
-- **Android's notification shows Roy what the app is using**, at every moment.
+- **Android's notification shows the owner what the app is using**, at every moment.
 - **Worse:** Gradle modules and a foreground service are more structure than a
   first app needs. They are chosen because the rules they enforce are the point.
 - **Worse:** if the Claude app does not let music duck, this app cannot fix that
