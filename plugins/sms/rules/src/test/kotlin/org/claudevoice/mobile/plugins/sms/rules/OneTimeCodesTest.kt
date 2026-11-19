@@ -48,6 +48,9 @@ class OneTimeCodesTest {
             Sample("+4700000014", "Your códe 482913", "an accent typed as a mark inside a code word"),
             Sample("+4700000014", "Din kóde: 4410", "a code word with a ready-made accented letter"),
             Sample("+4700000014", "Your co󠄀de 482913", "a supplementary variation selector in a code word"),
+            Sample("+4700000015", "Your co⃝de 482913", "an enclosing circle inside a code word"),
+            Sample("+4700000015", "Your co⃣de 482913", "an enclosing keycap inside a code word"),
+            Sample("+4700000015", "Your coःde 482913", "a spacing mark inside a code word"),
         )
 
     @ParameterizedTest

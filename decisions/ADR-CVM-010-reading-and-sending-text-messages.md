@@ -92,11 +92,12 @@ the module masks it, and it masks too much rather than too little:
   "sikkerhetskode", "logg inn", "login", "bankid" and "token".
 
 Both rules read a cleaned copy of the text: Unicode's compatibility form,
-split (NFKD), with accents and other combining marks dropped, invisible
-characters dropped and every dash or minus sign read as "-". So "códe" reads
-as "code". None of the code words holds an accent or æ, ø or å, so the
-cleaning never changes them. A digit is any decimal digit, in any script. The cleaned copy is only
-for matching. What is masked is the original message, whole.
+split (NFKD), with every mark dropped (accents, enclosing marks such as a
+keycap, and spacing marks), invisible characters dropped and every dash or
+minus sign read as "-". So "códe" reads as "code". None of the code words
+holds an accent or æ, ø or å, so the cleaning never changes them. A digit is
+any decimal digit, in any script. The cleaned copy is only for matching. What
+is masked is the original message, whole.
 
 A masked message is sent as "a one-time code from <sender>", with `masked:
 true`. The whole message is still in the phone's own text app, where the
