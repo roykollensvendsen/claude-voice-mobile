@@ -17,6 +17,10 @@ rather than too little. `plugins/sms/rules`, the text-message plugin's first rul
   `red-otp-line-before.txt`.
 - Text is first put in Unicode's compatibility form, and a digit is any decimal digit. So
   fullwidth digits, Arabic-Indic digits and a no-break space in "logg inn" are caught.
+- That form keeps invisible format characters, so a zero-width space, a soft hyphen or a word
+  joiner inside a code word would have let a code through. They are dropped after it, and every
+  kind of dash reads as "-", so "one‑time" with a no-break hyphen or an en dash is caught too.
+  This was the mobile architect's finding; its red run is in `red-otp-hidden-chars.txt`.
 - A hidden message is replaced whole by "a one-time code from <sender>". The owner still reads it
   in the phone's own text app.
 

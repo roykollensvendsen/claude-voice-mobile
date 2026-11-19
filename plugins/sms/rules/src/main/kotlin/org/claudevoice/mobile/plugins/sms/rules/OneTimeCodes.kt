@@ -21,7 +21,8 @@ sealed interface Shown {
  *   hides it, so "123456\nis your code" is caught as well as "Your code:\n123456".
  *
  * Text is first put in Unicode's compatibility form (NFKC), so fullwidth letters and digits,
- * and odd spaces, read as plain ones. A digit is any decimal digit, in any script.
+ * and odd spaces, read as plain ones. Invisible format characters are then dropped and every
+ * dash reads as "-". A digit is any decimal digit, in any script.
  */
 object OneTimeCodes {
     /** ADR-CVM-010's code words, matched in any case and inside longer words. */
@@ -45,6 +46,8 @@ object OneTimeCodes {
     private val SPACES = Regex("(?U)\\s+")
     private val DIGIT = Regex("\\p{Nd}")
     private val LETTER = Regex("\\p{L}")
+    private val FORMAT = Regex("\\p{Cf}")
+    private val DASH = Regex("\\p{Pd}")
     // The words hold no character a pattern treats as special, so they are joined as they are.
     private val CODE_WORD = Regex(WORDS.joinToString("|"))
 
@@ -68,7 +71,10 @@ object OneTimeCodes {
             (!trimmed.contains('+') && DIGIT.findAll(trimmed).count() <= SHORT_CODE_DIGITS)
     }
 
-    private fun plain(text: String) = Normalizer.normalize(text, Normalizer.Form.NFKC)
+    // NFKC keeps format characters such as a zero-width space or a soft hyphen, and turns odd
+    // dashes into other dashes, so both are dealt with after it: a code word stays a code word.
+    private fun plain(text: String) =
+        Normalizer.normalize(text, Normalizer.Form.NFKC).replace(FORMAT, "").replace(DASH, "-")
 
     private fun hides(sender: String, body: String): Boolean =
         (namedOrShort(sender) && hasCodeLengthRun(body)) || hasDigitNearWord(body)

@@ -1,0 +1,22 @@
+$ ./gradlew -PcvPlugins=sms :plugins:sms:rules:test
+  (five new samples in OneTimeCodesTest.codes(), against the masker before this change)
+
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [17] a zero-width space inside a code word FAILED
+    org.opentest4j.AssertionFailedError at OneTimeCodesTest.kt:49
+
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [18] a soft hyphen inside a code word FAILED
+    org.opentest4j.AssertionFailedError at OneTimeCodesTest.kt:49
+
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [19] a word joiner inside a code word FAILED
+    org.opentest4j.AssertionFailedError at OneTimeCodesTest.kt:49
+
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [20] a no-break hyphen in one-time FAILED
+    org.opentest4j.AssertionFailedError at OneTimeCodesTest.kt:49
+
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [21] an en dash in one-time FAILED
+    org.opentest4j.AssertionFailedError at OneTimeCodesTest.kt:49
+
+34 tests completed, 5 failed
+
+> Task :plugins:sms:rules:test FAILED
+BUILD FAILED in 1m 3s
