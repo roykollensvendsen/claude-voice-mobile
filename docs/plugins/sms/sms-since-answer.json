@@ -16,7 +16,7 @@
     "cursor": {
       "type": "string",
       "minLength": 1,
-      "description": "Pass this in the next call. That acknowledges every message here and this answer's dropped count."
+      "description": "Opaque: the bridge passes it in the next call exactly as it came, and never reads it, compares it or builds one. That call acknowledges every message here and this answer's dropped count. An answer carrying a message or a dropped count gives a cursor never given before, so an earlier cursor never acknowledges it. An empty answer with nothing dropped may give back the cursor it was passed."
     },
     "more": {
       "type": "boolean",
@@ -25,23 +25,23 @@
     "dropped": {
       "type": "integer",
       "minimum": 0,
-      "description": "Messages the phone lost before they were given, since the last acknowledged answer: over 500 kept, older than 7 days, or the queue's key lost. They are never given. Given again with the messages until acknowledged, so a lost answer does not lose the count. 0 when none."
+      "description": "Messages the phone lost before they were given: over 500 kept, older than 7 days, or the queue's key lost. They are never given. The count is cleared only when a call passes the cursor of an answer that carried it, so a lost answer does not lose it. 0 when none."
     },
     "reset": {
       "type": "boolean",
-      "description": "true when the cursor passed was not one this phone gave, as after a reinstall or cleared app data. The answer then starts at the oldest message kept, so some may come a second time: the bridge drops any id it has already seen."
+      "description": "true when the cursor passed was not one this phone gave, as after a reinstall or cleared app data. The answer then starts at the oldest message kept, so some may come a second time with the same id: the bridge drops any id it has already seen."
     }
   },
   "$defs": {
     "message": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "from", "from_kind", "received_at", "text", "masked", "untrusted"],
+      "required": ["id", "from", "from_kind", "received_at", "text", "cut", "masked", "untrusted"],
       "properties": {
         "id": {
           "type": "string",
-          "minLength": 1,
-          "description": "Unique on this phone, and the same each time the message is given again."
+          "pattern": "^[a-z0-9]{8}-[0-9]{1,12}$",
+          "description": "<install>-<number>. The install part is 8 random characters, chosen anew on every install and every clearing of the app's data, so an id never repeats, even after a reset. The number counts up within one install. The same message keeps its id each time it is given again. The bridge compares ids whole and never parses them."
         },
         "from": {
           "type": "string",
@@ -55,11 +55,17 @@
         "received_at": {
           "type": "string",
           "format": "date-time",
-          "description": "When the phone received it, ISO 8601 with the phone's offset."
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?[+-][0-9]{2}:[0-9]{2}$",
+          "description": "When the phone received it, ISO 8601 with the phone's offset. The pattern holds the offset, since 2020-12 treats format as a note only."
         },
         "text": {
           "type": "string",
-          "description": "The message as the sender wrote it, or, when masked, exactly 'a one-time code from <from>'."
+          "maxLength": 2000,
+          "description": "The message as the sender wrote it, cut to its first 2000 characters, or, when masked, exactly 'a one-time code from <from>'."
+        },
+        "cut": {
+          "type": "boolean",
+          "description": "true when the text was longer than 2000 characters and only its start is given. The whole message is in the phone's own text app."
         },
         "masked": {
           "type": "boolean",
@@ -76,51 +82,61 @@
     {
       "messages": [
         {
-          "id": "q3k9-000141",
+          "id": "k3q9m2x7-141",
           "from": "+4700000021",
           "from_kind": "number",
           "received_at": "2026-11-19T14:02:11+01:00",
           "text": "Ses vi klokka seks?",
+          "cut": false,
           "masked": false,
           "untrusted": true
         },
         {
-          "id": "q3k9-000142",
+          "id": "k3q9m2x7-142",
           "from": "Eksempelbank",
           "from_kind": "name",
           "received_at": "2026-11-19T14:03:40+01:00",
           "text": "a one-time code from Eksempelbank",
+          "cut": false,
           "masked": true,
           "untrusted": true
         }
       ],
-      "cursor": "q3k9-000142",
+      "cursor": "AZf04TqL7wNc",
       "more": false,
       "dropped": 0,
       "reset": false
     },
     {
       "messages": [],
-      "cursor": "q3k9-000142",
+      "cursor": "AZf04TqL7wNc",
       "more": false,
       "dropped": 0,
       "reset": false
     },
     {
+      "messages": [],
+      "cursor": "Bu8sE1hVm03K",
+      "more": false,
+      "dropped": 3,
+      "reset": false
+    },
+    {
       "messages": [
         {
-          "id": "w7p2-000001",
+          "id": "p7w2d5n1-1",
           "from": "2244",
           "from_kind": "short_code",
           "received_at": "2026-11-20T08:15:02+01:00",
           "text": "Sendingen er klar til henting.",
+          "cut": false,
           "masked": false,
           "untrusted": true
         }
       ],
-      "cursor": "w7p2-000001",
+      "cursor": "Cq2Hj6Yx9eRt",
       "more": true,
-      "dropped": 3,
+      "dropped": 0,
       "reset": true
     }
   ]
