@@ -1,0 +1,9 @@
+$ ./gradlew -PcvPlugins=sms :plugins:sms:rules:test
+  (three new samples in OneTimeCodesTest.codes(), against the masker as #129 left it)
+
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [29] an enclosing circle inside a code word FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [30] an enclosing keycap inside a code word FAILED
+OneTimeCodesTest > a message holding a one-time code is hidden, and names only its sender(Sample) > [31] a spacing mark inside a code word FAILED
+44 tests completed, 3 failed
+> Task :plugins:sms:rules:test FAILED
+BUILD FAILED in 11s

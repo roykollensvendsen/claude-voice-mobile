@@ -21,7 +21,7 @@ sealed interface Shown {
  *   hides it, so "123456\nis your code" is caught as well as "Your code:\n123456".
  *
  * Text is first put in Unicode's compatibility form, split (NFKD), so fullwidth letters and
- * digits, and odd spaces, read as plain ones. Accents and other combining marks, and invisible
+ * digits, and odd spaces, read as plain ones. Accents and every other mark, and invisible
  * format characters, are then dropped, and every dash reads as "-". A digit is any decimal
  * digit, in any script.
  */
@@ -50,9 +50,10 @@ object OneTimeCodes {
     // Invisible format characters, such as a zero-width space or a soft hyphen.
     private val FORMAT = Regex("\\p{Cf}")
 
-    // Combining marks: accents once split from their letters, and invisible marks such as the
-    // combining grapheme joiner and every variation selector.
-    private val MARK = Regex("\\p{Mn}")
+    // Every mark: accents once split from their letters, invisible marks such as the combining
+    // grapheme joiner and every variation selector, enclosing marks such as a keycap, and
+    // spacing marks.
+    private val MARK = Regex("\\p{M}")
 
     // Dashes, and the minus sign, which is a math symbol rather than a dash.
     private val DASH = Regex("[\\p{Pd}\\u2212]")

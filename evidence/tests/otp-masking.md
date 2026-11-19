@@ -33,6 +33,9 @@ rather than too little. `plugins/sms/rules`, the text-message plugin's first rul
   architects and quality agreed on it. Its red run is in `red-otp-accents.txt`. None of
   the code words holds an accent, so the cleaning leaves them as they are, and the code-word
   test sends each one through it.
+- That dropped only the marks that sit on a letter. Quality and the mobile architect then found
+  that an enclosing mark, such as a circle or a keycap, or a spacing mark still split a code
+  word. Every mark is dropped now. Its red run is in `red-otp-all-marks.txt`.
 - A hidden message is replaced whole by "a one-time code from <sender>". The owner still reads it
   in the phone's own text app.
 
