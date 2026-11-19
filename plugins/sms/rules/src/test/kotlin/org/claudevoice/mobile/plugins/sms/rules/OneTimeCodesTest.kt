@@ -45,6 +45,9 @@ class OneTimeCodesTest {
             Sample("+4700000013", "Your co͏de 482913", "a combining grapheme joiner inside a code word"),
             Sample("+4700000013", "Your co️de 482913", "a variation selector inside a code word"),
             Sample("2244", "Svar 12​34", "four digits split by a zero-width space, from a short code"),
+            Sample("+4700000014", "Your códe 482913", "an accent typed as a mark inside a code word"),
+            Sample("+4700000014", "Din kóde: 4410", "a code word with a ready-made accented letter"),
+            Sample("+4700000014", "Your co󠄀de 482913", "a supplementary variation selector in a code word"),
         )
 
     @ParameterizedTest

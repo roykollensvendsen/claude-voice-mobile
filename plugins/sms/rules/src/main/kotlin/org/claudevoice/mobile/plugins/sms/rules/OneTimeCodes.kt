@@ -20,9 +20,10 @@ sealed interface Shown {
  * - From any sender, a code word with a digit on its own line, the line before or the line after
  *   hides it, so "123456\nis your code" is caught as well as "Your code:\n123456".
  *
- * Text is first put in Unicode's compatibility form (NFKC), so fullwidth letters and digits,
- * and odd spaces, read as plain ones. Invisible format characters are then dropped and every
- * dash reads as "-". A digit is any decimal digit, in any script.
+ * Text is first put in Unicode's compatibility form, split (NFKD), so fullwidth letters and
+ * digits, and odd spaces, read as plain ones. Accents and other combining marks, and invisible
+ * format characters, are then dropped, and every dash reads as "-". A digit is any decimal
+ * digit, in any script.
  */
 object OneTimeCodes {
     /** ADR-CVM-010's code words, matched in any case and inside longer words. */
@@ -46,9 +47,12 @@ object OneTimeCodes {
     private val SPACES = Regex("(?U)\\s+")
     private val DIGIT = Regex("\\p{Nd}")
     private val LETTER = Regex("\\p{L}")
-    // Invisible characters: format characters, the combining grapheme joiner and the variation
-    // selectors, which are marks rather than format characters.
-    private val FORMAT = Regex("[\\p{Cf}\\u034F\\uFE00-\\uFE0F]")
+    // Invisible format characters, such as a zero-width space or a soft hyphen.
+    private val FORMAT = Regex("\\p{Cf}")
+
+    // Combining marks: accents once split from their letters, and invisible marks such as the
+    // combining grapheme joiner and every variation selector.
+    private val MARK = Regex("\\p{Mn}")
 
     // Dashes, and the minus sign, which is a math symbol rather than a dash.
     private val DASH = Regex("[\\p{Pd}\\u2212]")
@@ -75,10 +79,15 @@ object OneTimeCodes {
             (!trimmed.contains('+') && DIGIT.findAll(trimmed).count() <= SHORT_CODE_DIGITS)
     }
 
-    // NFKC keeps format characters such as a zero-width space or a soft hyphen, and turns odd
-    // dashes into other dashes, so both are dealt with after it: a code word stays a code word.
+    // NFKD splits every accent from its letter, so dropping the marks leaves "códe" as "code". It
+    // keeps format characters and turns odd dashes into other dashes, so both are dealt with after
+    // it: a code word stays a code word. The code words are plain letters, which this leaves as
+    // they are; the code-word test sends each one through it.
     private fun plain(text: String) =
-        Normalizer.normalize(text, Normalizer.Form.NFKC).replace(FORMAT, "").replace(DASH, "-")
+        Normalizer.normalize(text, Normalizer.Form.NFKD)
+            .replace(MARK, "")
+            .replace(FORMAT, "")
+            .replace(DASH, "-")
 
     private fun hides(sender: String, body: String): Boolean =
         (namedOrShort(sender) && hasCodeLengthRun(body)) || hasDigitNearWord(body)
