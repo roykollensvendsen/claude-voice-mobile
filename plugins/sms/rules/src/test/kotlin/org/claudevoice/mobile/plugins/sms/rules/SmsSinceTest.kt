@@ -174,6 +174,24 @@ class SmsSinceTest {
     }
 
     @Test
+    fun `a call to another tool, or before there is an inbox, is refused naming the tool`(@TempDir folder: File) {
+        val inbox = Inbox(QueueFile(File(folder, "q"), plainSeal, noFolderSync), FixedChance("inst0001")) { NOW }
+        val none = JsonObject(emptyMap())
+        assertEquals(SmsSince.Reply.Refused("sms has no tool sms_send"), SmsSince.call(inbox, "sms_send", none))
+        assertEquals(SmsSince.Reply.Refused("sms has no tool sms_since"), SmsSince.call(null, "sms_since", none))
+        assertTrue(SmsSince.call(inbox, "sms_since", none) is SmsSince.Reply.Answer)
+    }
+
+    @Test
+    fun `a reply is handed on as an answer or as a refusal, never as the other`() {
+        val content = JsonObject(mapOf("cursor" to JsonPrimitive("K00000000001")))
+        val answered = SmsSince.Reply.Answer(content).fold({ "answer $it" }, { "refused $it" })
+        assertEquals("answer $content", answered)
+        val refused = SmsSince.Reply.Refused("No.").fold({ "answer $it" }, { "refused $it" })
+        assertEquals("refused No.", refused)
+    }
+
+    @Test
     fun `a call answers from the inbox, and passing its cursor back acknowledges it`(@TempDir folder: File) {
         val inbox = Inbox(QueueFile(File(folder, "q"), plainSeal, noFolderSync), FixedChance("inst0001")) { NOW }
         inbox.add("+4700000021", "en", at, noCountry)

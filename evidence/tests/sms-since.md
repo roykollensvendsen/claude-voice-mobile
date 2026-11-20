@@ -67,5 +67,8 @@ shows they are not idle. It killed every mutant in the rules module, and the two
 of the first run were dealt with: an unknown sender kind at the edge of the list now has a test,
 and a refusal's words became one fixed sentence.
 
-The plugin offers `sms_since` and says it uses `messages` only once it has an inbox. The app
+The plugin offers `sms_since` and says it uses `messages` only once it has an inbox. Which tool
+was called, whether there is an inbox yet, and whether a reply is an answer or a refusal are all
+decided in the rules module, with tests, so the plugin itself only hands the call on. The quality
+ratchet had refused the first version, whose plugin made those choices itself. The app
 builds it without one until the receiver comes.
