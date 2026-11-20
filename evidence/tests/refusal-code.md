@@ -10,12 +10,17 @@ optional code, as the mobile architect agreed:
 
 - The code must match `error.json`'s pattern, `^[a-z][a-z0-9_]{0,31}$`, or the refusal is not
   made. So a plugin's typo fails in its own tests, not at the hub.
+- The words must not be blank, with a code or without, since `error.json` gives `error` a
+  `minLength` of 1. Both reviewing architects asked for this. A test stub that refused with no
+  words now says "No.".
 - With a code, the core sends `error.json` as the call's structured answer, `error` holding the
   words, with `isError` true. This is the same form as the duplicate-call refusal. Without a
-  code, the refusal is words only, as before.
+  code, the refusal is words only, as before. The text content holds the same JSON, so a hub
+  that reads only the text gets the same file. That check passed at once, since the core
+  already did so.
 
 `ToolResult.Refused` now holds a check, so it is no longer on Pitest's list of data-only classes.
 `tests/test_pitest_data_only.py` failed until it was taken off. That makes the plugin API the
 first time Pitest has mutants to measure there. `tests/test_levels.py` failed while the module was
 still allowed to have none, so it is off that list in `scripts/levels.py`, and its Pitest run
-no longer passes with no mutants. Pitest killed all 5.
+no longer passes with no mutants. Pitest killed every mutant.

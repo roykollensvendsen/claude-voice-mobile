@@ -29,8 +29,17 @@ class PluginApiTest {
     }
 
     @Test
+    fun `a refusal with no words is not made, with a code or without`() {
+        // claude-voice, docs/agent-protocol/v1/error.json: error has minLength 1.
+        for (say in listOf("", " ", "\n\t")) {
+            assertThrows<IllegalArgumentException>(say) { ToolResult.Refused(say) }
+            assertThrows<IllegalArgumentException>(say) { ToolResult.Refused(say, "permission_missing") }
+        }
+    }
+
+    @Test
     fun `a code is what protocol version 1's error file allows, or the refusal is not made`() {
-        // claude-voice, docs/schemas/v1/error.json: ^[a-z][a-z0-9_]{0,31}$
+        // claude-voice, docs/agent-protocol/v1/error.json: ^[a-z][a-z0-9_]{0,31}$
         for (code in listOf("a", "permission_missing", "x9_", "a" + "b".repeat(31))) {
             assertEquals(code, ToolResult.Refused("No.", code).code)
         }

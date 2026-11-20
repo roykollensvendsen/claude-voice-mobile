@@ -6,3 +6,7 @@ red-refusal.log:PluginApiTest > a code is what protocol version 1's error file a
 red-refusal.log:6 tests completed, 1 failed
 red-refusal.log:> Task :plugin-api:test FAILED
 red-refusal.log:BUILD FAILED in 31s
+red-blank.log:PluginApiTest > a refusal with no words is not made, with a code or without() FAILED
+red-blank.log:7 tests completed, 1 failed
+red-blank.log:> Task :plugin-api:test FAILED
+red-blank.log:BUILD FAILED in 1m 11s

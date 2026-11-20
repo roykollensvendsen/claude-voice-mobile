@@ -16,7 +16,7 @@ class BuiltPluginsTest {
         override val uses = listOf<String>()
         override val confirms = listOf<String>()
 
-        override suspend fun call(tool: String, arguments: JsonObject) = ToolResult.Refused("")
+        override suspend fun call(tool: String, arguments: JsonObject) = ToolResult.Refused("No.")
     }
 
     @Test
