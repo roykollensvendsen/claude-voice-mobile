@@ -114,8 +114,10 @@ The manifest needs these pieces for it:
 
 **The listener comes back after a restart or an update.** The app has a
 receiver for `BOOT_COMPLETED` and for `MY_PACKAGE_REPLACED`, declared in the
-manifest with `RECEIVE_BOOT_COMPLETED`. On either, it starts the service with
-the special-use type only, and only if the phone is paired with a hub. Any
+manifest with `RECEIVE_BOOT_COMPLETED`. It is not exported, so no other app can
+send to it, and it acts on those two actions only. On either, it starts the
+service with the special-use type only, and only if the phone is paired with a
+hub. Any
 other type is added later, by a plugin, from the app in the foreground. So the
 Android 15 limit above does not stop it. The receiver waits for
 `BOOT_COMPLETED`, after the first unlock, and not for the locked boot, because
@@ -127,14 +129,17 @@ update is measured on the phone, as with Doze, before this is relied on.
 
 **When the owner refuses notifications.** The listener runs anyway, with its
 notification hidden. The app's main screen then shows one line: "The listener
-is running, but Android hides its notice. Tap to show it." What the tap does
-depends on what Android still allows:
+is running, but Android hides its notice. Tap to show it." The tap always asks
+for `POST_NOTIFICATIONS` first. Android may answer without showing anything,
+because the owner has refused it twice. The app then opens its notification
+settings (`ACTION_APP_NOTIFICATION_SETTINGS`) instead.
 
-- while Android still lets the app ask, that is
-  `shouldShowRequestPermissionRationale` is true after one refusal, the tap
-  asks for `POST_NOTIFICATIONS` again;
-- otherwise Android would not show the request at all, so the tap opens the
-  app's notification settings (`ACTION_APP_NOTIFICATION_SETTINGS`).
+The app does not choose from `shouldShowRequestPermissionRationale` alone. That
+flag is false both when Android will no longer ask and when the owner closed
+the first request without answering. In the second case asking still works,
+and opening the settings would be the wrong page. A refusal that comes back
+before any request could have been shown, under half a second, counts as
+Android not asking.
 
 The line goes once the permission is granted. The app never asks on its own
 more than once at first start.
@@ -236,11 +241,14 @@ plugins.
   - the receiver starts the service with the special-use type only, on
     `BOOT_COMPLETED` and on `MY_PACKAGE_REPLACED`, and starts nothing when
     the app is not paired or on any other broadcast;
-  - the merged manifest holds the receiver, `RECEIVE_BOOT_COMPLETED`, and no
-    locked-boot action;
-  - with notifications refused, the line is shown; a tap asks for the
-    permission when the rationale flag is true, and opens the notification
-    settings when it is false; the line goes once the permission is granted;
+  - the merged manifest holds the receiver with `android:exported="false"`,
+    its two actions and no other, `RECEIVE_BOOT_COMPLETED`, and no
+    locked-boot action. The system still delivers its own broadcasts to a
+    receiver that is not exported, and no other app can reach it;
+  - with notifications refused, the line is shown, and a tap asks for the
+    permission. A refusal at once opens the notification settings. A first
+    request closed without an answer asks again on the next tap, not the
+    settings. The line goes once the permission is granted;
   - measured on the phone and written down in `evidence/`: the hub reaches the
     listener after a restart and after an update, with the screen off.
 - **Worse:** Gradle modules and a foreground service are more structure than a
