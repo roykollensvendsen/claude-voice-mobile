@@ -58,11 +58,26 @@ message as before. The module does not see RCS chats, which the default app
 keeps in its own storage, or a message that app has deleted. Picture messages
 (MMS) are left for a later step.
 
+The receiver takes the broadcast only from the system, through the
+`BROADCAST_SMS` permission. So no other app on the phone can hand it a message
+that the hub would read as the owner's. The app is not direct-boot aware, so a
+message that arrives after a restart and before the first unlock never reaches
+the queue. The default text app still has it. Each message is stamped with the
+phone's own clock and offset when it arrives, not the time the network gave.
+
 **The queue.** Each message goes into a queue on the phone, kept in the app's
 no-backup folder and encrypted with a key in Android's Keystore. The queue
 holds at most 500 messages, or 7 days. Past either limit it drops the oldest
 message and counts the drop. If the key is lost, the queue is dropped, and the
-next answer counts those messages as dropped.
+next answer counts those messages as dropped. A queue file that can't be read
+counts at least one. The key needs no unlock and no fingerprint, since the
+receiver runs while the phone is locked.
+
+The dropped count may be a little high, never low, with one exception. If a
+message can't be saved, even on a second try, it stays only in memory. If the
+app is then killed before a later save succeeds, the message is lost and never
+counted. That takes a full disk or a Keystore failure followed by a kill. The
+default text app still has the message.
 
 **One tool, `sms_since(cursor)`.** It returns the messages after `cursor`, in
 the order they arrived, and the count dropped since the last call. It gives at
@@ -246,6 +261,10 @@ it keeps the time, caller and outcome of each call, never a number or a text.
     over 2000 characters cut, and nothing in a backup. Every answer the tool
     gives in these tests fits `docs/plugins/sms/sms-since-answer.json`, and
     each masked message in them reads "a one-time code from <sender>";
+  - the receiver: the manifest takes `SMS_RECEIVED` only with
+    `BROADCAST_SMS`, a message is stamped with the phone's clock, a failed
+    save is tried once more, an unreadable queue file counts at least one
+    dropped, and a missing one counts none;
   - drafts: a new version per change, a stale version refused, a lapsed
     draft dropped, and one draft per recipient;
   - the allowlist: a short code, a foreign number, a premium number, a new
