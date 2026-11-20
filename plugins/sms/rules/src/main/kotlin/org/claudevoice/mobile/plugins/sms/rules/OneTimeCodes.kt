@@ -44,7 +44,7 @@ object OneTimeCodes {
     private const val MOST_CODE_DIGITS = 8
     private val RUN_DIGITS = FEWEST_CODE_DIGITS..MOST_CODE_DIGITS
     private val LINE_END = Regex("\r\n|\n|\r")
-    private val SPACES = Regex("(?U)\\s+")
+    private val SPACES = Regex(CharacterSets.WHITE_SPACE + "+")
     private val DIGIT = Regex("\\p{Nd}")
     private val LETTER = Regex("\\p{L}")
     // Invisible format characters, such as a zero-width space or a soft hyphen.
