@@ -20,11 +20,11 @@ object Senders {
     data class Heard(val from: String, val kind: Kind)
 
     // Spaces and line breaks of every kind, which become one space.
-    private val SPACES = Regex("(?U)\\s+")
+    private val SPACES = Regex(CharacterSets.WHITE_SPACE + "+")
 
     // Control and format characters that are not spaces, such as a zero-width space or a mark
     // that turns the text around; they are dropped.
-    private val HIDDEN = Regex("(?U)[\\p{Cc}\\p{Cf}&&\\S]")
+    private val HIDDEN = Regex(CharacterSets.HIDDEN)
     private val E164 = Regex("\\+[0-9]+")
     private val DIGITS = Regex("[0-9]+")
 

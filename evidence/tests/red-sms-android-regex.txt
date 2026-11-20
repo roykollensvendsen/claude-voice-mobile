@@ -1,0 +1,8 @@
+red-character-sets.log:CharacterSetsTest > hidden is every control and format character that is not white space() FAILED
+red-character-sets.log:CharacterSetsTest > white space is every space and line break Unicode names, as the JVM's (?U) took it() FAILED
+red-character-sets.log:CharacterSetsTest > neither set leans on a flag Android refuses() FAILED
+red-character-sets.log:156 tests completed, 3 failed
+red-character-sets.log:> Task :plugins:sms:rules:test FAILED
+red-character-sets.log:BUILD FAILED in 29s
+red-android-regex.log:FAILED tests/test_android_regex.py::test_no_code_on_the_phone_uses_a_flag_android_refuses
+red-android-regex.log:1 failed, 1 passed in 0.48s
