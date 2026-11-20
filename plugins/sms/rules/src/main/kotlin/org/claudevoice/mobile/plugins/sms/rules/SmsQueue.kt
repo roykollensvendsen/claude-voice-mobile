@@ -41,7 +41,15 @@ class SecureChance(private val random: SecureRandom = SecureRandom()) : Chance {
 }
 
 /** A message as the queue keeps it: masked before it was ever kept (ADR-CVM-010). */
-data class Kept(val id: String, val from: String, val text: String, val masked: Boolean, val at: OffsetDateTime)
+data class Kept(
+    val id: String,
+    val from: String,
+    val fromKind: Senders.Kind,
+    val text: String,
+    val cut: Boolean,
+    val masked: Boolean,
+    val at: OffsetDateTime,
+)
 
 /** One answer of `sms_since`, before it is put into the answer's JSON. */
 class Batch(val messages: List<Kept>, val cursor: String, val more: Boolean, val dropped: Int, val reset: Boolean)
@@ -64,11 +72,14 @@ class SmsQueue private constructor(
 ) {
     private class Entry(
         val number: Long,
-        val from: String,
+        val from: Senders.Heard,
         val text: String,
+        val cut: Boolean,
         val masked: Boolean,
         val at: OffsetDateTime,
-    )
+    ) {
+        fun kept(id: String) = Kept(id, from.from, from.kind, text, cut, masked, at)
+    }
 
     /** What an answer gave: messages up to [last], and the dropped count it carried. */
     private class Given(val last: Long, val dropped: Int)
@@ -76,12 +87,34 @@ class SmsQueue private constructor(
     /** How many messages wait. */
     val size: Int get() = entries.size
 
-    /** Keep a new message, masked first, and drop what is now too old or too many. */
-    fun add(from: String, body: String, at: OffsetDateTime, now: Instant) {
-        val shown = OneTimeCodes.shown(from, body)
-        val text = if (shown is Shown.Hidden) shown.line else body
-        entries.addLast(Entry(nextNumber, from, text, shown is Shown.Hidden, at))
+    // Whether anything worth keeping changed since the last [takeChanged].
+    private var changed = false
+
+    /** Whether the queue changed since this was last asked, so that it must be saved. */
+    fun takeChanged(): Boolean {
+        val was = changed
+        changed = false
+        return was
+    }
+
+    /**
+     * Keep a new message, masked first, and drop what is now too old or too many. The sender is
+     * kept as [Senders.heard] gives it, with [toE164] for a national number; whether the message
+     * is hidden is decided on the sender as it came. A kept text is cut to [LONGEST_TEXT].
+     */
+    fun add(from: String, body: String, at: OffsetDateTime, now: Instant, toE164: (String) -> String?) {
+        val heard = Senders.heard(from, toE164)
+        val masked = OneTimeCodes.shown(from, body) is Shown.Hidden
+        val count = body.codePointCount(0, body.length)
+        val cut = !masked && count > LONGEST_TEXT
+        val text = when {
+            masked -> OneTimeCodes.line(heard.from)
+            cut -> body.substring(0, body.offsetByCodePoints(0, LONGEST_TEXT))
+            else -> body
+        }
+        entries.addLast(Entry(nextNumber, heard, text, cut, masked, at))
         nextNumber += 1
+        changed = true
         dropOld(now)
         while (entries.size > MOST_KEPT) drop()
     }
@@ -95,7 +128,7 @@ class SmsQueue private constructor(
         val messages = ArrayList<Kept>()
         for (entry in entries) {
             if (messages.size == MOST_PER_ANSWER) break
-            messages += Kept("$install-${entry.number}", entry.from, entry.text, entry.masked, entry.at)
+            messages += entry.kept("$install-${entry.number}")
         }
         if (messages.isEmpty() && dropped == 0 && acked != null) {
             return Batch(messages, acked, false, 0, false)
@@ -123,9 +156,11 @@ class SmsQueue private constructor(
         out.writeInt(entries.size)
         for (entry in entries) {
             out.writeLong(entry.number)
-            writeText(out, entry.from)
+            writeText(out, entry.from.from)
             writeText(out, entry.text)
+            out.writeBoolean(entry.cut)
             out.writeBoolean(entry.masked)
+            out.writeByte(entry.from.kind.ordinal)
             out.writeLong(entry.at.toEpochSecond())
             out.writeInt(entry.at.nano)
             out.writeInt(entry.at.offset.totalSeconds)
@@ -141,6 +176,7 @@ class SmsQueue private constructor(
             if (each.next().at.toInstant().isBefore(oldest)) {
                 each.remove()
                 dropped += 1
+                changed = true
             }
         }
     }
@@ -152,7 +188,11 @@ class SmsQueue private constructor(
 
     /** Delete what the answer gave and the count it carried, and forget every earlier cursor. */
     private fun acknowledge(cursor: String, answer: Given) {
-        while (entries.isNotEmpty() && entries.first().number <= answer.last) entries.removeFirst()
+        while (entries.isNotEmpty() && entries.first().number <= answer.last) {
+            entries.removeFirst()
+            changed = true
+        }
+        if (answer.dropped != 0) changed = true
         dropped -= answer.dropped
         val earlier = ArrayList<String>()
         for (key in given.keys) {
@@ -160,6 +200,7 @@ class SmsQueue private constructor(
             earlier += key
         }
         for (key in earlier) given.remove(key)
+        if (earlier.isNotEmpty()) changed = true
         given[cursor] = Given(answer.last, 0)
     }
 
@@ -168,6 +209,7 @@ class SmsQueue private constructor(
         var cursor = chance.cursor()
         while (given.containsKey(cursor)) cursor = chance.cursor()
         given[cursor] = Given(last, dropped)
+        changed = true
         if (given.size > CURSORS_REMEMBERED) given.remove(given.keys.first())
         return cursor
     }
@@ -176,12 +218,14 @@ class SmsQueue private constructor(
         /** ADR-CVM-010's limits. */
         const val MOST_KEPT = 500
         const val MOST_PER_ANSWER = 50
+        const val LONGEST_TEXT = 2000
 
         /** How many answers' cursors the phone keeps; an older one reads as never given. */
         const val CURSORS_REMEMBERED = 16
         val LONGEST_KEPT: Duration = Duration.ofDays(7)
 
-        private const val FORMAT = 1
+        // 2 added each message's kind and whether its text was cut.
+        private const val FORMAT = 2
 
         /** A queue for a new install, or after the app's data was cleared. */
         fun fresh(chance: Chance) = afterLostKey(0, chance)
@@ -211,12 +255,14 @@ class SmsQueue private constructor(
                 val number = input.readLong()
                 val from = readText(input)
                 val text = readText(input)
+                val cut = input.readBoolean()
                 val masked = input.readBoolean()
+                val kind = kind(input.readByte().toInt())
                 val second = input.readLong()
                 val nano = input.readInt()
                 val offset = ZoneOffset.ofTotalSeconds(input.readInt())
                 val at = OffsetDateTime.ofInstant(Instant.ofEpochSecond(second, nano.toLong()), offset)
-                entries.addLast(Entry(number, from, text, masked, at))
+                entries.addLast(Entry(number, Senders.Heard(from, kind), text, cut, masked, at))
             }
             return SmsQueue(chance, install, nextNumber, dropped, entries, given)
         }
@@ -227,6 +273,12 @@ class SmsQueue private constructor(
             val bytes = text.toByteArray(Charsets.UTF_8)
             out.writeInt(bytes.size)
             out.write(bytes)
+        }
+
+        private fun kind(ordinal: Int): Senders.Kind {
+            val kinds = Senders.Kind.entries
+            if (ordinal !in kinds.indices) throw IOException("no sender kind $ordinal")
+            return kinds[ordinal]
         }
 
         private fun readText(input: DataInputStream): String {

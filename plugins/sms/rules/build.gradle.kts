@@ -8,6 +8,8 @@ plugins {
 kotlin { jvmToolchain(17) }
 
 dependencies {
+    // The sms_since answer is JSON, built here so that it is tested and mutated with the rest.
+    implementation(libs.serialization.json)
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)

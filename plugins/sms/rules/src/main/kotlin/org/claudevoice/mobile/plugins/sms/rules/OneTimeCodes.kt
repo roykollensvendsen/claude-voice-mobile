@@ -64,13 +64,16 @@ object OneTimeCodes {
     private val PLAIN_RUN = Regex("\\p{Nd}+")
     private val GROUPED_RUN = Regex("\\p{Nd}+(?:[ .\\-]\\p{Nd}+)*")
 
-    /** The message as the hub may see it: kept, or hidden as "a one-time code from <sender>". */
+    /**
+     * The message as the hub may see it: kept, or hidden as "a one-time code from <sender>",
+     * naming the sender as the hub hears it ([Senders.shown]). Whether it is hidden is decided on
+     * the sender as it came.
+     */
     fun shown(sender: String, body: String): Shown =
-        if (hides(sender, plain(body))) {
-            Shown.Hidden(sender, "a one-time code from ${sender.ifBlank { "an unknown sender" }}")
-        } else {
-            Shown.Text(body)
-        }
+        if (hides(sender, plain(body))) Shown.Hidden(sender, line(Senders.shown(sender))) else Shown.Text(body)
+
+    /** All the hub hears of a hidden message, from [from] as it is kept. */
+    fun line(from: String) = "a one-time code from $from"
 
     /** A sender named with letters, a short code of at most six digits with no plus, or none at all. */
     fun namedOrShort(sender: String): Boolean {

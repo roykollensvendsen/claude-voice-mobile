@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import java.io.IOException
 import java.security.SecureRandom
 import java.time.Duration
 import java.time.OffsetDateTime
@@ -31,7 +33,7 @@ class SmsQueueTest {
 
     private fun queue(install: String = "inst0001") = SmsQueue.fresh(Counted(install))
 
-    private fun SmsQueue.addFriend(text: String, at: OffsetDateTime = start) = add("+4700000021", text, at, now)
+    private fun SmsQueue.addFriend(text: String, at: OffsetDateTime = start) = add("+4700000021", text, at, now, noCountry)
 
     private fun Batch.ids() = messages.map { it.id }
 
@@ -53,7 +55,7 @@ class SmsQueueTest {
     fun `a message keeps its sender and the time it arrived, with its offset`() {
         val q = queue()
         val at = OffsetDateTime.parse("2026-11-20T07:59:58-03:30")
-        q.add("Testbutikk", "Pakken er sendt", at, now)
+        q.add("Testbutikk", "Pakken er sendt", at, now, noCountry)
         val kept = q.since(null, now).messages.single()
         assertEquals("Testbutikk", kept.from)
         assertEquals(at, kept.at)
@@ -62,7 +64,7 @@ class SmsQueueTest {
     @Test
     fun `a message that may hold a code is kept only as its line, never as its text`() {
         val q = queue()
-        q.add("Eksempelbank", "Engangskoden din er 482913", start, now)
+        q.add("Eksempelbank", "Engangskoden din er 482913", start, now, noCountry)
         q.addFriend("Ses i kveld?")
         val (code, friend) = q.since(null, now).messages
         assertEquals("a one-time code from Eksempelbank", code.text)
@@ -161,7 +163,7 @@ class SmsQueueTest {
     fun `old messages are dropped when a new one arrives, too`() {
         val q = queue()
         q.addFriend("gammel", start)
-        q.add("+4700000021", "ny", start.plusDays(8), start.toInstant().plus(Duration.ofDays(8)))
+        q.add("+4700000021", "ny", start.plusDays(8), start.toInstant().plus(Duration.ofDays(8)), noCountry)
         assertEquals(1, q.size)
     }
 
@@ -289,12 +291,115 @@ class SmsQueueTest {
         assertEquals(listOf("inst0009-1"), batch.ids())
     }
 
+    private val norway: (String) -> String? = { national -> if (national.length == 8) "+47$national" else null }
+
+    @Test
+    fun `a message keeps its sender cleaned, with its kind`() {
+        val q = queue()
+        q.add("Eksempel\u202E\nbank", "Hei", start, now, noCountry)
+        q.add("2244", "Hei", start, now, noCountry)
+        q.add("+4700000021", "Hei", start, now, noCountry)
+        val (name, short, number) = q.since(null, now).messages
+        assertEquals("Eksempel bank", name.from)
+        assertEquals(Senders.Kind.NAME, name.fromKind)
+        assertEquals(Senders.Kind.SHORT_CODE, short.fromKind)
+        assertEquals(Senders.Kind.NUMBER, number.fromKind)
+    }
+
+    @Test
+    fun `a national number is kept in E164 form, and a hidden message names it so`() {
+        val q = queue()
+        q.add("00000021", "Koden er 482913", start, now, norway)
+        val kept = q.since(null, now).messages.single()
+        assertEquals("+4700000021", kept.from)
+        assertEquals(Senders.Kind.NUMBER, kept.fromKind)
+        assertEquals("a one-time code from +4700000021", kept.text)
+    }
+
+    @Test
+    fun `whether a message is hidden is decided on the sender as it came`() {
+        // Seven digits with no plus is not a short code, so a bare code from it is kept, even
+        // when the phone puts the number in E.164 form.
+        val q = queue()
+        q.add("2200001", "482913", start, now) { "+472200001" }
+        assertFalse(q.since(null, now).messages.single().masked)
+    }
+
+    @Test
+    fun `a hidden message from no sender reads as from an unknown sender`() {
+        val q = queue()
+        q.add("", "Kode 482913", start, now, noCountry)
+        val kept = q.since(null, now).messages.single()
+        assertEquals(Senders.UNKNOWN, kept.from)
+        assertEquals("a one-time code from an unknown sender", kept.text)
+    }
+
+    @Test
+    fun `a text longer than 2000 characters is kept as its first 2000, and says it was cut`() {
+        val q = queue()
+        q.addFriend("a".repeat(SmsQueue.LONGEST_TEXT + 1))
+        q.addFriend("b".repeat(SmsQueue.LONGEST_TEXT))
+        val (long, exact) = q.since(null, now).messages
+        assertEquals("a".repeat(SmsQueue.LONGEST_TEXT), long.text)
+        assertTrue(long.cut)
+        assertEquals("b".repeat(SmsQueue.LONGEST_TEXT), exact.text)
+        assertFalse(exact.cut)
+    }
+
+    @Test
+    fun `a text is cut by characters as Unicode counts them, never inside one`() {
+        val q = queue()
+        val face = "\uD83D\uDE00"
+        q.addFriend(face.repeat(SmsQueue.LONGEST_TEXT + 1))
+        val kept = q.since(null, now).messages.single()
+        assertEquals(face.repeat(SmsQueue.LONGEST_TEXT), kept.text)
+        assertTrue(kept.cut)
+    }
+
+    @Test
+    fun `a hidden message is never cut, however long it was`() {
+        val q = queue()
+        q.add("Eksempelbank", "Kode 482913 " + "a".repeat(SmsQueue.LONGEST_TEXT), start, now, noCountry)
+        val kept = q.since(null, now).messages.single()
+        assertTrue(kept.masked)
+        assertFalse(kept.cut)
+    }
+
+    @Test
+    fun `a queue read back keeps each message's kind and whether it was cut`() {
+        val q = queue()
+        q.addFriend("a".repeat(SmsQueue.LONGEST_TEXT + 1))
+        q.add("2244", "Hei", start, now, noCountry)
+        q.add("Eksempelbank", "Hei", start, now, noCountry)
+        val back = SmsQueue.fromBytes(q.toBytes(), Counted())
+        assertEquals(q.since(null, now).messages, back.since(null, now).messages)
+    }
+
+    @Test
+    fun `bytes with a kind the queue does not know are not a queue`() {
+        val q = queue()
+        q.addFriend("en")
+        val bytes = q.toBytes()
+        // The kind is the byte just before the message's time, whose 16 bytes end the queue.
+        for (kind in listOf(-1, Senders.Kind.entries.size, 9)) {
+            bytes[bytes.size - 17] = kind.toByte()
+            assertThrows<IOException>("kind $kind") { SmsQueue.fromBytes(bytes, Counted()) }
+        }
+    }
+
+    @Test
+    fun `bytes of an older format are not a queue`() {
+        val bytes = queue().toBytes()
+        bytes[3] = 1
+        assertThrows<IOException> { SmsQueue.fromBytes(bytes, Counted()) }
+    }
+
     @Test
     fun `a queue read back from its bytes goes on where it was`() {
         val q = queue()
         q.addFriend("gammel", start.minusDays(8))
         q.addFriend("en")
-        q.add("Eksempelbank", "Koden er 482913", OffsetDateTime.parse("2026-11-20T09:00:00.25+05:45"), now)
+        q.add("Eksempelbank", "Koden er 482913", OffsetDateTime.parse("2026-11-20T09:00:00.25+05:45"), now, noCountry)
         val given = q.since(null, now)
         val back = SmsQueue.fromBytes(q.toBytes(), Counted())
         assertEquals(q.size, back.size)

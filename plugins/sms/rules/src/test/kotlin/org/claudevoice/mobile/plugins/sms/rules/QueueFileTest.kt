@@ -50,7 +50,7 @@ class QueueFileTest {
     @Test
     fun `a saved queue is read back after a restart, with no half-written file left`() {
         val q = QueueFile(file(), Turned()).load(Fixed("inst0001"))
-        q.add("+4700000021", "Ses vi klokka seks?", at, now)
+        q.add("+4700000021", "Ses vi klokka seks?", at, now, noCountry)
         QueueFile(file(), Turned()).save(q)
         val back = QueueFile(file(), Turned()).load(Fixed("inst0002"))
         val kept = back.since(null, now).messages.single()
@@ -62,7 +62,7 @@ class QueueFileTest {
     @Test
     fun `the file never holds a message's text in the clear`() {
         val q = QueueFile(file(), Turned()).load(Fixed("inst0001"))
-        q.add("+4700000021", "Ses vi klokka seks?", at, now)
+        q.add("+4700000021", "Ses vi klokka seks?", at, now, noCountry)
         QueueFile(file(), Turned()).save(q)
         val bytes = file().readBytes().toString(Charsets.ISO_8859_1)
         assertFalse(bytes.contains("klokka"))
@@ -72,12 +72,12 @@ class QueueFileTest {
     @Test
     fun `when the key is lost the queue starts again and counts every message it held as dropped`() {
         val q = QueueFile(file(), Turned()).load(Fixed("inst0001"))
-        q.add("+4700000021", "en", at, now)
-        q.add("+4700000021", "to", at, now)
+        q.add("+4700000021", "en", at, now, noCountry)
+        q.add("+4700000021", "to", at, now, noCountry)
         QueueFile(file(), Turned()).save(q)
         val back = QueueFile(file(), Turned(lost = true)).load(Fixed("inst0002"))
         assertEquals(0, back.size)
-        back.add("+4700000021", "tre", at, now)
+        back.add("+4700000021", "tre", at, now, noCountry)
         val batch = back.since(null, now)
         assertEquals(2, batch.dropped)
         assertEquals(listOf("inst0002-1"), batch.messages.map { it.id })
@@ -94,7 +94,7 @@ class QueueFileTest {
     @Test
     fun `a sealed file that opens to nonsense counts its messages as dropped`() {
         val q = QueueFile(file(), Turned()).load(Fixed("inst0001"))
-        q.add("+4700000021", "en", at, now)
+        q.add("+4700000021", "en", at, now, noCountry)
         QueueFile(file(), Turned()).save(q)
         val nonsense = object : Sealer {
             override fun seal(plain: ByteArray) = plain
@@ -108,7 +108,7 @@ class QueueFileTest {
     @Test
     fun `a new save replaces the old one whole`() {
         val q = QueueFile(file(), Turned()).load(Fixed("inst0001"))
-        q.add("+4700000021", "en", at, now)
+        q.add("+4700000021", "en", at, now, noCountry)
         QueueFile(file(), Turned()).save(q)
         q.since(q.since(null, now).cursor, now)
         QueueFile(file(), Turned()).save(q)
