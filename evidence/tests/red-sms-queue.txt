@@ -1,0 +1,34 @@
+QueueFileTest > with no file yet the queue is new and empty() FAILED
+QueueFileTest > a damaged file starts a new queue rather than stopping the plugin() FAILED
+QueueFileTest > a new save replaces the old one whole() FAILED
+QueueFileTest > the file never holds a message's text in the clear() FAILED
+QueueFileTest > a sealed file that opens to nonsense counts its messages as dropped() FAILED
+QueueFileTest > when the key is lost the queue starts again and counts every message it held as dropped() FAILED
+QueueFileTest > a saved queue is read back after a restart, with no half-written file left() FAILED
+SmsQueueTest > an answer with nothing to give still has a cursor() FAILED
+SmsQueueTest > past 500 kept the oldest is dropped and counted() FAILED
+SmsQueueTest > once a later cursor is acknowledged, an earlier one is a cursor never given() FAILED
+SmsQueueTest > passing a cursor back acknowledges its answer, and only later messages follow() FAILED
+SmsQueueTest > a queue read back from its bytes goes on where it was() FAILED
+SmsQueueTest > a cursor this phone never gave says reset and starts at the oldest kept() FAILED
+SmsQueueTest > drops after an answer stay counted when that answer is acknowledged() FAILED
+SmsQueueTest > a message keeps its sender and the time it arrived, with its offset() FAILED
+SmsQueueTest > old messages are dropped when a new one arrives, too() FAILED
+SmsQueueTest > an empty answer with nothing dropped gives back the cursor it was passed() FAILED
+SmsQueueTest > an answer lost on the way is given again, with the same ids and a new cursor() FAILED
+SmsQueueTest > after a lost key the next answer counts the lost messages as dropped, with new ids() FAILED
+SmsQueueTest > exactly 50 waiting fit one answer with nothing more() FAILED
+SmsQueueTest > a cursor from another install says reset, with ids of this install() FAILED
+SmsQueueTest > exactly 500 kept drops nothing() FAILED
+SmsQueueTest > an answer holds at most 50 messages and says when more wait() FAILED
+SmsQueueTest > messages come oldest first, each with an id of the install part and a number() FAILED
+SmsQueueTest > a count is still given after its answer is lost and an older cursor is passed() FAILED
+SmsQueueTest > a dropped count is given again until the answer that carried it is acknowledged() FAILED
+SmsQueueTest > a message that may hold a code is kept only as its line, never as its text() FAILED
+SmsQueueTest > a queue read back remembers which cursors it gave and their counts() FAILED
+SmsQueueTest > without a cursor the answer starts at the oldest message kept() FAILED
+SmsQueueTest > a message older than 7 days is dropped and counted, and one exactly 7 days old is kept() FAILED
+SmsQueueTest > the phone remembers its last 16 cursors, and an older one is a cursor never given() FAILED
+72 tests completed, 31 failed
+> Task :plugins:sms:rules:test FAILED
+BUILD FAILED in 5m 34s
