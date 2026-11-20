@@ -39,25 +39,40 @@ object SmsSince {
         "The phone has failed to save its messages more than once in a row, so nothing was handed out. " +
             "Its storage may be full: ask the owner to free space on the phone, then ask again."
 
+    /** Protocol version 1's code for a refusal the owner can lift by granting a permission. */
+    const val PERMISSION_MISSING = "permission_missing"
+
+    /** Where the owner grants it again: Android may hide the switch until restricted settings are allowed. */
+    const val NOT_PERMITTED =
+        "The phone may not read text messages. Allow it in Settings, Apps, claude-voice, Permissions, SMS. " +
+            "If the switch is greyed out, first choose Allow restricted settings on the app's info page."
+
     private const val WRONG = "sms_since takes only a cursor: the string from the last answer, or none at all."
 
     /** What a call comes to: an answer, or a refusal in words. */
     sealed interface Reply {
         /** [answer] of the content, or [refused] of the words: how the plugin hands a reply on. */
-        fun <T> fold(answer: (JsonObject) -> T, refused: (String) -> T): T
+        fun <T> fold(answer: (JsonObject) -> T, refused: (String, String?) -> T): T
 
         data class Answer(val content: JsonObject) : Reply {
-            override fun <T> fold(answer: (JsonObject) -> T, refused: (String) -> T): T = answer(content)
+            override fun <T> fold(answer: (JsonObject) -> T, refused: (String, String?) -> T): T = answer(content)
         }
 
-        data class Refused(val say: String) : Reply {
-            override fun <T> fold(answer: (JsonObject) -> T, refused: (String) -> T): T = refused(say)
+        data class Refused(val say: String, val code: String? = null) : Reply {
+            override fun <T> fold(answer: (JsonObject) -> T, refused: (String, String?) -> T): T = refused(say, code)
         }
     }
 
-    /** A call to the plugin's [tool], refused when it is not this one or there is no [inbox] yet. */
-    fun call(inbox: Inbox?, tool: String, arguments: JsonObject): Reply =
-        if (inbox == null || tool != TOOL) Reply.Refused("sms has no tool $tool") else call(inbox, arguments)
+    /**
+     * A call to the plugin's [tool], refused when it is not this one or there is no [inbox] yet,
+     * and refused with [PERMISSION_MISSING] when the phone may not read messages ([permitted]).
+     */
+    fun call(inbox: Inbox?, tool: String, arguments: JsonObject, permitted: Boolean): Reply =
+        when {
+            inbox == null || tool != TOOL -> Reply.Refused("sms has no tool $tool")
+            !permitted -> Reply.Refused(NOT_PERMITTED, PERMISSION_MISSING)
+            else -> call(inbox, arguments)
+        }
 
     /** The answer to one call, from [inbox], or a refusal when the arguments do not fit [INPUT]. */
     fun call(inbox: Inbox, arguments: JsonObject): Reply {
