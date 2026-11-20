@@ -25,7 +25,7 @@
     "dropped": {
       "type": "integer",
       "minimum": 0,
-      "description": "Messages the phone lost before they were given: over 500 kept, older than 7 days, or the queue's key lost. They are never given. The count is cleared only when a call passes the cursor of an answer that carried it, so a lost answer does not lose it. 0 when none."
+      "description": "Messages the phone dropped before they were acknowledged: over 500 kept, older than 7 days, or the queue's key lost. Most were never given. One given in an answer not yet acknowledged may be counted too, so the count can be a little high, never low. The count is cleared only when a call passes the cursor of an answer that carried it, so a lost answer does not lose it. 0 when none."
     },
     "reset": {
       "type": "boolean",
@@ -46,11 +46,11 @@
         "from": {
           "type": "string",
           "minLength": 1,
-          "description": "The sender: an E.164 number, a short code's digits, or a letter-named sender's name, as the network gave it."
+          "description": "The sender, cleaned of control and invisible characters and cut to 40 characters: an E.164 number, a short code's digits, or a letter-named sender's name. A national number is put into E.164 with the SIM's country; when that cannot be done, its digits are given as they came. When the network gave no sender, 'an unknown sender'."
         },
         "from_kind": {
           "enum": ["number", "short_code", "name"],
-          "description": "number: an E.164 number. short_code: at most 6 digits with no '+'. name: a letter-named sender."
+          "description": "number: a phone number, in E.164 unless the phone could not tell its country. short_code: at most 6 digits with no '+'. name: a letter-named sender, or 'an unknown sender'."
         },
         "received_at": {
           "type": "string",
@@ -119,6 +119,24 @@
       "cursor": "Bu8sE1hVm03K",
       "more": false,
       "dropped": 3,
+      "reset": false
+    },
+    {
+      "messages": [
+        {
+          "id": "k3q9m2x7-143",
+          "from": "an unknown sender",
+          "from_kind": "name",
+          "received_at": "2026-11-19T15:20:05+01:00",
+          "text": "a one-time code from an unknown sender",
+          "cut": false,
+          "masked": true,
+          "untrusted": true
+        }
+      ],
+      "cursor": "Dk5Rw2Lp8Ys0",
+      "more": false,
+      "dropped": 0,
       "reset": false
     },
     {

@@ -23,3 +23,9 @@ FAILED tests/test_sms_since_shape.py::test_the_numbers_in_adr_cvm_010_are_the_nu
 4 failed, 4 passed in 0.05s
 
 test_ids_after_a_reset_come_from_another_install passed: round 1 examples already used two install parts; it pins that.
+
+--- Round 3: an unknown sender, against the files before the change ---
+
+FAILED tests/test_sms_since_shape.py::test_a_sender_the_network_did_not_give_is_an_unknown_sender
+E       AssertionError: no example shows a message with no sender
+1 failed, 8 passed
