@@ -28,6 +28,9 @@ object Senders {
     private val E164 = Regex("\\+[0-9]+")
     private val DIGITS = Regex("[0-9]+")
 
+    // What people put between a number's digits; dropped only when the rest is a number.
+    private val SEPARATORS = Regex("[ ().-]")
+
     /** The sender cleaned and cut, or [UNKNOWN] when nothing is left. */
     fun shown(sender: String): String {
         val clean = sender.replace(HIDDEN, "").replace(SPACES, " ").trim()
@@ -37,17 +40,23 @@ object Senders {
     }
 
     /**
-     * The sender as it is kept. A run of seven digits or more with no "+" is a national number,
-     * which [toE164] puts in E.164 form with the phone's country; when it cannot, the digits are
-     * kept as they came, still a number.
+     * The sender as it is kept. A number written with spaces, dashes, dots or brackets is kept
+     * without them. A run of seven digits or more with no "+" is a national number, which
+     * [toE164] puts in E.164 form with the phone's country; when it cannot, or gives anything
+     * else, the digits are kept as they came, still a number.
      */
     fun heard(sender: String, toE164: (String) -> String?): Heard {
-        val from = shown(sender)
+        val from = compact(shown(sender))
         return when {
             E164.matches(from) -> Heard(from, Kind.NUMBER)
             !DIGITS.matches(from) -> Heard(from, Kind.NAME)
             from.length <= OneTimeCodes.SHORT_CODE_DIGITS -> Heard(from, Kind.SHORT_CODE)
-            else -> Heard(toE164(from) ?: from, Kind.NUMBER)
+            else -> Heard(toE164(from)?.takeIf { E164.matches(it) } ?: from, Kind.NUMBER)
         }
+    }
+
+    private fun compact(shown: String): String {
+        val bare = shown.replace(SEPARATORS, "")
+        return if (E164.matches(bare) || DIGITS.matches(bare)) bare else shown
     }
 }

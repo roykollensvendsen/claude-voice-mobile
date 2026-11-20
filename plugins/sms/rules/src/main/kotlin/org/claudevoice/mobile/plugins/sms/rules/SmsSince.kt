@@ -7,6 +7,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
+import java.io.IOException
 import java.time.format.DateTimeFormatter
 
 /**
@@ -30,6 +31,9 @@ object SmsSince {
     // Always seconds, and the offset as +hh:mm, never "Z", as the answer's pattern asks.
     private val TIME = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ssxxx")
     private const val CURSOR = "cursor"
+    /** What the hub hears when the queue could not be saved: nothing left, so asking again is safe. */
+    const val NOT_SAVED = "The phone could not save its messages, so nothing was handed out. Ask again."
+
     private const val WRONG = "sms_since takes only a cursor: the string from the last answer, or none at all."
 
     /** What a call comes to: an answer, or a refusal in words. */
@@ -57,7 +61,11 @@ object SmsSince {
         } catch (_: IllegalArgumentException) {
             return Reply.Refused(WRONG)
         }
-        return Reply.Answer(answer(inbox.since(cursor)))
+        return try {
+            Reply.Answer(answer(inbox.since(cursor)))
+        } catch (_: IOException) {
+            Reply.Refused(NOT_SAVED)
+        }
     }
 
     /** The cursor passed, or none; an [IllegalArgumentException] for arguments that do not fit [INPUT]. */

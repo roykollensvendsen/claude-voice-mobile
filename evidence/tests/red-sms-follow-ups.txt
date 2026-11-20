@@ -1,0 +1,10 @@
+red-follow-ups.log:SendersTest > a number written with spaces, dashes, dots or brackets is a number, kept without them() FAILED
+red-follow-ups.log:SendersTest > a lookup that gives something not in E164 form is not believed, and the digits are kept() FAILED
+red-follow-ups.log:SmsSinceTest > when the save fails nothing is handed out, and asking again with the same cursor works(File) FAILED
+red-follow-ups.log:137 tests completed, 3 failed
+red-follow-ups.log:> Task :plugins:sms:rules:test FAILED
+red-follow-ups.log:BUILD FAILED in 25s
+red-save-marked-again-switched-off.log:SmsSinceTest > when the save fails nothing is handed out, and asking again with the same cursor works(File) FAILED
+red-save-marked-again-switched-off.log:15 tests completed, 1 failed
+red-save-marked-again-switched-off.log:> Task :plugins:sms:rules:test FAILED
+red-save-marked-again-switched-off.log:BUILD FAILED in 5s

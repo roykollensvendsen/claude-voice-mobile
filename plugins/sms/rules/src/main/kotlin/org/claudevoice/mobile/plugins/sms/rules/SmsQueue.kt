@@ -99,6 +99,11 @@ class SmsQueue private constructor(
     // Whether anything worth keeping changed since the last [takeChanged].
     private var changed = false
 
+    /** Mark the queue as changed again, when what [takeChanged] reported could not be saved. */
+    fun markChanged() {
+        changed = true
+    }
+
     /** Whether the queue changed since this was last asked, so that it must be saved. */
     fun takeChanged(): Boolean {
         val was = changed

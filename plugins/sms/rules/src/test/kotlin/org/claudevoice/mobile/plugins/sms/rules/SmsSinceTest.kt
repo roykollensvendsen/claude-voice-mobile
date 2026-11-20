@@ -205,6 +205,42 @@ class SmsSinceTest {
     }
 
     @Test
+    fun `when the save fails nothing is handed out, and asking again with the same cursor works`(@TempDir folder: File) {
+        var failing = false
+        // Fails before anything is written, as a full disk would.
+        val seal = object : Sealer {
+            override fun seal(plain: ByteArray): ByteArray {
+                if (failing) throw java.io.IOException("the disk is full")
+                return plain
+            }
+
+            override fun open(sealed: ByteArray) = sealed
+        }
+        val file = QueueFile(File(folder, "q"), seal, noFolderSync)
+        val inbox = Inbox(file, FixedChance("inst0001")) { NOW }
+        inbox.add("+4700000021", "en", at, noCountry)
+        val first = SmsSince.call(inbox, JsonObject(emptyMap())) as SmsSince.Reply.Answer
+        val passed = JsonObject(mapOf("cursor" to first.content["cursor"]!!))
+
+        failing = true
+        val refused = SmsSince.call(inbox, passed) as SmsSince.Reply.Refused
+        assertEquals(SmsSince.NOT_SAVED, refused.say)
+        assertFalse(refused.say.contains("disk"))
+
+        // The acknowledgement may already hold in memory; the same cursor still answers alike.
+        failing = false
+        val again = SmsSince.call(inbox, passed) as SmsSince.Reply.Answer
+        assertEquals(0, again.content["messages"]!!.jsonArray.size)
+        val next = JsonObject(mapOf("cursor" to again.content["cursor"]!!))
+        val after = SmsSince.call(inbox, next) as SmsSince.Reply.Answer
+        assertEquals(false, after.content["reset"]!!.jsonPrimitive.content.toBoolean())
+
+        // What failed to be saved is saved by the next call: after a restart the message is not given again.
+        val restarted = Inbox(QueueFile(File(folder, "q"), plainSeal, noFolderSync), FixedChance("inst0002")) { NOW }
+        assertEquals(0, restarted.since(null).messages.size)
+    }
+
+    @Test
     fun `a call with wrong arguments is refused in words, and the inbox is not touched`(@TempDir folder: File) {
         val inbox = Inbox(QueueFile(File(folder, "q"), plainSeal, noFolderSync), FixedChance("inst0001")) { NOW }
         inbox.add("+4700000021", "en", at, noCountry)
