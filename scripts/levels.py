@@ -37,7 +37,7 @@ ROOT = Path(__file__).resolve().parent.parent
 ALL_PLUGINS = "-PcvPlugins=all"
 # Modules whose classes are all data-only, so Pitest makes no mutants there and writes no
 # report. tests/test_levels.py checks each holds nothing else.
-NO_MUTANTS = ("plugin-api",)
+NO_MUTANTS: tuple[str, ...] = ()
 PREFIX = "org.claudevoice.mobile"
 BLOCK = 6  # lines in a row that count as a copied block, as in claude-voice
 # Lines that say nothing on their own, left out of the copied-code measure.

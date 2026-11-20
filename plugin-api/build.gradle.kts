@@ -35,6 +35,4 @@ pitest {
     excludedClasses = rootProject.file("config/pitest-data-only.txt").readLines()
         .map { it.trim() }.filter { it.isNotEmpty() && !it.startsWith("#") }
     timestampedReports = false
-    // Every class here is data-only today, so there may be no mutants at all.
-    failWhenNoMutations = false
 }

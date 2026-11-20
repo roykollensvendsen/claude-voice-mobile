@@ -66,7 +66,7 @@ class McpHandlerTest {
         override val name = "status"
         override val uses = listOf<String>()
         override val confirms = listOf<String>()
-        override val tools = listOf("hang", "break", "later", "later_break", "slow", "block").map { Tool("status_$it", "", battery.input) }
+        override val tools = listOf("hang", "break", "later", "later_break", "slow", "block", "locked").map { Tool("status_$it", "", battery.input) }
             .let { listOf(battery, ring) + it }
 
         override suspend fun call(tool: String, arguments: JsonObject): ToolResult {
@@ -88,6 +88,7 @@ class McpHandlerTest {
                 "status_later" -> later { it.resume(ToolResult.Answer(buildJsonObject { put("later", true) })) }
                 "status_later_break" -> later { it.resumeWithException(IllegalArgumentException("private")) }
                 "status_slow" -> later(waitMillis = 1_500) { it.resume(ToolResult.Answer(JsonObject(emptyMap()))) }
+                "status_locked" -> ToolResult.Refused("Allow it in the phone's settings.", "permission_missing")
                 else -> ToolResult.Refused("The phone is in silent mode, so it cannot ring.")
             }
         }
@@ -194,7 +195,7 @@ class McpHandlerTest {
     fun `tools list offers every plugin's tools with their inputs`() {
         val tools = result(rpc("tools/list"))["tools"]!!.jsonArray.map { it.jsonObject }
         assertEquals(
-            listOf("agent_info", "status_battery", "status_ring", "status_hang", "status_break", "status_later", "status_later_break", "status_slow", "status_block"),
+            listOf("agent_info", "status_battery", "status_ring", "status_hang", "status_break", "status_later", "status_later_break", "status_slow", "status_block", "status_locked"),
             tools.map { it["name"]!!.jsonPrimitive.content },
         )
         assertEquals(ring.input, tools[2]["inputSchema"])
@@ -217,6 +218,7 @@ class McpHandlerTest {
         val result = result(rpc("tools/call", """{"name":"status_ring","arguments":{"seconds":5}}"""))
         assertTrue(isError(result))
         assertEquals("The phone is in silent mode, so it cannot ring.", text(result))
+        assertFalse("structuredContent" in result, "a refusal without a code has no error file")
     }
 
     @Test
@@ -280,6 +282,17 @@ class McpHandlerTest {
         assertTrue(again["structuredContent"]!!.jsonObject["error"]!!.jsonPrimitive.content.isNotBlank())
         assertEquals(1, runs.get())
         assertEquals(listOf("answered", "duplicate"), outcomes())
+    }
+
+    @Test
+    fun `a refusal with a code reaches the hub as the error file, with its words and its code`() {
+        val refused = result(call("status_locked"))
+        assertTrue(isError(refused))
+        val error = refused["structuredContent"]!!.jsonObject
+        assertEquals(setOf("error", "code"), error.keys)
+        assertEquals("Allow it in the phone's settings.", error["error"]!!.jsonPrimitive.content)
+        assertEquals("permission_missing", error["code"]!!.jsonPrimitive.content)
+        assertEquals(listOf("refused"), outcomes())
     }
 
     @Test

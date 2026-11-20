@@ -153,7 +153,7 @@ class McpHandler(
         when (outcome) {
             is CallOutcome.Done -> when (val result = outcome.result) {
                 is ToolResult.Answer -> asked.came(CallLog.Outcome.ANSWERED, answered(result.content))
-                is ToolResult.Refused -> asked.came(CallLog.Outcome.REFUSED, refusal(result.say))
+                is ToolResult.Refused -> asked.came(CallLog.Outcome.REFUSED, refused(result))
             }
             CallOutcome.Late -> asked.came(
                 CallLog.Outcome.LATE,
@@ -168,6 +168,12 @@ class McpHandler(
             }
             is CallOutcome.Broke -> asked.broke(outcome.kind, refusal("The phone could not run $tool."))
         }
+
+    // With a code, the refusal carries `error.json` as the duplicate-call refusal does.
+    private fun refused(result: ToolResult.Refused): JsonObject {
+        val code = result.code ?: return refusal(result.say)
+        return refusal(obj("error" to JsonPrimitive(result.say), "code" to JsonPrimitive(code)))
+    }
 
     /** One call as the log knows it: its tool and who asked. Its fields are its own, so it has no getters. */
     private inner class Asked(private val tool: String, private val caller: String?) {

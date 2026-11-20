@@ -1,0 +1,8 @@
+red-refusal-core.log:McpHandlerTest > a refusal with a code reaches the hub as the error file, with its words and its code() FAILED
+red-refusal-core.log:273 tests completed, 1 failed
+red-refusal-core.log:> Task :core:test FAILED
+red-refusal-core.log:BUILD FAILED in 36s
+red-refusal.log:PluginApiTest > a code is what protocol version 1's error file allows, or the refusal is not made() FAILED
+red-refusal.log:6 tests completed, 1 failed
+red-refusal.log:> Task :plugin-api:test FAILED
+red-refusal.log:BUILD FAILED in 31s
