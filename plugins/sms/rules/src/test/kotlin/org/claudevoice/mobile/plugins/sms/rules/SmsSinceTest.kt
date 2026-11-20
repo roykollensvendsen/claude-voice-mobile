@@ -241,6 +241,31 @@ class SmsSinceTest {
     }
 
     @Test
+    fun `a save that fails again and again tells the owner to free space, until one succeeds`(@TempDir folder: File) {
+        var failing = false
+        val seal = object : Sealer {
+            override fun seal(plain: ByteArray): ByteArray {
+                if (failing) throw java.io.IOException("the disk is full")
+                return plain
+            }
+
+            override fun open(sealed: ByteArray) = sealed
+        }
+        val inbox = Inbox(QueueFile(File(folder, "q"), seal, noFolderSync), FixedChance("inst0001")) { NOW }
+        inbox.add("+4700000021", "en", at, noCountry)
+        val none = JsonObject(emptyMap())
+        failing = true
+        assertEquals(SmsSince.Reply.Refused(SmsSince.NOT_SAVED), SmsSince.call(inbox, none))
+        assertEquals(SmsSince.Reply.Refused(SmsSince.NO_SPACE), SmsSince.call(inbox, none))
+        assertEquals(SmsSince.Reply.Refused(SmsSince.NO_SPACE), SmsSince.call(inbox, none))
+        assertTrue(SmsSince.NO_SPACE.contains("free space"))
+        failing = false
+        assertTrue(SmsSince.call(inbox, none) is SmsSince.Reply.Answer)
+        failing = true
+        assertEquals(SmsSince.Reply.Refused(SmsSince.NOT_SAVED), SmsSince.call(inbox, none))
+    }
+
+    @Test
     fun `a call with wrong arguments is refused in words, and the inbox is not touched`(@TempDir folder: File) {
         val inbox = Inbox(QueueFile(File(folder, "q"), plainSeal, noFolderSync), FixedChance("inst0001")) { NOW }
         inbox.add("+4700000021", "en", at, noCountry)
