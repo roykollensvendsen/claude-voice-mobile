@@ -3,6 +3,7 @@ package org.claudevoice.mobile.plugins.sms.rules
 import java.io.IOException
 import java.security.GeneralSecurityException
 import java.security.InvalidKeyException
+import java.security.ProviderException
 import javax.crypto.Cipher
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
@@ -55,20 +56,33 @@ class AesGcmSealer(private val keys: KeySource) : Sealer {
             sealed(plain)
         }
 
-    private fun sealed(plain: ByteArray): ByteArray {
-        // The cipher picks the nonce, as the Keystore insists for its own keys.
-        val cipher = Cipher.getInstance(MODE)
-        cipher.init(Cipher.ENCRYPT_MODE, key())
-        return cipher.iv + cipher.doFinal(plain)
-    }
+    private fun sealed(plain: ByteArray): ByteArray =
+        guarded {
+            // The cipher picks the nonce, as the Keystore insists for its own keys.
+            val cipher = Cipher.getInstance(MODE)
+            cipher.init(Cipher.ENCRYPT_MODE, key())
+            cipher.iv + cipher.doFinal(plain)
+        }
 
     @Throws(GeneralSecurityException::class)
     override fun open(sealed: ByteArray): ByteArray {
         if (sealed.size < NONCE + TAG) throw GeneralSecurityException("too short to be sealed")
-        val cipher = Cipher.getInstance(MODE)
-        cipher.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(TAG * Byte.SIZE_BITS, sealed, 0, NONCE))
-        return cipher.doFinal(sealed, NONCE, sealed.size - NONCE)
+        return guarded {
+            val cipher = Cipher.getInstance(MODE)
+            cipher.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(TAG * Byte.SIZE_BITS, sealed, 0, NONCE))
+            cipher.doFinal(sealed, NONCE, sealed.size - NONCE)
+        }
     }
+
+    // The Keystore can fail inside the cipher with an unchecked ProviderException. Left alone it
+    // would kill the receiver's thread and lose the message uncounted; as a security failure it is
+    // a failed save when sealing and a lost key when opening, both of which the queue counts.
+    private fun <T> guarded(work: () -> T): T =
+        try {
+            work()
+        } catch (failed: ProviderException) {
+            throw GeneralSecurityException("the key store failed", failed)
+        }
 
     companion object {
         /** The nonce's bytes, and the tag's. */

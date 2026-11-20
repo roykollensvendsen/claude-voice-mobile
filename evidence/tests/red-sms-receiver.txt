@@ -23,3 +23,7 @@ red-receiver-rules.log:BUILD FAILED in 33s
 red-manifest.log:FAILED tests/test_sms_manifest.py::test_the_reading_plugin_holds_what_it_reads_with_and_never_the_right_to_send
 red-manifest.log:FAILED tests/test_sms_manifest.py::test_one_receiver_hears_new_messages_and_only_the_system_may_send_to_it
 red-manifest.log:2 failed, 1 passed in 0.08s
+red-provider.log:AesGcmSealerTest > a cipher the Keystore fails inside fails the seal as a failed save, and the open as a lost key() FAILED
+red-provider.log:153 tests completed, 1 failed
+red-provider.log:> Task :plugins:sms:rules:test FAILED
+red-provider.log:BUILD FAILED in 25s
