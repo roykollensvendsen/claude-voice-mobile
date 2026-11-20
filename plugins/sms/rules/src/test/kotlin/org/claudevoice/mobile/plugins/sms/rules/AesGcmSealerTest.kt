@@ -8,6 +8,7 @@ import org.junit.jupiter.api.assertThrows
 import java.io.IOException
 import java.security.GeneralSecurityException
 import java.security.KeyStoreException
+import java.security.ProviderException
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
@@ -116,5 +117,24 @@ class AesGcmSealerTest {
         assertThrows<IOException> { AesGcmSealer(gone).seal(plain) }
         val sealed = AesGcmSealer(key()).seal(plain)
         assertThrows<GeneralSecurityException> { AesGcmSealer(gone).open(sealed) }
+    }
+
+    // A key the cipher itself fails on with the unchecked exception the Keystore throws.
+    private object Broken : SecretKey {
+        private fun readResolve(): Any = Broken
+
+        override fun getAlgorithm() = "AES"
+
+        override fun getFormat() = "RAW"
+
+        override fun getEncoded(): ByteArray = throw ProviderException("the Keystore failed in the cipher")
+    }
+
+    @Test
+    fun `a cipher the Keystore fails inside fails the seal as a failed save, and the open as a lost key`() {
+        val sealed = AesGcmSealer(key()).seal("en".toByteArray())
+        val sealer = AesGcmSealer(Keys({ Broken }))
+        assertThrows<IOException> { sealer.seal("to".toByteArray()) }
+        assertThrows<GeneralSecurityException> { sealer.open(sealed) }
     }
 }

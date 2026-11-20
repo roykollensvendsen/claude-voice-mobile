@@ -24,6 +24,10 @@ class SmsReceiver : BroadcastReceiver() {
         Thread {
             try {
                 keep(context, parts, zone)
+            } catch (@Suppress("TooGenericExceptionCaught") failed: RuntimeException) {
+                // A backstop: a crash here would lose the message without a trace. Only the
+                // kind of failure is logged, never a sender or a text.
+                Log.e(TAG, "a new message was not kept: ${failed.javaClass.name}")
             } finally {
                 pending.finish()
             }

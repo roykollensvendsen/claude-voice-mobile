@@ -1,7 +1,8 @@
 # The phone hears each new text message and keeps it for the hub
 
-The red runs are in `red-sms-receiver.txt`. There are three: the refusal that asks the owner to
-free space, every new rule behind the receiver, and the manifest.
+The red runs are in `red-sms-receiver.txt`. There are four: the refusal that asks the owner to
+free space, every new rule behind the receiver, the manifest, and a Keystore failing inside the
+cipher.
 
 This is the third of the mobile architect's steps for reading text messages (ADR-CVM-010),
 the part called c1. A receiver hears each new message and puts it in the sealed queue that
@@ -32,6 +33,14 @@ What the tests pin, off the phone:
   A key the platform no longer accepts is forgotten and a new one made, once. Any other key
   failure fails the seal as a failed save, which the hub hears as "ask again". When opening,
   the same failure is a lost key, and the queue starts again counting what it held as dropped.
+  That holds when the Keystore fails inside the cipher too, with its unchecked exception. A
+  test feeds the seal a key the cipher fails on. One cost: a passing Keystore failure while the
+  queue is opened is also taken as a lost key, so a queue whose key was fine is dropped. It is
+  counted, so the hub is never told too few.
+- **The inbox is opened on the first call,** not while the app builds its plugins, so reading
+  the file and asking the Keystore never happen on the main thread. The receiver also catches
+  any other unchecked failure and logs only its kind, so a crash never loses a message without a
+  trace.
 - **May the phone read messages?** When the owner has taken back `RECEIVE_SMS` or `READ_SMS`,
   a call is refused with the code `permission_missing`. Nothing is handed out. The words say
   where to allow it again, and to choose "Allow restricted settings" first if the switch is
