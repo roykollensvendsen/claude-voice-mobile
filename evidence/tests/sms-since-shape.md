@@ -42,3 +42,7 @@ files.
 
 - **A message with no sender** is from "an unknown sender", kind `name`, and masks as "a one-time code from an unknown sender" (`test_a_sender_the_network_did_not_give_is_an_unknown_sender`). Its red run is appended to `red-sms-since-shape.txt`.
 - The descriptions of `dropped`, `from` and `from_kind` now say what the queue does: the count may be a little high, never low; a national number goes into E.164 with the SIM's country when it can. No field, type or limit changed.
+
+## Round 4, after the tool was built
+
+- **A sender is at most 40 characters**, as the phone cuts it (`Senders.LONGEST`), so the bridge can size what it reads out. A letter-named sender ID is at most 11 characters on the network, so no real sender can be the 17 characters of "an unknown sender" (`test_a_sender_is_at_most_40_characters_and_never_mistaken_for_the_unknown_one`). Its red run is appended to `red-sms-since-shape.txt`. The bridge only gains a limit it may check; nothing it receives today changes.
