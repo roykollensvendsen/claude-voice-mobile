@@ -52,3 +52,11 @@ red-queue-follow-ups.log:SmsQueueTest > two answers that carried one count take 
 red-queue-follow-ups.log:130 tests completed, 5 failed
 red-queue-follow-ups.log:> Task :plugins:sms:rules:test FAILED
 red-queue-follow-ups.log:BUILD FAILED in 32s
+red-reply-fold.log:SmsSinceTest > a reply is handed on as an answer or as a refusal, never as the other() FAILED
+red-reply-fold.log:13 tests completed, 1 failed
+red-reply-fold.log:> Task :plugins:sms:rules:test FAILED
+red-reply-fold.log:BUILD FAILED in 28s
+red-tool-choice.log:SmsSinceTest > a call to another tool, or before there is an inbox, is refused naming the tool(File) FAILED
+red-tool-choice.log:14 tests completed, 1 failed
+red-tool-choice.log:> Task :plugins:sms:rules:test FAILED
+red-tool-choice.log:BUILD FAILED in 25s

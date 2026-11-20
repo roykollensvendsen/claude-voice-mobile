@@ -15,17 +15,10 @@ import org.claudevoice.mobile.plugins.sms.rules.SmsSince
  */
 class SmsPlugin(private val inbox: Inbox? = null) : Plugin {
     override val name = "sms"
-    override val tools =
-        if (inbox == null) listOf() else listOf(Tool(SmsSince.TOOL, SmsSince.DESCRIPTION, SmsSince.INPUT))
-    override val uses = if (inbox == null) listOf() else listOf("messages")
+    override val tools = listOfNotNull(inbox?.let { Tool(SmsSince.TOOL, SmsSince.DESCRIPTION, SmsSince.INPUT) })
+    override val uses = listOfNotNull(inbox?.let { "messages" })
     override val confirms = listOf<String>()
 
-    override suspend fun call(tool: String, arguments: JsonObject): ToolResult {
-        val held = inbox
-        if (held == null || tool != SmsSince.TOOL) return ToolResult.Refused("sms has no tool $tool")
-        return when (val reply = SmsSince.call(held, arguments)) {
-            is SmsSince.Reply.Answer -> ToolResult.Answer(reply.content)
-            is SmsSince.Reply.Refused -> ToolResult.Refused(reply.say)
-        }
-    }
+    override suspend fun call(tool: String, arguments: JsonObject): ToolResult =
+        SmsSince.call(inbox, tool, arguments).fold({ ToolResult.Answer(it) }, { ToolResult.Refused(it) })
 }

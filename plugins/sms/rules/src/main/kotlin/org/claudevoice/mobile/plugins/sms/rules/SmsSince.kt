@@ -34,10 +34,21 @@ object SmsSince {
 
     /** What a call comes to: an answer, or a refusal in words. */
     sealed interface Reply {
-        data class Answer(val content: JsonObject) : Reply
+        /** [answer] of the content, or [refused] of the words: how the plugin hands a reply on. */
+        fun <T> fold(answer: (JsonObject) -> T, refused: (String) -> T): T
 
-        data class Refused(val say: String) : Reply
+        data class Answer(val content: JsonObject) : Reply {
+            override fun <T> fold(answer: (JsonObject) -> T, refused: (String) -> T): T = answer(content)
+        }
+
+        data class Refused(val say: String) : Reply {
+            override fun <T> fold(answer: (JsonObject) -> T, refused: (String) -> T): T = refused(say)
+        }
     }
+
+    /** A call to the plugin's [tool], refused when it is not this one or there is no [inbox] yet. */
+    fun call(inbox: Inbox?, tool: String, arguments: JsonObject): Reply =
+        if (inbox == null || tool != TOOL) Reply.Refused("sms has no tool $tool") else call(inbox, arguments)
 
     /** The answer to one call, from [inbox], or a refusal when the arguments do not fit [INPUT]. */
     fun call(inbox: Inbox, arguments: JsonObject): Reply {
