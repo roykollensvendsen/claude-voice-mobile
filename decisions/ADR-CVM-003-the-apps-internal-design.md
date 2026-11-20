@@ -13,6 +13,10 @@ transfer to a new phone. Proposed by the architect session; how long the log
 keeps calls is the owner's choice, made by merging this.
 Amended 2026-11-17, if the owner agrees: a poll that finds nothing is counted
 once a day, not logged line by line.
+Amended 2026-11-20 by the architect session: the listener comes back after a
+restart or an update, and the app says so when the owner has hidden its
+notification. This fills in the special-use service of 2026-11-13 and changes
+no direction.
 Nothing beyond [the audio-focus prototype](../docs/prototype-audio-focus.md) is
 built until the owner accepts this record.
 
@@ -36,6 +40,18 @@ chose a native Android app.
   - Whether a foreground service keeps the network through Doze, or the app
     must also be excused from battery optimisation, is measured with the
     listener.
+  - From Android 12, an app may start a foreground service from the
+    background only in listed cases. Receiving `BOOT_COMPLETED` or
+    `MY_PACKAGE_REPLACED` is one of them.
+  - From Android 15, an app started by `BOOT_COMPLETED` may not start a
+    foreground service of the data-sync, camera, media-playback, phone-call,
+    media-projection or microphone type. Special use is not on that list.
+  - An app the owner has force-stopped gets no broadcast, `BOOT_COMPLETED`
+    included, until the owner opens it again.
+  - From Android 13, an app needs `POST_NOTIFICATIONS` to show a
+    notification. If the owner refuses, a foreground service still runs, but
+    its notification is hidden. It shows only in the list of running apps in
+    the quick settings.
 - **Sound is shared through audio focus.** An app asks for focus to play. When
   another app asks too, Android tells the first to stop or to *duck*: play on,
   quieter. Whether the Claude app's voice mode lets music duck is not documented.
@@ -89,10 +105,39 @@ The manifest needs these pieces for it:
 - on the service, `android:foregroundServiceType="specialUse"`, and the
   property `android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE` holding the
   description above;
+- the permission `RECEIVE_BOOT_COMPLETED`, and a receiver for
+  `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED`, as the next part says;
 - for each later type, its own `FOREGROUND_SERVICE_<TYPE>` permission, and the
   type added to the service's list. The manifest lists every type the service
   may ever hold, and the service starts with only the ones in use. A plugin
   that adds a type changes the manifest in the same pull request.
+
+**The listener comes back after a restart or an update.** The app has a
+receiver for `BOOT_COMPLETED` and for `MY_PACKAGE_REPLACED`, declared in the
+manifest with `RECEIVE_BOOT_COMPLETED`. On either, it starts the service with
+the special-use type only, and only if the phone is paired with a hub. Any
+other type is added later, by a plugin, from the app in the foreground. So the
+Android 15 limit above does not stop it. The receiver waits for
+`BOOT_COMPLETED`, after the first unlock, and not for the locked boot, because
+the hub's key is in storage that opens only then. It does nothing else, and
+starts nothing when the app is not paired. After a force stop the app stays
+off until the owner opens it, which is Android's rule and the owner's choice.
+Whether the listener truly answers the hub after a restart and after an
+update is measured on the phone, as with Doze, before this is relied on.
+
+**When the owner refuses notifications.** The listener runs anyway, with its
+notification hidden. The app's main screen then shows one line: "The listener
+is running, but Android hides its notice. Tap to show it." What the tap does
+depends on what Android still allows:
+
+- while Android still lets the app ask, that is
+  `shouldShowRequestPermissionRationale` is true after one refusal, the tap
+  asks for `POST_NOTIFICATIONS` again;
+- otherwise Android would not show the request at all, so the tap opens the
+  app's notification settings (`ACTION_APP_NOTIFICATION_SETTINGS`).
+
+The line goes once the permission is granted. The app never asks on its own
+more than once at first start.
 
 **Settings that only the phone changes.** The microphone setting, location
 logging, the list of people who may be called straight away and the camera are
@@ -183,7 +228,21 @@ plugins.
 
 - **Each phone function can be added, removed or left out** without touching the
   others.
-- **Android's notification shows the owner what the app is using**, at every moment.
+- **Android's notification shows the owner what the app is using**, at every
+  moment. When the owner has hidden it, the app's own screen says so.
+- **The phone answers the hub again after a restart or an update** without
+  the owner opening the app, unless the owner force-stopped it.
+- **Tests, written first, with fakes for Android's classes:**
+  - the receiver starts the service with the special-use type only, on
+    `BOOT_COMPLETED` and on `MY_PACKAGE_REPLACED`, and starts nothing when
+    the app is not paired or on any other broadcast;
+  - the merged manifest holds the receiver, `RECEIVE_BOOT_COMPLETED`, and no
+    locked-boot action;
+  - with notifications refused, the line is shown; a tap asks for the
+    permission when the rationale flag is true, and opens the notification
+    settings when it is false; the line goes once the permission is granted;
+  - measured on the phone and written down in `evidence/`: the hub reaches the
+    listener after a restart and after an update, with the screen off.
 - **Worse:** Gradle modules and a foreground service are more structure than a
   first app needs. They are chosen because the rules they enforce are the point.
 - **Worse:** if the Claude app does not let music duck, this app cannot fix that
