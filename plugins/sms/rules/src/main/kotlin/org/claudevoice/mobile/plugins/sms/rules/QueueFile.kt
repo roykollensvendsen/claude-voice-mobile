@@ -20,40 +20,59 @@ interface Sealer {
     fun open(sealed: ByteArray): ByteArray
 }
 
+/** Makes what a folder lists survive a power cut, as `fsync` on the folder does. */
+fun interface FolderSync {
+    @Throws(IOException::class)
+    fun sync(folder: File)
+}
+
 /**
  * The queue kept in one file, sealed (ADR-CVM-010). The plugin puts the file in the app's
  * no-backup folder. Only how many messages it holds is outside the seal, so that a lost key
  * can still count them as dropped. Each save replaces the file whole.
  */
-class QueueFile(private val file: File, private val sealer: Sealer) {
-    /** The queue kept, a new one when there is none, or a new one that counts a lost key's messages. */
+class QueueFile(private val file: File, private val sealer: Sealer, private val folderSync: FolderSync) {
+    /**
+     * The queue kept, a new one when there is none, or a new one that counts a lost key's
+     * messages. A file whose start cannot be read counts one lost, since it may have held any:
+     * the hub may be told of too many dropped, never too few.
+     */
     fun load(chance: Chance): SmsQueue {
-        val kept = kept() ?: return SmsQueue.fresh(chance)
-        return try {
+        if (!file.exists()) return SmsQueue.fresh(chance)
+        val kept = kept()
+        return if (kept == null) SmsQueue.afterLostKey(1, chance) else opened(kept, chance)
+    }
+
+    private fun opened(kept: Kept, chance: Chance): SmsQueue =
+        try {
             SmsQueue.fromBytes(sealer.open(kept.sealed), chance)
         } catch (_: GeneralSecurityException) {
             SmsQueue.afterLostKey(kept.held, chance)
         } catch (_: IOException) {
             SmsQueue.afterLostKey(kept.held, chance)
         }
-    }
 
     /** How many messages the file holds, and its sealed part. */
     private class Kept(val held: Int, val sealed: ByteArray)
 
-    // None when there is no file, or it is not one of ours. Read whole into memory first, so
-    // nothing is left open.
-    private fun kept(): Kept? {
-        if (!file.exists()) return null
-        return try {
+    // None when the file is not one of ours or its count cannot be. The count is outside the
+    // seal, so it is held to what the queue can hold. Read whole into memory first, so nothing
+    // is left open.
+    private fun kept(): Kept? =
+        try {
             val input = DataInputStream(ByteArrayInputStream(file.readBytes()))
-            if (input.readInt() == MAGIC) Kept(input.readInt(), input.readBytes()) else null
+            val ours = input.readInt() == MAGIC
+            val held = input.readInt()
+            if (ours && held >= 0) Kept(minOf(held, SmsQueue.MOST_KEPT), input.readBytes()) else null
         } catch (_: IOException) {
             null
         }
-    }
 
-    /** Keep [queue], all at once or not at all: written beside the file, then moved over it. */
+    /**
+     * Keep [queue], all at once or not at all: written beside the file, then moved over it, and
+     * the folder synced, so that after a power cut the old file, and the numbers it would give
+     * again, never comes back.
+     */
     @Throws(IOException::class)
     fun save(queue: SmsQueue) {
         val bytes = ByteArrayOutputStream()
@@ -71,6 +90,7 @@ class QueueFile(private val file: File, private val sealer: Sealer) {
             StandardOpenOption.SYNC,
         )
         Files.move(next.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+        folderSync.sync(file.absoluteFile.parentFile)
     }
 
     private companion object {

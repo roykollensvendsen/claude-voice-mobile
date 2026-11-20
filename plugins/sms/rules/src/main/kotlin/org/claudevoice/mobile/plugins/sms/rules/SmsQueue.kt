@@ -6,6 +6,7 @@ import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
 import java.security.SecureRandom
+import java.time.DateTimeException
 import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -60,13 +61,15 @@ class Batch(val messages: List<Kept>, val cursor: String, val more: Boolean, val
  * A message leaves only when a call passes back the cursor of an answer that gave it, so an
  * answer lost on the way is given again with the same ids. Past [MOST_KEPT] messages, or
  * [LONGEST_KEPT], the oldest is dropped and counted. The count is given with each answer until
- * the cursor of an answer that carried it comes back.
+ * the cursor of an answer that carried it comes back. Drops are kept as a running total, and an
+ * acknowledgement only raises how much of it the hub has: two answers that carried one count,
+ * both acknowledged, take it off once.
  */
 class SmsQueue private constructor(
     private val chance: Chance,
     private val install: String,
     private var nextNumber: Long,
-    private var dropped: Int,
+    private val drops: Drops,
     private val entries: ArrayDeque<Entry>,
     private val given: LinkedHashMap<String, Given>,
 ) {
@@ -81,11 +84,17 @@ class SmsQueue private constructor(
         fun kept(id: String) = Kept(id, from.from, from.kind, text, cut, masked, at)
     }
 
-    /** What an answer gave: messages up to [last], and the dropped count it carried. */
-    private class Given(val last: Long, val dropped: Int)
+    /** Every message dropped so far, and how many of them the hub has acknowledged. */
+    private class Drops(var ever: Int, var seen: Int)
+
+    /** What an answer gave: messages up to [last], and the running total of drops when it was made. */
+    private class Given(val last: Long, val droppedEver: Int)
 
     /** How many messages wait. */
     val size: Int get() = entries.size
+
+    // Dropped and not yet known by the hub.
+    private val dropped: Int get() = drops.ever - drops.seen
 
     // Whether anything worth keeping changed since the last [takeChanged].
     private var changed = false
@@ -146,12 +155,13 @@ class SmsQueue private constructor(
         out.writeInt(FORMAT)
         out.writeUTF(install)
         out.writeLong(nextNumber)
-        out.writeInt(dropped)
+        out.writeInt(drops.ever)
+        out.writeInt(drops.seen)
         out.writeInt(given.size)
         for ((cursor, answer) in given) {
             out.writeUTF(cursor)
             out.writeLong(answer.last)
-            out.writeInt(answer.dropped)
+            out.writeInt(answer.droppedEver)
         }
         out.writeInt(entries.size)
         for (entry in entries) {
@@ -175,7 +185,7 @@ class SmsQueue private constructor(
         while (each.hasNext()) {
             if (each.next().at.toInstant().isBefore(oldest)) {
                 each.remove()
-                dropped += 1
+                drops.ever += 1
                 changed = true
             }
         }
@@ -183,17 +193,19 @@ class SmsQueue private constructor(
 
     private fun drop() {
         entries.removeFirst()
-        dropped += 1
+        drops.ever += 1
     }
 
-    /** Delete what the answer gave and the count it carried, and forget every earlier cursor. */
+    /** Delete what the answer gave, mark the drops it told of as known, and forget every earlier cursor. */
     private fun acknowledge(cursor: String, answer: Given) {
         while (entries.isNotEmpty() && entries.first().number <= answer.last) {
             entries.removeFirst()
             changed = true
         }
-        if (answer.dropped != 0) changed = true
-        dropped -= answer.dropped
+        if (answer.droppedEver > drops.seen) {
+            drops.seen = answer.droppedEver
+            changed = true
+        }
         val earlier = ArrayList<String>()
         for (key in given.keys) {
             if (key == cursor) break
@@ -201,14 +213,13 @@ class SmsQueue private constructor(
         }
         for (key in earlier) given.remove(key)
         if (earlier.isNotEmpty()) changed = true
-        given[cursor] = Given(answer.last, 0)
     }
 
     /** A cursor never given before, for an answer that gave up to [last] and carried [dropped]. */
     private fun remember(last: Long): String {
         var cursor = chance.cursor()
         while (given.containsKey(cursor)) cursor = chance.cursor()
-        given[cursor] = Given(last, dropped)
+        given[cursor] = Given(last, drops.ever)
         changed = true
         if (given.size > CURSORS_REMEMBERED) given.remove(given.keys.first())
         return cursor
@@ -224,7 +235,10 @@ class SmsQueue private constructor(
         const val CURSORS_REMEMBERED = 16
         val LONGEST_KEPT: Duration = Duration.ofDays(7)
 
-        // 2 added each message's kind and whether its text was cut.
+        // UTF-8 takes at most four bytes for each of a kept text's characters.
+        private const val LONGEST_TEXT_BYTES = LONGEST_TEXT * 4
+
+        // 2 added each message's kind and whether its text was cut, and keeps drops as a total.
         private const val FORMAT = 2
 
         /** A queue for a new install, or after the app's data was cleared. */
@@ -232,16 +246,27 @@ class SmsQueue private constructor(
 
         /** A new queue that counts the [lost] messages a lost key took with it as dropped. */
         fun afterLostKey(lost: Int, chance: Chance) =
-            SmsQueue(chance, chance.installPart(), 1, lost, ArrayDeque(), LinkedHashMap())
+            SmsQueue(chance, chance.installPart(), 1, Drops(lost, 0), ArrayDeque(), LinkedHashMap())
 
-        /** A queue read back from [toBytes]; an [IOException] when the bytes are not one. */
+        /**
+         * A queue read back from [toBytes]; an [IOException] when the bytes are not one, whatever
+         * is wrong with them, so that a damaged queue is never more than a lost one.
+         */
         @Throws(IOException::class)
-        fun fromBytes(bytes: ByteArray, chance: Chance): SmsQueue {
-            val input = DataInputStream(ByteArrayInputStream(bytes))
+        fun fromBytes(bytes: ByteArray, chance: Chance): SmsQueue =
+            try {
+                read(DataInputStream(ByteArrayInputStream(bytes)), chance)
+            } catch (wrong: DateTimeException) {
+                throw IOException("a time that cannot be", wrong)
+            } catch (wrong: ArithmeticException) {
+                throw IOException("a time that cannot be", wrong)
+            }
+
+        private fun read(input: DataInputStream, chance: Chance): SmsQueue {
             if (input.readInt() != FORMAT) throw IOException("not a queue of this format")
             val install = input.readUTF()
             val nextNumber = input.readLong()
-            val dropped = input.readInt()
+            val drops = Drops(input.readInt(), input.readInt())
             val given = LinkedHashMap<String, Given>()
             var cursors = input.readInt()
             while (cursors > 0) {
@@ -264,7 +289,7 @@ class SmsQueue private constructor(
                 val at = OffsetDateTime.ofInstant(Instant.ofEpochSecond(second, nano.toLong()), offset)
                 entries.addLast(Entry(number, Senders.Heard(from, kind), text, cut, masked, at))
             }
-            return SmsQueue(chance, install, nextNumber, dropped, entries, given)
+            return SmsQueue(chance, install, nextNumber, drops, entries, given)
         }
 
         // A text by its length in bytes: a long message joined from many parts can pass the
@@ -282,7 +307,10 @@ class SmsQueue private constructor(
         }
 
         private fun readText(input: DataInputStream): String {
-            val bytes = ByteArray(input.readInt())
+            val length = input.readInt()
+            // No kept text is longer, so a damaged length never asks for gigabytes.
+            if (length < 0 || length > LONGEST_TEXT_BYTES) throw IOException("a text of $length bytes")
+            val bytes = ByteArray(length)
             input.readFully(bytes)
             return String(bytes, Charsets.UTF_8)
         }

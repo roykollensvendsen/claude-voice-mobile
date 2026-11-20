@@ -21,3 +21,6 @@ class FixedChance(private val install: String) : Chance {
         return "K" + cursors.toString().padStart(11, '0')
     }
 }
+
+/** A folder sync that does nothing, for tests where a power cut is not the point. */
+val noFolderSync = FolderSync { }
