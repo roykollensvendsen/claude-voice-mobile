@@ -1,0 +1,46 @@
+AesGcmSealerTest > another key cannot open it, as after the Keystore lost the key() FAILED
+AesGcmSealerTest > what is sealed opens to the same bytes() FAILED
+AesGcmSealerTest > bytes too short to hold a nonce and a tag are refused as unopenable() FAILED
+AesGcmSealerTest > the key is asked for each time, so a key the phone made again is used() FAILED
+AesGcmSealerTest > the sealed bytes hold no plain text, and two seals of the same bytes differ() FAILED
+AesGcmSealerTest > a changed byte anywhere is noticed() FAILED
+InboxTest > messages added from many threads at once are all kept() FAILED
+InboxTest > an acknowledgement is on disk, so a restart does not give the message again() FAILED
+InboxTest > when the file cannot be written the answer does not leave() FAILED
+InboxTest > a poll that changes nothing does not write the file() FAILED
+InboxTest > a poll that drops an old message writes the file() FAILED
+InboxTest > a message added is given by the next answer() FAILED
+InboxTest > a cursor handed out is on disk before the answer leaves, so a restart still knows it() FAILED
+InboxTest > a message added is on disk at once, so a restart still has it() FAILED
+OneTimeCodesTest > the line names the sender as the hub hears it, so a chosen name cannot flood or steer it() FAILED
+SendersTest > a sender with nothing left is an unknown sender() FAILED
+SendersTest > a short code or a name is never sent to the country lookup() FAILED
+SendersTest > control, format and line-separating characters are dropped() FAILED
+SendersTest > a plus and digits is a number, up to six digits a short code, and anything else a name() FAILED
+SendersTest > a cut never leaves a space at the end() FAILED
+SendersTest > an ordinary sender is kept as it came() FAILED
+SendersTest > a sender is cut to its first 40 characters, counted as Unicode counts them() FAILED
+SendersTest > seven digits or more with no plus is a national number, put in E164 form with the phone's country() FAILED
+SendersTest > a national number that cannot be put in E164 form keeps its digits, still a number() FAILED
+SendersTest > runs of spaces become one, and the ends are trimmed() FAILED
+SmsQueueTest > a hidden message from no sender reads as from an unknown sender() FAILED
+SmsQueueTest > bytes with a kind the queue does not know are not a queue() FAILED
+SmsQueueTest > a text is cut by characters as Unicode counts them, never inside one() FAILED
+SmsQueueTest > a message keeps its sender cleaned, with its kind() FAILED
+SmsQueueTest > a national number is kept in E164 form, and a hidden message names it so() FAILED
+SmsQueueTest > a text longer than 2000 characters is kept as its first 2000, and says it was cut() FAILED
+SmsQueueTest > bytes of an older format are not a queue() FAILED
+SmsSinceTest > a time is given with its seconds and its offset, even when both are zero() FAILED
+SmsSinceTest > a call with wrong arguments is refused in words, and the inbox is not touched(File) FAILED
+SmsSinceTest > a cursor that is empty or not a string, or any other argument, is refused() FAILED
+SmsSinceTest > the answer carries more, dropped and reset as the batch has them() FAILED
+SmsSinceTest > the tool's input is the input schema's own shape() FAILED
+SmsSinceTest > an empty answer fits too() FAILED
+SmsSinceTest > a call answers from the inbox, and passing its cursor back acknowledges it(File) FAILED
+SmsSinceTest > the checker refuses an answer that breaks the schema, so it cannot pass everything() FAILED
+SmsSinceTest > a hidden, a cut, a short-code and a named message each fit, with their flags() FAILED
+SmsSinceTest > an answer gives each message with every field the schema names, and fits it() FAILED
+SmsSinceTest > no cursor, or null, starts at the oldest kept, and a string is passed on as it came() FAILED
+125 tests completed, 43 failed
+> Task :plugins:sms:rules:test FAILED
+BUILD FAILED in 49s

@@ -98,6 +98,14 @@ class OneTimeCodesTest {
     }
 
     @Test
+    fun `the line names the sender as the hub hears it, so a chosen name cannot flood or steer it`() {
+        val flood = "Eksempelbank‮\n" + "x".repeat(200)
+        val hidden = OneTimeCodes.shown(flood, "Kode 482913") as Shown.Hidden
+        assertEquals("a one-time code from ${Senders.shown(flood)}", hidden.line)
+        assertEquals(flood, hidden.sender)
+    }
+
+    @Test
     fun `a sender is a short code with at most the bound's digits and no plus`() {
         assertEquals(true, OneTimeCodes.namedOrShort("2".repeat(OneTimeCodes.SHORT_CODE_DIGITS)))
         assertEquals(false, OneTimeCodes.namedOrShort("2".repeat(OneTimeCodes.SHORT_CODE_DIGITS + 1)))
