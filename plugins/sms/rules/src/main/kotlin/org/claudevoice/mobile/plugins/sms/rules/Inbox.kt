@@ -30,9 +30,12 @@ class Inbox(private val file: QueueFile, chance: Chance, private val now: () -> 
         return batch
     }
 
-    // A change that could not be saved stays marked, so the next call saves it.
     private fun saved() {
-        if (!queue.takeChanged()) return
+        if (queue.takeChanged()) save()
+    }
+
+    // A change that could not be saved stays marked, so the next call saves it.
+    private fun save() {
         try {
             file.save(queue)
         } catch (failed: IOException) {
