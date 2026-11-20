@@ -1,0 +1,7 @@
+red-pairing-offer.log:PairingOfferTest > a code is shown only while it still works, so an expired one leaves the screen() FAILED
+red-pairing-offer.log:PairingOfferTest > while the phone listens, the screen offers pairing and gives the address the hub adds() FAILED
+red-pairing-offer.log:PairingOfferTest > a code that paired leaves the screen at once() FAILED
+red-pairing-offer.log:PairingOfferTest > while the phone listens nowhere, the screen offers no pairing() FAILED
+red-pairing-offer.log:4 tests completed, 4 failed
+red-pairing-offer.log:> Task :core:test FAILED
+red-pairing-offer.log:BUILD FAILED in 28s

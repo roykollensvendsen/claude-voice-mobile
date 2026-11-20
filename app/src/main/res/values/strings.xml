@@ -14,4 +14,8 @@
     <string name="name_not_allowed">A name may have small letters, digits and hyphens, must start with a letter, and be at most 32 long.</string>
     <string name="name_already_named">The phone already has another name. Changing it means clearing the app\'s data and pairing again.</string>
     <string name="name_not_written">The phone could not save the name. Free some space, and try again.</string>
+    <string name="listener_channel">The listener</string>
+    <string name="listener_running">Listening for your hub.</string>
+    <string name="pairing_show">Show a pairing code</string>
+    <string name="pairing_code">Pairing code: %1$s\nIt works once, for 10 minutes. Showing a new one ends it.\nThe phone\'s tailnet address: %2$s</string>
 </resources>
