@@ -59,9 +59,26 @@ class SendersTest {
         assertEquals(Senders.Heard("2", Senders.Kind.SHORT_CODE), Senders.heard("2", norway))
         assertEquals(Senders.Heard("Eksempelbank", Senders.Kind.NAME), Senders.heard("Eksempelbank", norway))
         assertEquals(Senders.Kind.NAME, Senders.heard("+", norway).kind)
-        assertEquals(Senders.Kind.NAME, Senders.heard("+47 00", norway).kind)
         assertEquals(Senders.Kind.NAME, Senders.heard("4+7", norway).kind)
         assertEquals(Senders.Heard(Senders.UNKNOWN, Senders.Kind.NAME), Senders.heard("", norway))
+    }
+
+    @Test
+    fun `a number written with spaces, dashes, dots or brackets is a number, kept without them`() {
+        assertEquals(Senders.Heard("+4712345678", Senders.Kind.NUMBER), Senders.heard("+47 123 45 678", norway))
+        assertEquals(Senders.Heard("+4712345678", Senders.Kind.NUMBER), Senders.heard("(+47) 123-45.678", norway))
+        assertEquals(Senders.Heard("+4712345678", Senders.Kind.NUMBER), Senders.heard("123 45 678", norway))
+        assertEquals(Senders.Heard("2244", Senders.Kind.SHORT_CODE), Senders.heard("22 44", norway))
+        // Only when nothing else is left: a name with a number in it stays a name, as written.
+        assertEquals(Senders.Heard("Bank 24", Senders.Kind.NAME), Senders.heard("Bank 24", norway))
+        assertEquals(Senders.Heard("+47 12 x", Senders.Kind.NAME), Senders.heard("+47 12 x", norway))
+    }
+
+    @Test
+    fun `a lookup that gives something not in E164 form is not believed, and the digits are kept`() {
+        for (wrong in listOf("4712345678", "+47 123", "+", "Eksempel", "")) {
+            assertEquals(Senders.Heard("12345678", Senders.Kind.NUMBER), Senders.heard("12345678") { wrong }, wrong)
+        }
     }
 
     @Test

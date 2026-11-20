@@ -112,6 +112,9 @@ class OneTimeCodesTest {
         assertEquals(false, OneTimeCodes.namedOrShort("+2244"))
         assertEquals(true, OneTimeCodes.namedOrShort("Eksempel 1"))
         assertEquals(true, OneTimeCodes.namedOrShort(" "))
+        // A number written with spaces is a number here too, as it came: never a name's masking.
+        assertEquals(false, OneTimeCodes.namedOrShort("+47 123 45 678"))
+        assertEquals(false, OneTimeCodes.namedOrShort("47 123 45 678"))
     }
 
     @Test
