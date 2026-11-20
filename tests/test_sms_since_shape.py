@@ -147,6 +147,15 @@ def test_a_masked_message_names_only_its_sender():
         assert message["text"] == f"a one-time code from {message['from']}"
 
 
+def test_a_sender_the_network_did_not_give_is_an_unknown_sender():
+    """Android can give no sender at all; the answer still names one, and masks as usual."""
+    doc = schema(ANSWER)
+    unknown = [m for e in doc["examples"] for m in e["messages"] if m["from"] == "an unknown sender"]
+    assert unknown, "no example shows a message with no sender"
+    assert all(m["from_kind"] == "name" for m in unknown)
+    assert "an unknown sender" in doc["$defs"]["message"]["properties"]["from"]["description"]
+
+
 def test_a_cursor_never_looks_like_a_message_id():
     """The bridge must not be tempted to build a cursor from the last id it saw."""
     examples = schema(ANSWER)["examples"]

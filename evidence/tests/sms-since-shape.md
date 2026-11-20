@@ -37,3 +37,8 @@ files.
 - **A text is at most 2000 characters**, with `cut` saying so, and ADR-CVM-010's "first 2000
   characters" is the schema's `maxLength`.
 - The checker now refuses twelve wrong answers.
+
+## Round 3, while the tool is built
+
+- **A message with no sender** is from "an unknown sender", kind `name`, and masks as "a one-time code from an unknown sender" (`test_a_sender_the_network_did_not_give_is_an_unknown_sender`). Its red run is appended to `red-sms-since-shape.txt`.
+- The descriptions of `dropped`, `from` and `from_kind` now say what the queue does: the count may be a little high, never low; a national number goes into E.164 with the SIM's country when it can. No field, type or limit changed.
