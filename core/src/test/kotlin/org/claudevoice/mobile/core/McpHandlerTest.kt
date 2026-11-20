@@ -292,6 +292,9 @@ class McpHandlerTest {
         assertEquals(setOf("error", "code"), error.keys)
         assertEquals("Allow it in the phone's settings.", error["error"]!!.jsonPrimitive.content)
         assertEquals("permission_missing", error["code"]!!.jsonPrimitive.content)
+        // A hub that reads only the text gets the same error file.
+        val text = refused["content"]!!.jsonArray.single().jsonObject["text"]!!.jsonPrimitive.content
+        assertEquals(error, Json.parseToJsonElement(text))
         assertEquals(listOf("refused"), outcomes())
     }
 

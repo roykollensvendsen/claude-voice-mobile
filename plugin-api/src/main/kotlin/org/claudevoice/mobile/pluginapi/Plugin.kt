@@ -37,16 +37,18 @@ sealed interface ToolResult {
     data class Answer(val content: JsonObject) : ToolResult
 
     /**
-     * [code], when given, is protocol version 1's `error.json` code, such as
-     * `permission_missing`, for a hub that acts on the kind of refusal and not only its words.
+     * [say] is never blank, as `error.json` asks. [code], when given, is protocol version 1's
+     * `error.json` code, such as `permission_missing`, for a hub that acts on the kind of refusal
+     * and not only its words.
      */
     data class Refused(val say: String, val code: String? = null) : ToolResult {
         init {
+            require(say.isNotBlank()) { "a refusal must say something a person can act on" }
             require(code == null || CODE.matches(code)) { "a refusal's code must match ${CODE.pattern}" }
         }
 
         private companion object {
-            // claude-voice, docs/schemas/v1/error.json.
+            // claude-voice, docs/agent-protocol/v1/error.json.
             val CODE = Regex("[a-z][a-z0-9_]{0,31}")
         }
     }
