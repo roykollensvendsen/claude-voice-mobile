@@ -177,18 +177,30 @@ ends either sent or stopped, never both or neither. A cancel after the send
 answers "too late, it was sent at 14.02".
 
 **A held message survives nothing.** It lives only in the app's memory. When
-the app stops, restarts or crashes, the message is stopped and never sent
-later. When a hold starts, the phone writes a marker with the token and the
-time, and nothing else. On the next start, a marker still there becomes a
-"stopped: the app restarted" outcome. So a crash is reported, not silent.
+the app stops, restarts or crashes during the hold, the message is stopped
+and never sent later. When a hold starts, the phone writes a marker with the
+token, the time and the state `held`, and nothing else. Just before it asks
+Android to send, it changes the state to `sending`, and waits until that is on
+disk. The marker goes when the outcome is stored. So on the next start, a
+marker still there tells which side of the send the app stopped on:
+
+- `held` becomes a "stopped: the app restarted" outcome. The message was
+  never handed to Android.
+- `sending` becomes an `unknown` outcome: "it may have been sent; check the
+  text app". Android may have sent it before the app stopped, and the app
+  cannot tell. It never sends it again.
+
+So a crash is reported, not silent, and never reported as stopped when it may
+have gone. The outcome is `sent` only when Android reports every part sent,
+and `failed` when it reports any part failed.
 
 **`sms_send_outcomes(cursor)`** tells the laptop how each held message ended,
 so its whats_new can say "sent at 14.02" or "stopped, not sent". It is
 `sms_send`'s own poll, with the same cursor, acknowledgement and resend as
 `sms_since`. A phone with sending on and reading off still reports outcomes.
-Each item holds the token, the outcome (`sent`, `stopped` or `failed`), the
-time and a reason in words. It never holds a number or a text. The laptop
-marks it as a poll, so an empty answer is counted, not logged.
+Each item holds the token, the outcome (`sent`, `stopped`, `failed` or
+`unknown`), the time and a reason in words. It never holds a number or a text.
+The laptop marks it as a poll, so an empty answer is counted, not logged.
 
 **The undo delay** is a phone-only setting (ADR-CVM-003). It defaults to 10
 seconds and has a floor of 5 seconds in the code. No tool reads or changes it.
@@ -242,8 +254,10 @@ it keeps the time, caller and outcome of each call, never a number or a text.
   - the race: cancel and the timer fire together over many runs, each ending
     in exactly one outcome; and a stopped app sends nothing;
   - outcomes: each is given exactly once after its acknowledgement, a kill
-    during the hold gives a "stopped" outcome after the restart, and the
-    outcome store holds no number or text;
+    during the hold gives a "stopped" outcome after the restart, a kill just
+    after the send call gives an `unknown` outcome and no second send, a
+    multipart text with one part failed gives `failed`, and the outcome store
+    holds no number or text;
   - the delay: below 5 seconds is refused when the setting is saved;
   - a build without `sms_send` has no `SEND_SMS` in its merged manifest.
 
