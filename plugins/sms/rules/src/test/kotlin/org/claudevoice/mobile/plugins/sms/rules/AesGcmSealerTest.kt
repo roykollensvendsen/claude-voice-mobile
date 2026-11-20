@@ -5,9 +5,12 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.io.IOException
 import java.security.GeneralSecurityException
+import java.security.KeyStoreException
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
+import javax.crypto.spec.SecretKeySpec
 
 /**
  * The queue's seal: AES in GCM mode, so a changed byte is noticed, with a key the caller holds.
@@ -58,12 +61,60 @@ class AesGcmSealerTest {
         }
     }
 
+    /** Keys handed out in turn; [forgotten] counts how often the platform was told to drop one. */
+    private class Keys(vararg keys: () -> SecretKey) : KeySource {
+        private val queue = ArrayDeque(keys.toList())
+        var asked = 0
+        var forgotten = 0
+
+        override fun key(): SecretKey {
+            asked += 1
+            return (if (queue.size > 1) queue.first() else queue.last())()
+        }
+
+        override fun forget() {
+            forgotten += 1
+            if (queue.size > 1) queue.removeFirst()
+        }
+    }
+
+    // A key AES refuses at once, as the Keystore refuses one it has permanently invalidated.
+    private val refused: () -> SecretKey = { SecretKeySpec(ByteArray(5), "AES") }
+
     @Test
     fun `the key is asked for each time, so a key the phone made again is used`() {
-        var asked = 0
         val held = key()
-        val sealer = AesGcmSealer { asked += 1; held }
+        val keys = Keys({ held })
+        val sealer = AesGcmSealer(keys)
         sealer.open(sealer.seal(plain))
-        assertEquals(2, asked)
+        assertEquals(2, keys.asked)
+    }
+
+    @Test
+    fun `a key the platform no longer accepts is forgotten once, and the seal made with a new one`() {
+        val fresh = key()
+        val keys = Keys(refused, { fresh })
+        val sealed = AesGcmSealer(keys).seal(plain)
+        assertEquals(1, keys.forgotten)
+        assertArrayEquals(plain, AesGcmSealer(fresh).open(sealed))
+    }
+
+    @Test
+    fun `a key still refused after it was forgotten fails the seal as a failed save, without trying forever`() {
+        val keys = Keys(refused)
+        assertThrows<IOException> { AesGcmSealer(keys).seal(plain) }
+        assertEquals(1, keys.forgotten)
+    }
+
+    @Test
+    fun `a key that cannot be had at all fails the seal as a failed save, and the open as a lost key`() {
+        val gone = object : KeySource {
+            override fun key(): SecretKey = throw KeyStoreException("the Keystore is not there")
+
+            override fun forget() = Unit
+        }
+        assertThrows<IOException> { AesGcmSealer(gone).seal(plain) }
+        val sealed = AesGcmSealer(key()).seal(plain)
+        assertThrows<GeneralSecurityException> { AesGcmSealer(gone).open(sealed) }
     }
 }

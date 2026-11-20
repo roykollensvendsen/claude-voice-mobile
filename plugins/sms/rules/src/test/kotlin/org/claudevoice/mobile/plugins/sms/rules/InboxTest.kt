@@ -2,6 +2,7 @@ package org.claudevoice.mobile.plugins.sms.rules
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
@@ -10,6 +11,7 @@ import java.io.IOException
 import java.time.Duration
 import java.time.Instant
 import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -124,5 +126,44 @@ class InboxTest {
         pool.shutdown()
         pool.awaitTermination(10, TimeUnit.SECONDS)
         assertEquals(SmsQueue.MOST_PER_ANSWER, inbox.since(null).messages.map { it.id }.toSet().size)
+    }
+
+    /** Fails as many seals as it is told to, then works. */
+    private class FailingFor(var failures: Int) : Sealer {
+        override fun seal(plain: ByteArray): ByteArray {
+            if (failures > 0) {
+                failures -= 1
+                throw IOException("the disk is full")
+            }
+            return plain
+        }
+
+        override fun open(sealed: ByteArray) = sealed
+    }
+
+    @Test
+    fun `a message received is kept at the phone's time now, with the phone's offset`() {
+        val inbox = inbox()
+        now = Instant.parse("2026-11-20T09:30:15Z")
+        assertTrue(inbox.receive("+4700000021", "Ses vi?", ZoneOffset.ofHours(1), noCountry))
+        val kept = inbox.since(null).messages.single()
+        assertEquals(OffsetDateTime.parse("2026-11-20T10:30:15+01:00"), kept.at)
+        assertEquals(ZoneOffset.ofHours(1), kept.at.offset)
+    }
+
+    @Test
+    fun `a received message whose save fails once is saved by the second try`() {
+        assertTrue(inbox(FailingFor(1)).receive("+4700000021", "Ses vi?", ZoneOffset.UTC, noCountry))
+        assertEquals(listOf("Ses vi?"), inbox(install = "inst0002").since(null).messages.map { it.text })
+    }
+
+    @Test
+    fun `a received message whose save fails twice says so, and stays to be saved by the next change`() {
+        val seal = FailingFor(2)
+        val inbox = inbox(seal)
+        assertFalse(inbox.receive("+4700000021", "Ses vi?", ZoneOffset.UTC, noCountry))
+        assertEquals(0, seal.failures)
+        inbox.since(null)
+        assertEquals(listOf("Ses vi?"), inbox(install = "inst0002").since(null).messages.map { it.text })
     }
 }

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Reading the owner's text messages (ADR-CVM-010). Only a build that names `sms` holds these. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Restricted: after a sideloaded install, Android may first ask for "Allow restricted settings". -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+
+    <application>
+        <!-- Exported, since the system sends the broadcast, but only the system may: without
+             BROADCAST_SMS any app could hand it a made-up message for the hub to read. -->
+        <receiver
+            android:name=".SmsReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

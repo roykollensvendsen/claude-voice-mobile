@@ -1,0 +1,25 @@
+red-no-space.log:SmsSinceTest > a save that fails again and again tells the owner to free space, until one succeeds(File) FAILED
+red-no-space.log:138 tests completed, 1 failed
+red-no-space.log:> Task :plugins:sms:rules:test FAILED
+red-no-space.log:BUILD FAILED in 44s
+red-receiver-rules.log:AesGcmSealerTest > a key still refused after it was forgotten fails the seal as a failed save, without trying forever() FAILED
+red-receiver-rules.log:AesGcmSealerTest > a key the platform no longer accepts is forgotten once, and the seal made with a new one() FAILED
+red-receiver-rules.log:AesGcmSealerTest > a key that cannot be had at all fails the seal as a failed save, and the open as a lost key() FAILED
+red-receiver-rules.log:ArrivalsTest > no parts are no messages() FAILED
+red-receiver-rules.log:ArrivalsTest > one part is one message() FAILED
+red-receiver-rules.log:ArrivalsTest > a part from another sender starts another message() FAILED
+red-receiver-rules.log:ArrivalsTest > parts from one sender in a row are joined in order, without anything between them() FAILED
+red-receiver-rules.log:ArrivalsTest > a part with no sender or no text counts as empty, never as missing() FAILED
+red-receiver-rules.log:InboxTest > a received message whose save fails once is saved by the second try() FAILED
+red-receiver-rules.log:InboxTest > a message received is kept at the phone's time now, with the phone's offset() FAILED
+red-receiver-rules.log:InboxTest > a received message whose save fails twice says so, and stays to be saved by the next change() FAILED
+red-receiver-rules.log:SharedTest > two threads asking at once still get one, made once() FAILED
+red-receiver-rules.log:SharedTest > the first ask makes it, and every later ask gets the same one() FAILED
+red-receiver-rules.log:SmsSinceTest > a reply is handed on as an answer or as a refusal, never as the other() FAILED
+red-receiver-rules.log:SmsSinceTest > a call when the phone may not read messages is refused with a code, and says where to allow it(File) FAILED
+red-receiver-rules.log:152 tests completed, 15 failed
+red-receiver-rules.log:> Task :plugins:sms:rules:test FAILED
+red-receiver-rules.log:BUILD FAILED in 33s
+red-manifest.log:FAILED tests/test_sms_manifest.py::test_the_reading_plugin_holds_what_it_reads_with_and_never_the_right_to_send
+red-manifest.log:FAILED tests/test_sms_manifest.py::test_one_receiver_hears_new_messages_and_only_the_system_may_send_to_it
+red-manifest.log:2 failed, 1 passed in 0.08s
