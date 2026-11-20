@@ -42,7 +42,7 @@ class InboxTest {
     private fun file() = File(folder, "sms-queue")
 
     private fun inbox(seal: Sealer = plainSeal, install: String = "inst0001") =
-        Inbox(QueueFile(file(), seal), FixedChance(install)) { now }
+        Inbox(QueueFile(file(), seal, noFolderSync), FixedChance(install)) { now }
 
     @Test
     fun `a message added is given by the next answer`() {

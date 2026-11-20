@@ -175,7 +175,7 @@ class SmsSinceTest {
 
     @Test
     fun `a call answers from the inbox, and passing its cursor back acknowledges it`(@TempDir folder: File) {
-        val inbox = Inbox(QueueFile(File(folder, "q"), plainSeal), FixedChance("inst0001")) { NOW }
+        val inbox = Inbox(QueueFile(File(folder, "q"), plainSeal, noFolderSync), FixedChance("inst0001")) { NOW }
         inbox.add("+4700000021", "en", at, noCountry)
         val first = SmsSince.call(inbox, JsonObject(emptyMap())) as SmsSince.Reply.Answer
         fits(first.content)
@@ -188,7 +188,7 @@ class SmsSinceTest {
 
     @Test
     fun `a call with wrong arguments is refused in words, and the inbox is not touched`(@TempDir folder: File) {
-        val inbox = Inbox(QueueFile(File(folder, "q"), plainSeal), FixedChance("inst0001")) { NOW }
+        val inbox = Inbox(QueueFile(File(folder, "q"), plainSeal, noFolderSync), FixedChance("inst0001")) { NOW }
         inbox.add("+4700000021", "en", at, noCountry)
         val refused = SmsSince.call(inbox, JsonObject(mapOf("cursor" to JsonPrimitive(5))))
         assertTrue(refused is SmsSince.Reply.Refused)

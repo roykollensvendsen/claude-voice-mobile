@@ -44,3 +44,11 @@ SmsSinceTest > no cursor, or null, starts at the oldest kept, and a string is pa
 125 tests completed, 43 failed
 > Task :plugins:sms:rules:test FAILED
 BUILD FAILED in 49s
+red-queue-follow-ups.log:QueueFileTest > a count outside the seal that cannot be true is held to one that can() FAILED
+red-queue-follow-ups.log:QueueFileTest > after the new file is moved in, its folder is synced, so a power cut never brings back the old one() FAILED
+red-queue-follow-ups.log:QueueFileTest > a file whose start cannot be read starts a new queue that tells the hub some were lost() FAILED
+red-queue-follow-ups.log:SmsQueueTest > bytes whose text length or time cannot be are not a queue, and never crash the phone() FAILED
+red-queue-follow-ups.log:SmsQueueTest > two answers that carried one count take it off once, acknowledged in turn() FAILED
+red-queue-follow-ups.log:130 tests completed, 5 failed
+red-queue-follow-ups.log:> Task :plugins:sms:rules:test FAILED
+red-queue-follow-ups.log:BUILD FAILED in 32s

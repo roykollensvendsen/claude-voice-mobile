@@ -201,6 +201,30 @@ class SmsQueueTest {
     }
 
     @Test
+    fun `two answers that carried one count take it off once, acknowledged in turn`() {
+        val q = queue()
+        for (i in 1..SmsQueue.MOST_KEPT + 3) q.addFriend("melding $i")
+        // A hub's retry overlaps its first call: both answers carry the same 3.
+        val first = q.since(null, now)
+        val retry = q.since(null, now)
+        assertEquals(3, retry.dropped)
+        assertEquals(0, q.since(first.cursor, now).dropped)
+        assertEquals(0, q.since(retry.cursor, now).dropped)
+        q.addFriend("gammel", start.minusDays(8))
+        assertEquals(1, q.since(null, now).dropped)
+    }
+
+    @Test
+    fun `an answer acknowledged again never takes its count off twice`() {
+        val q = queue()
+        for (i in 1..SmsQueue.MOST_KEPT + 2) q.addFriend("melding $i")
+        val carried = q.since(null, now)
+        q.since(carried.cursor, now)
+        q.addFriend("gammel", start.minusDays(8))
+        assertEquals(1, q.since(carried.cursor, now).dropped)
+    }
+
+    @Test
     fun `an empty answer with nothing dropped gives back the cursor it was passed`() {
         val q = queue()
         q.addFriend("en")
@@ -385,6 +409,38 @@ class SmsQueueTest {
             bytes[bytes.size - 17] = kind.toByte()
             assertThrows<IOException>("kind $kind") { SmsQueue.fromBytes(bytes, Counted()) }
         }
+    }
+
+    @Test
+    fun `bytes whose text length or time cannot be are not a queue, and never crash the phone`() {
+        val q = queue()
+        q.addFriend("en")
+        val good = q.toBytes()
+        // From the end: time 16, kind, masked and cut 1 each, the text "en" 2, then its length.
+        val textLength = good.size - 25
+        val second = good.size - 16
+        val offset = good.size - 4
+        val broken = listOf<(java.nio.ByteBuffer) -> Unit>(
+            { it.putInt(textLength, -1) },
+            { it.putInt(textLength, Int.MAX_VALUE) },
+            { it.putLong(second, Long.MAX_VALUE) },
+            { it.putInt(offset, 99_999_999) },
+        )
+        for ((n, breaking) in broken.withIndex()) {
+            val bytes = good.copyOf()
+            breaking(java.nio.ByteBuffer.wrap(bytes))
+            assertThrows<IOException>("break $n") { SmsQueue.fromBytes(bytes, Counted()) }
+        }
+    }
+
+    @Test
+    fun `an empty text, and the longest text in the widest characters, are read back`() {
+        val q = queue()
+        q.addFriend("")
+        val widest = "\uD83D\uDE00".repeat(SmsQueue.LONGEST_TEXT)
+        q.addFriend(widest)
+        val back = SmsQueue.fromBytes(q.toBytes(), Counted()).since(null, now).messages
+        assertEquals(listOf("", widest), back.map { it.text })
     }
 
     @Test
