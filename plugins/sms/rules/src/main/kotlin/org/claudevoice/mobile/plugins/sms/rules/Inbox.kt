@@ -13,6 +13,10 @@ import java.time.OffsetDateTime
 class Inbox(private val file: QueueFile, chance: Chance, private val now: () -> Instant) {
     private val queue = file.load(chance)
 
+    /** How many saves have failed since the last one that worked. */
+    var failedInARow = 0
+        private set
+
     /** Keep a new message; [toE164] puts a national number in E.164 form, or gives none. */
     @Synchronized
     @Throws(IOException::class)
@@ -38,8 +42,10 @@ class Inbox(private val file: QueueFile, chance: Chance, private val now: () -> 
     private fun save() {
         try {
             file.save(queue)
+            failedInARow = 0
         } catch (failed: IOException) {
             queue.markChanged()
+            failedInARow += 1
             throw failed
         }
     }

@@ -34,6 +34,11 @@ object SmsSince {
     /** What the hub hears when the queue could not be saved: nothing left, so asking again is safe. */
     const val NOT_SAVED = "The phone could not save its messages, so nothing was handed out. Ask again."
 
+    /** What the hub hears when saving has failed more than once in a row: the phone may be full. */
+    const val NO_SPACE =
+        "The phone has failed to save its messages more than once in a row, so nothing was handed out. " +
+            "Its storage may be full: ask the owner to free space on the phone, then ask again."
+
     private const val WRONG = "sms_since takes only a cursor: the string from the last answer, or none at all."
 
     /** What a call comes to: an answer, or a refusal in words. */
@@ -64,9 +69,11 @@ object SmsSince {
         return try {
             Reply.Answer(answer(inbox.since(cursor)))
         } catch (_: IOException) {
-            Reply.Refused(NOT_SAVED)
+            Reply.Refused(notSaved(inbox))
         }
     }
+
+    private fun notSaved(inbox: Inbox) = if (inbox.failedInARow > 1) NO_SPACE else NOT_SAVED
 
     /** The cursor passed, or none; an [IllegalArgumentException] for arguments that do not fit [INPUT]. */
     fun cursor(arguments: JsonObject): String? {

@@ -69,6 +69,7 @@ class SendersTest {
         assertEquals(Senders.Heard("+4712345678", Senders.Kind.NUMBER), Senders.heard("(+47) 123-45.678", norway))
         assertEquals(Senders.Heard("+4712345678", Senders.Kind.NUMBER), Senders.heard("123 45 678", norway))
         assertEquals(Senders.Heard("2244", Senders.Kind.SHORT_CODE), Senders.heard("22 44", norway))
+        assertEquals(Senders.Heard("+4700", Senders.Kind.NUMBER), Senders.heard("+47 00", norway))
         // Only when nothing else is left: a name with a number in it stays a name, as written.
         assertEquals(Senders.Heard("Bank 24", Senders.Kind.NAME), Senders.heard("Bank 24", norway))
         assertEquals(Senders.Heard("+47 12 x", Senders.Kind.NAME), Senders.heard("+47 12 x", norway))
