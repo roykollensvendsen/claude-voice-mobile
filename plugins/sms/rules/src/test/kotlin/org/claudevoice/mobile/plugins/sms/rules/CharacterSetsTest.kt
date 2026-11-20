@@ -20,7 +20,7 @@ class CharacterSetsTest {
     }
 
     @Test
-    fun `white space is every space and line break Unicode names, as the JVM's (?U) took it`() {
+    fun `white space is every space and line break Unicode names, as the JVM's Unicode flag took it`() {
         same(CharacterSets.WHITE_SPACE, "(?U)\\s")
     }
 
