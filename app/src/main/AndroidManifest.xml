@@ -2,6 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Watching the network needs no prompt: it is a normal permission. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- The listener opens a socket for the hub: a normal permission, granted at install. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- The one foreground service, of the special-use type (ADR-CVM-003), and its notice. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- From Android 11, an app sees another only if it says so; this lets the button open Tailscale. -->
     <queries>
@@ -25,5 +31,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- Special use, not data sync, which Android 15 stops after six hours a day (ADR-CVM-003). -->
+        <service
+            android:name=".ListenerService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="A listener for the owner's own assistant hub" />
+        </service>
     </application>
 </manifest>

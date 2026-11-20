@@ -4,15 +4,28 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.WindowInsets
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 
-/** For now one thing: whether the hub can reach this phone, and what to do if not. */
+/**
+ * Whether the hub can reach this phone, and what to do if not; once the phone has a name, the
+ * listener runs and a pairing code can be shown.
+ */
 class MainActivity : Activity() {
     private lateinit var watcher: TailnetWatcher
+    private lateinit var pairing: PairingPanel
+    private val ticks = Handler(Looper.getMainLooper())
+    private val tick = object : Runnable {
+        override fun run() {
+            pairing.refresh()
+            ticks.postDelayed(this, TICK_MS)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,9 +50,11 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setPadding(MARGIN, TOP_MARGIN, MARGIN, MARGIN)
             val app = application as App
-            addView(NameStep(this@MainActivity, app.machine, app.suggestedName) { }.view)
+            addView(NameStep(this@MainActivity, app.machine, app.suggestedName) { listen() }.view)
             addView(message)
             addView(open)
+            pairing = PairingPanel(this@MainActivity) { app.agent() }
+            pairing.views.forEach(::addView)
         }
         // From Android 15 the screen is drawn under the bars; keep the message clear of them.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -50,6 +65,7 @@ class MainActivity : Activity() {
             }
         }
         setContentView(root)
+        begin(firstStart = savedInstanceState == null)
         watcher = TailnetWatcher(this) { state ->
             runOnUiThread {
                 val notice = TailnetNotice.of(state)
@@ -62,12 +78,23 @@ class MainActivity : Activity() {
     override fun onStart() {
         super.onStart()
         watcher.start()
+        tick.run()
     }
 
     override fun onStop() {
+        ticks.removeCallbacks(tick)
         watcher.stop()
         super.onStop()
     }
+
+    // Listens once the phone has a name, and asks for the notice's permission at a first start.
+    private fun begin(firstStart: Boolean) {
+        if ((application as App).machine.name != null) listen()
+        if (firstStart) AskNotifications.once(this)
+    }
+
+    // Started from here, in the foreground, as Android requires; it finds the agent itself.
+    private fun listen() = ListenerService.start(this)
 
     private companion object {
         const val TEXT_SIZE_SP = 18f
@@ -75,5 +102,8 @@ class MainActivity : Activity() {
         /** In pixels: room around the message, and more at the top, clear of the status bar. */
         const val MARGIN = 48
         const val TOP_MARGIN = 96
+
+        /** How often the pairing panel looks again: a code that was used or ran out leaves soon. */
+        const val TICK_MS = 1000L
     }
 }
