@@ -29,3 +29,9 @@ test_ids_after_a_reset_come_from_another_install passed: round 1 examples alread
 FAILED tests/test_sms_since_shape.py::test_a_sender_the_network_did_not_give_is_an_unknown_sender
 E       AssertionError: no example shows a message with no sender
 1 failed, 8 passed
+
+--- Round 4: a sender at most 40 characters, against the files before the change ---
+
+FAILED tests/test_sms_since_shape.py::test_a_sender_is_at_most_40_characters_and_never_mistaken_for_the_unknown_one
+E       KeyError: 'maxLength'
+1 failed, 9 passed

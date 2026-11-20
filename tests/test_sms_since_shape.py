@@ -156,6 +156,24 @@ def test_a_sender_the_network_did_not_give_is_an_unknown_sender():
     assert "an unknown sender" in doc["$defs"]["message"]["properties"]["from"]["description"]
 
 
+def test_a_sender_is_at_most_40_characters_and_never_mistaken_for_the_unknown_one():
+    """The phone cuts a sender to 40 characters, so the schema holds the same limit.
+
+    A letter-named sender ID is at most 11 characters on the network, so no real sender
+    can be the 17 characters of "an unknown sender".
+    """
+    doc = schema(ANSWER)
+    sender = doc["$defs"]["message"]["properties"]["from"]
+    assert sender["maxLength"] == 40
+    good = doc["examples"][0]
+    message = good["messages"][0]
+    too_long = {**good, "messages": [{**message, "from": "x" * 41, "from_kind": "name"}]}
+    assert matches(too_long, doc, doc), "accepted a 41-character sender"
+    unknown = "an unknown sender"
+    assert len(unknown) > 11
+    assert "at most 11" in sender["description"]
+
+
 def test_a_cursor_never_looks_like_a_message_id():
     """The bridge must not be tempted to build a cursor from the last id it saw."""
     examples = schema(ANSWER)["examples"]

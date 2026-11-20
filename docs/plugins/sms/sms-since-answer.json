@@ -46,7 +46,8 @@
         "from": {
           "type": "string",
           "minLength": 1,
-          "description": "The sender, cleaned of control and invisible characters and cut to 40 characters: an E.164 number, a short code's digits, or a letter-named sender's name. A national number is put into E.164 with the SIM's country; when that cannot be done, its digits are given as they came. When the network gave no sender, 'an unknown sender'."
+          "maxLength": 40,
+          "description": "The sender, cleaned of control and invisible characters and cut to 40 characters: an E.164 number, a short code's digits, or a letter-named sender's name. A national number is put into E.164 with the SIM's country; when that cannot be done, its digits are given as they came. When the network gave no sender, 'an unknown sender'. A letter-named sender is at most 11 characters on the network, so no real sender can be those 17."
         },
         "from_kind": {
           "enum": ["number", "short_code", "name"],
