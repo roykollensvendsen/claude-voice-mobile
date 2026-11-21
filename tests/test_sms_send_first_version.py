@@ -23,6 +23,7 @@ def first_version() -> str:
 def test_the_record_says_what_the_first_version_of_sending_holds() -> None:
     part = first_version()
     for kept in (
+        "the hub denies it in every role",
         "10 sends an hour, 30 in 24 hours, and 3 to one number in 10 minutes",
         "at most 1000 characters, with no link and no run of more than 6 digits",
         "`rate_limited`",
