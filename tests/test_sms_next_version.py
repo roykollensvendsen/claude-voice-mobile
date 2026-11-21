@@ -61,7 +61,7 @@ def test_sending_still_holds_send_sms_alone_and_asks_reading_whether_a_number_is
     for guard in (
         '"texted before?"',
         "`sms_send` declares `SEND_SMS` alone",
-        '"can\'t check whether you\'ve texted this number before"',
+        "\"can't check whether you've texted this number before\"",
     ):
         assert guard in part, guard
 
