@@ -23,18 +23,23 @@ android {
 kotlin { jvmToolchain(17) }
 
 // NoBackupTest reads the manifest the build merged for the variant under test, and the rules
-// file it names, so what it checks is what ships.
+// file it names, so what it checks is what ships. MergedPermissionsTest reads where each
+// permission in it came from.
 androidComponents {
     onVariants { variant ->
         val name = variant.name.replaceFirstChar { it.uppercase() }
         val manifest = layout.buildDirectory
             .file("intermediates/merged_manifest/${variant.name}/process${name}MainManifest/AndroidManifest.xml")
+        // The merger's record of which module each line came from; MergedPermissionsTest reads it.
+        val record = layout.buildDirectory.file("outputs/logs/manifest-merger-${variant.name}-report.txt")
         tasks.matching { it.name == "test${name}UnitTest" }.configureEach {
             dependsOn("process${name}MainManifest")
-            // Declared as inputs, so a change to either runs the test again instead of reusing it.
+            // Declared as inputs, so a change to any runs the test again instead of reusing it.
             inputs.file(manifest)
+            inputs.file(record)
             inputs.dir("src/main/res/xml")
             (this as Test).systemProperty("mergedManifest", manifest.get().asFile.path)
+            systemProperty("mergerReport", record.get().asFile.path)
             systemProperty("resources", file("src/main/res").path)
         }
     }

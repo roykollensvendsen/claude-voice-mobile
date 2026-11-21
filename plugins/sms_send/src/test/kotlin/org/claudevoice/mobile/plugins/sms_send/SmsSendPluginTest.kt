@@ -10,7 +10,9 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.claudevoice.mobile.pluginapi.ToolResult
+import org.claudevoice.mobile.plugins.sms_send.rules.Contact
 import org.claudevoice.mobile.plugins.sms_send.rules.Outbox
+import org.claudevoice.mobile.plugins.sms_send.rules.Recipients
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -23,7 +25,11 @@ class SmsSendPluginTest {
         failed = {},
         tokens = { "t1" },
     )
-    private val plugin = SmsSendPlugin(outbox) { permitted }
+    // A made-up contact, with a number in the +47 00 range no one is given.
+    private val recipients = Recipients(Clock.fixed(Instant.EPOCH, ZoneId.of("UTC")), { "p1" }) { matches, _ ->
+        listOf(Contact("Ola Nordmann", "+4700000056", "mobile")).filter { matches(it.name) }
+    }
+    private val plugin = SmsSendPlugin(outbox, recipients) { permitted }
 
     /** Runs a call to its end; the plugin never suspends, so it ends at once. */
     private fun call(tool: String, arguments: String): ToolResult {
@@ -40,7 +46,7 @@ class SmsSendPluginTest {
             listOf("sms_send_request", "sms_send_confirm", "sms_send_cancel"),
             plugin.tools.map { it.name },
         )
-        assertEquals(listOf("messages"), plugin.uses)
+        assertEquals(listOf("messages", "contacts"), plugin.uses)
         assertEquals(listOf("sms_send_confirm"), plugin.confirms)
         assertEquals(setOf("to", "text"), plugin.tools[0].input["properties"]!!.jsonObject.keys)
     }
@@ -49,6 +55,12 @@ class SmsSendPluginTest {
     fun `an answer reaches the hub as the rules gave it`() {
         val answer = call("sms_send_request", """{"to":"+4700000001","text":"Hei"}""") as ToolResult.Answer
         assertEquals("Draft to +4700000001: 'Hei'", answer.content["say"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `a name in to is looked up among the contacts`() {
+        val answer = call("sms_send_request", """{"to":"Ola","text":"Hei"}""") as ToolResult.Answer
+        assertEquals("Draft to Ola Nordmann, +4700000056: 'Hei'", answer.content["say"]!!.jsonPrimitive.content)
     }
 
     @Test

@@ -32,10 +32,12 @@ object SmsSend {
     val TOOLS: List<ToolSpec> = listOf(
         ToolSpec(
             REQUEST,
-            "Keep a draft text to one number and send nothing. Read the say back to the owner word for word, " +
-                "then confirm only after their spoken yes.",
+            "Keep a draft text to one recipient and send nothing. to is a number in full international form, " +
+                "a contact's name, or a pick. A name may answer choices instead of a draft: read them to the " +
+                "owner, then call again with their chosen pick in to. Read a draft's say back to the owner word " +
+                "for word, then confirm only after their spoken yes.",
             schema(
-                """"to":{"type":"string","pattern":"^\\+[1-9][0-9]{6,14}$"},"text":{"type":"string","minLength":1}""",
+                """"to":{"type":"string","minLength":1},"text":{"type":"string","minLength":1}""",
                 "to",
                 "text",
             ),
@@ -61,21 +63,35 @@ object SmsSend {
     val CONFIRMS: List<String> = listOf(CONFIRM)
 
     /** One call, refused with [PERMISSION_MISSING] while the phone may not send ([permitted]). */
-    fun call(outbox: Outbox, tool: String, arguments: JsonObject, permitted: Boolean): Reply {
+    fun call(
+        outbox: Outbox,
+        tool: String,
+        arguments: JsonObject,
+        permitted: Boolean,
+        resolve: (String) -> Recipients.Resolved = Recipients::number,
+    ): Reply {
         val spec = TOOLS.firstOrNull { it.name == tool }
         return when {
             spec == null -> Reply.Refused("sms_send has no tool $tool.")
             !permitted -> Reply.Refused(NOT_PERMITTED, PERMISSION_MISSING)
             arguments.keys != spec.keys -> Reply.Refused("$tool takes exactly ${spec.keys.joinToString()}.")
-            else -> handed(outbox, tool, arguments) ?: Reply.Refused("$tool was given an argument of the wrong kind.")
+            else -> handed(outbox, tool, arguments, resolve)
+                ?: Reply.Refused("$tool was given an argument of the wrong kind.")
         }
     }
 
     /** The call handed to the outbox, or null when an argument is of the wrong kind. */
-    private fun handed(outbox: Outbox, tool: String, arguments: JsonObject): Reply? {
+    private fun handed(
+        outbox: Outbox,
+        tool: String,
+        arguments: JsonObject,
+        resolve: (String) -> Recipients.Resolved,
+    ): Reply? {
         val token = text(arguments, "token")
         return when (tool) {
-            REQUEST -> text(arguments, "to")?.let { to -> text(arguments, "text")?.let { outbox.request(to, it) } }
+            REQUEST -> text(arguments, "to")?.let { to ->
+                text(arguments, "text")?.let { outbox.request(to, it, resolve) }
+            }
             CONFIRM -> token?.let { number(arguments)?.let { version -> outbox.confirm(token, version) } }
             else -> token?.let(outbox::cancel)
         }

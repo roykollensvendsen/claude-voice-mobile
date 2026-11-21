@@ -58,21 +58,34 @@ class Outbox(
 
     private val drafts = mutableMapOf<String, Draft>()
 
-    /** Keeps [text] for [to] and sends nothing. A new text for a held draft is its next version. */
+    /**
+     * Keeps [text] for [to] and sends nothing. A new text for a held draft is its next version.
+     * [resolve] turns `to` into a number, or the answer the owner hears instead; it is asked only
+     * once the text has passed, so a refused text costs no name lookup.
+     */
     @Synchronized
-    fun request(to: String, text: String): Reply {
+    fun request(to: String, text: String, resolve: (String) -> Recipients.Resolved = Recipients::number): Reply {
         val wrong = Limits.text(text)
-        val blocked = Limits.blocked(counted(), to, clock.instant())
         return when {
-            !E164.matches(to) -> Reply.Refused(NOT_A_NUMBER, INVALID_RECIPIENT)
             text.isEmpty() -> Reply.Refused(EMPTY)
             wrong != null -> Reply.Refused(wrong, Limits.TEXT_REFUSED)
-            blocked != null -> Reply.Refused(blocked.say("Not drafted", clock.zone), Limits.RATE_LIMITED)
-            else -> drafted(to, text)
+            else -> when (val resolved = resolve(to)) {
+                is Recipients.Resolved.Answered -> resolved.reply
+                is Recipients.Resolved.To -> numbered(resolved, text)
+            }
         }
     }
 
-    private fun drafted(to: String, text: String): Reply {
+    private fun numbered(to: Recipients.Resolved.To, text: String): Reply {
+        val blocked = Limits.blocked(counted(), to.number, clock.instant())
+        return when {
+            !E164.matches(to.number) -> Reply.Refused(NOT_A_NUMBER, INVALID_RECIPIENT)
+            blocked != null -> Reply.Refused(blocked.say("Not drafted", clock.zone), Limits.RATE_LIMITED)
+            else -> drafted(to.number, to.name?.let { "$it, ${to.number}" } ?: to.number, text)
+        }
+    }
+
+    private fun drafted(to: String, named: String, text: String): Reply {
         val held = drafts.values.firstOrNull { it.to == to && it.state == State.Held }
         val draft = held?.apply {
             this.text = text
@@ -81,7 +94,7 @@ class Outbox(
         return answer(
             "token" to JsonPrimitive(draft.token),
             "version" to JsonPrimitive(draft.version),
-            "say" to JsonPrimitive("Draft to $to: '$text'"),
+            "say" to JsonPrimitive("Draft to $named: '$text'"),
         )
     }
 
