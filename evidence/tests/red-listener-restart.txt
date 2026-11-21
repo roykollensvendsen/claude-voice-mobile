@@ -5,3 +5,15 @@ red-come-back.log:ComeBackTest > a named phone paired with a hub listens again a
 red-come-back.log:4 tests completed, 4 failed
 red-come-back.log:> Task :core:test FAILED
 red-come-back.log:BUILD FAILED in 1m 5s
+
+# With the old rule, which ignored the broadcast:
+red-come-back-action.log:ComeBackTest > any other broadcast starts nothing, the locked boot included() FAILED
+red-come-back-action.log:5 tests completed, 1 failed
+red-come-back-action.log:> Task :core:test FAILED
+red-come-back-action.log:BUILD FAILED in 1m 11s
+
+# tests/test_listener_manifest.py against main's manifest:
+red-listener-manifest.log:E       AssertionError: assert ['RECEIVE_BOO...vers hear []'] == []
+red-listener-manifest.log:tests/test_listener_manifest.py:46: AssertionError
+red-listener-manifest.log:FAILED tests/test_listener_manifest.py::test_one_receiver_starts_the_listener_after_a_restart_or_an_update_and_never_before_unlock
+red-listener-manifest.log:1 failed, 1 passed in 0.03s

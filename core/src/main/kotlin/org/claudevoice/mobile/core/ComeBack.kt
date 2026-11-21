@@ -7,6 +7,10 @@ package org.claudevoice.mobile.core
  * to open the app.
  */
 object ComeBack {
-    fun afterRestart(name: String?, hub: HubStore): Boolean =
-        name != null && KeptGate.Kept.parse(hub.read()) != null
+    /** Whether broadcast [action] starts the listener: only a restart after unlock, or an update. */
+    fun starts(action: String?, name: String?, hub: HubStore): Boolean =
+        action in ACTIONS && name != null && KeptGate.Kept.parse(hub.read()) != null
+
+    /** Not the locked boot: the hub's key opens only after the first unlock. */
+    private val ACTIONS = setOf("android.intent.action.BOOT_COMPLETED", "android.intent.action.MY_PACKAGE_REPLACED")
 }
