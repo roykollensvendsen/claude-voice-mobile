@@ -163,7 +163,9 @@ builds the part of it below, and the rest waits for a later version.
 
 - **It holds:** the draft with its token and version, the read-back, confirm
   sending only the stored text of the latest version, the undo delay with its
-  floor, and cancel and the timer under one lock. It also holds the owner's
+  floor, and cancel and the timer under one lock. Confirm is in `confirms`,
+  so the hub denies it in every role and calls it only after the owner's
+  spoken yes. It also holds the owner's
   limits: no more than 10 sends an hour, 30 in 24 hours, and 3 to one number
   in 10 minutes, and at most 1000 characters, with no link and no run of more
   than 6 digits. A run counts across spaces, dots and dashes.
