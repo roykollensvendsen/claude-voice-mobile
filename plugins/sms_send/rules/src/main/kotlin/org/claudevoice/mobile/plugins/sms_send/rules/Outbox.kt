@@ -51,16 +51,25 @@ class Outbox(
         data object Stopped : State
     }
 
-    private class Draft(val token: String, val to: String, var text: String, var version: Int, var state: State)
+    private class Draft(val token: String, val to: String, var text: String, var version: Int, var state: State) {
+        /** When the owner's yes armed it; it counts toward the limits until it is stopped. */
+        var confirmed: Instant? = null
+    }
 
     private val drafts = mutableMapOf<String, Draft>()
 
     /** Keeps [text] for [to] and sends nothing. A new text for a held draft is its next version. */
     @Synchronized
-    fun request(to: String, text: String): Reply = when {
-        !E164.matches(to) -> Reply.Refused(NOT_A_NUMBER, INVALID_RECIPIENT)
-        text.isEmpty() -> Reply.Refused(EMPTY)
-        else -> drafted(to, text)
+    fun request(to: String, text: String): Reply {
+        val wrong = Limits.text(text)
+        val blocked = Limits.blocked(counted(), to, clock.instant())
+        return when {
+            !E164.matches(to) -> Reply.Refused(NOT_A_NUMBER, INVALID_RECIPIENT)
+            text.isEmpty() -> Reply.Refused(EMPTY)
+            wrong != null -> Reply.Refused(wrong, Limits.TEXT_REFUSED)
+            blocked != null -> Reply.Refused(blocked.say("Not drafted", clock.zone), Limits.RATE_LIMITED)
+            else -> drafted(to, text)
+        }
     }
 
     private fun drafted(to: String, text: String): Reply {
@@ -80,15 +89,18 @@ class Outbox(
     @Synchronized
     fun confirm(token: String, version: Int): Reply {
         val draft = drafts[token]?.takeIf { it.state == State.Held }
+        val blocked = draft?.let { Limits.blocked(counted(), it.to, clock.instant()) }
         return when {
             draft == null -> Reply.Refused(NO_SUCH, NO_DRAFT)
             version != draft.version -> Reply.Refused(CHANGED, STALE_VERSION)
+            blocked != null -> Reply.Refused(blocked.say("Not sent", clock.zone), Limits.RATE_LIMITED)
             else -> armed(draft)
         }
     }
 
     private fun armed(draft: Draft): Reply {
         draft.state = State.Armed
+        draft.confirmed = clock.instant()
         later.run(delay) { fire(draft) }
         return answer("say" to JsonPrimitive("Sending to ${draft.to} in ${delay.seconds} seconds. $STOP_HINT"))
     }
@@ -105,6 +117,11 @@ class Outbox(
             is State.Handed -> answer("say" to JsonPrimitive(tooLate(state.at)))
             State.Stopped -> Reply.Refused(NO_SUCH, NO_DRAFT)
         }
+    }
+
+    /** The sends that count toward the limits: armed or handed to the phone, never stopped. */
+    private fun counted(): List<Counted> = drafts.values.mapNotNull { draft ->
+        draft.confirmed?.takeIf { draft.state != State.Stopped }?.let { Counted(draft.to, it) }
     }
 
     private fun fire(draft: Draft) {

@@ -247,6 +247,76 @@ class OutboxTest {
         assertTrue(sent.isEmpty())
     }
 
+    /** A made-up number for the [n]th recipient. */
+    private fun number(n: Int) = "+47000003%02d".format(n)
+
+    /** Drafts and confirms a text to each of [count] numbers, from the [from]th on. */
+    private fun Phone.confirmAll(count: Int, from: Int = 0) = (from until from + count).map {
+        val drafted = outbox.request(number(it), "Hei")
+        outbox.confirm(token(drafted), version(drafted))
+        token(drafted)
+    }
+
+    @Test
+    fun `a text with a link, a long number or over 1000 characters is refused at request, and nothing is kept`() {
+        val phone = Phone()
+        for (text in listOf("Se https://example.no", "Ring 123 456 789", "a".repeat(1001))) {
+            val reply = phone.outbox.request(to, text)
+            assertEquals(Limits.TEXT_REFUSED, code(reply), text)
+            assertTrue(say(reply).startsWith("Not drafted: "), say(reply))
+        }
+        assertEquals(Outbox.NO_DRAFT, code(phone.outbox.confirm("t1", 1)))
+    }
+
+    @Test
+    fun `the eleventh send in an hour is refused at request, saying when to try again`() {
+        val phone = Phone()
+        phone.confirmAll(10)
+        val reply = phone.outbox.request(number(10), "Hei")
+        assertEquals(Limits.RATE_LIMITED, code(reply))
+        assertEquals("Not drafted: that's 10 texts in the last hour; try again after 09.30.", say(reply))
+    }
+
+    @Test
+    fun `a draft made under the limit is refused at confirm once the limit is reached`() {
+        val phone = Phone()
+        val waiting = phone.outbox.request(number(10), "Hei")
+        phone.confirmAll(10)
+        val reply = phone.outbox.confirm(token(waiting), 1)
+        assertEquals(Limits.RATE_LIMITED, code(reply))
+        assertEquals("Not sent: that's 10 texts in the last hour; try again after 09.30.", say(reply))
+        assertEquals(10, phone.timers.size)
+        phone.now = phone.now.plus(Duration.ofHours(1))
+        assertTrue(say(phone.outbox.confirm(token(waiting), 1)).startsWith("Sending to"))
+    }
+
+    @Test
+    fun `held drafts never count, a send handed to the phone still counts, and a stopped one stops counting`() {
+        val phone = Phone()
+        repeat(12) { phone.outbox.request(number(20 + it), "Hei") }
+        phone.confirmAll(10)
+        repeat(10) { phone.fire() }
+        assertEquals(Limits.RATE_LIMITED, code(phone.outbox.request(number(10), "Hei")))
+        val other = Phone()
+        val stopped = other.confirmAll(10)
+        other.outbox.cancel(stopped.first())
+        assertEquals(1, version(other.outbox.request(number(10), "Hei")))
+    }
+
+    @Test
+    fun `three sends to one number in ten minutes stop a fourth to it, and ten minutes later it may go`() {
+        val phone = Phone()
+        repeat(3) {
+            val drafted = phone.outbox.request(to, "Hei $it")
+            phone.outbox.confirm(token(drafted), version(drafted))
+        }
+        val reply = phone.outbox.request(to, "Hei igjen")
+        assertEquals("Not drafted: that's 3 texts to that number in 10 minutes; try again after 08.40.", say(reply))
+        assertEquals(1, version(phone.outbox.request(other, "Hei")))
+        phone.now = phone.now.plus(Duration.ofMinutes(10))
+        assertEquals(1, version(phone.outbox.request(to, "Hei igjen")))
+    }
+
     private companion object {
         const val RACES = 200
     }

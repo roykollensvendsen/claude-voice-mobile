@@ -53,6 +53,34 @@ class has a plain unit test of its own (`SmsSendPluginTest`). What is left untes
 what needs Android: the permission check and the default SIM. These tests, too, came after the
 code.
 
+## The owner's limits
+
+The owner then asked for limits on what may be sent, and how often. Their red run is the last
+part of `red-sms-send.txt`: all 19 new tests failed against limit checks whose bodies were left
+unwritten, while the 21 tests before them still passed.
+
+- **How often.** At most 10 sends in the last hour, 30 in the last 24 hours, and 3 to one
+  number in 10 minutes. A send counts from the moment the owner's yes arms it, whether it still
+  waits out the undo delay or has been handed to the phone. A stopped send stops counting, and a
+  draft never confirmed never counts. The counts are checked when a text is drafted, so the owner
+  hears it early, and again at confirm, since a draft made under the limit may meet it later.
+  The refusal is `rate_limited` and says when to try again: "Not sent: that's 10 texts in the
+  last hour; try again after 09.30." When two limits block, it names the one that lifts last.
+  The counts live in memory with the drafts, so a restart of the app resets them.
+- **What a text may hold,** checked when it is drafted, refused as `text_refused` with the reason:
+  at most 1000 characters, counted as a person counts them, so an emoji is one; no link, which is
+  a scheme such as `https://`, `www.`, or a domain such as `example.no`, alone, with a path or in
+  an e-mail address; and no run of more than 6 digits, counted across spaces, dots and dashes, so
+  "123 456 789" is a run of nine. The tests cover exactly 1000 and 1001 characters, exactly 6 and
+  7 digits, and a phone number written with spaces.
+
+Pitest then left one survivor of 76: when two limits lift at the same moment, the answer could
+name either. A test now pins that it names the first in order, the hour's. That test came after
+the code, and the mutation run is what shows it catches something; all 76 mutants are now killed.
+
+Refusal codes are an open set: the protocol's `error.json` fixes only their shape, and a hub
+treats a code it does not know as a refusal and passes on its words. So the two codes are new.
+
 Drafts live in memory only, so a text held when the app dies is never sent later. Texts go from
 the default SIM, a long one in parts.
 
