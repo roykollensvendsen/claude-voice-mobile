@@ -17,3 +17,24 @@ OutboxTest > stop after the timer says it is too late, without claiming delivery
 ## The phone's tool list, with every tool marked read-only for the run: the guarding test goes red
 McpHandlerTest > tools list never marks a tool read-only, so the hub asks before any of them changes the world() FAILED
 37 tests completed, 1 failed
+## The owner's limits, before the code: the limit checks left unwritten and not yet asked by the outbox, red
+LimitsTest > ten sends in the last hour block the next until the oldest is an hour old() FAILED
+LimitsTest > thirty sends in a day block the next until the oldest is a day old() FAILED
+LimitsTest > a link is refused, with a scheme, with www, or as a bare domain() FAILED
+LimitsTest > nine sends in the last hour leave room for a tenth() FAILED
+LimitsTest > a text of exactly 1000 characters may go, and 1001 may not() FAILED
+LimitsTest > a send exactly an hour old no longer counts toward the hour() FAILED
+LimitsTest > when two limits block, the answer names the one that lifts last() FAILED
+LimitsTest > ordinary words with a dot, numbers with a decimal point and abbreviations are no link() FAILED
+LimitsTest > digits apart from each other by words are separate runs() FAILED
+LimitsTest > the refusal says when to try again, in the phone's own time() FAILED
+LimitsTest > characters are counted as a person counts them, so an emoji is one() FAILED
+LimitsTest > three sends to one number in ten minutes block a fourth to it, but not to another() FAILED
+LimitsTest > six digits in a row may go, and seven may not() FAILED
+LimitsTest > digits are counted across spaces, dots and dashes() FAILED
+OutboxTest > held drafts never count, a send handed to the phone still counts, and a stopped one stops counting() FAILED
+OutboxTest > three sends to one number in ten minutes stop a fourth to it, and ten minutes later it may go() FAILED
+OutboxTest > the eleventh send in an hour is refused at request, saying when to try again() FAILED
+OutboxTest > a draft made under the limit is refused at confirm once the limit is reached() FAILED
+OutboxTest > a text with a link, a long number or over 1000 characters is refused at request, and nothing is kept() FAILED
+40 tests completed, 19 failed
