@@ -1,0 +1,28 @@
+$ uv run pytest -q tests/test_sms_next_version.py --tb=line
+(run before ADR-CVM-010 had the section on the next version; the one pass is the sending manifest guard, which already holds)
+
+FFFF.FFF                                                                 [100%]
+=================================== FAILURES ===================================
+E   ValueError: substring not found
+tests/test_sms_next_version.py:22: ValueError: substring not found
+E   ValueError: substring not found
+tests/test_sms_next_version.py:22: ValueError: substring not found
+E   ValueError: substring not found
+tests/test_sms_next_version.py:22: ValueError: substring not found
+E   ValueError: substring not found
+tests/test_sms_next_version.py:22: ValueError: substring not found
+E   ValueError: substring not found
+tests/test_sms_next_version.py:22: ValueError: substring not found
+E   ValueError: substring not found
+tests/test_sms_next_version.py:22: ValueError: substring not found
+E   ValueError: substring not found
+tests/test_sms_next_version.py:22: ValueError: substring not found
+=========================== short test summary info ============================
+FAILED tests/test_sms_next_version.py::test_a_name_lookup_never_lets_the_contact_book_be_walked
+FAILED tests/test_sms_next_version.py::test_the_chosen_pick_comes_back_inside_to
+FAILED tests/test_sms_next_version.py::test_searched_texts_are_data_and_senders_that_hold_codes_are_held_back_whole
+FAILED tests/test_sms_next_version.py::test_sending_still_holds_send_sms_alone_and_asks_reading_whether_a_number_is_new
+FAILED tests/test_sms_next_version.py::test_one_yes_sends_to_at_most_five_and_names_each_one
+FAILED tests/test_sms_next_version.py::test_delivered_is_said_only_on_a_delivery_report
+FAILED tests/test_sms_next_version.py::test_the_hub_keeps_these_tools_to_the_owners_voice_and_logs_no_names
+7 failed, 1 passed in 0.05s
