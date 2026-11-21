@@ -1,0 +1,51 @@
+## The sending plugin's rules: names, picks, lookups and the read-back, against stubs, red
+ByNameTest > a text the rules refuse is refused before any lookup() FAILED
+ByNameTest > the send limits hold for a number found by name() FAILED
+ByNameTest > a pick comes back in to, and drafts that number() FAILED
+ByNameTest > the draft keeps the number, so a contact changed later does not move the text() FAILED
+ByNameTest > the request tool takes a name, a number or a pick in to, and says how choices come back() FAILED
+ByNameTest > the read-back of a draft by name names the contact and the whole number() FAILED
+NamesTest > a whole first name, a whole last name or the full name matches() FAILED
+NamesTest > a number the phone cannot write in full international form is left out() FAILED
+NamesTest > a prefix, a part of a name, a middle name or a single letter never matches() FAILED
+NamesTest > a contact with only a home or work number is a choice, never a silent draft() FAILED
+NamesTest > one mobile number for the name is the one recipient() FAILED
+NamesTest > a name with one word matches itself, and an empty name matches nothing() FAILED
+NamesTest > more than one number is a choice of at most five() FAILED
+NamesTest > a choice names the contact and the label with the last two digits, never the whole number() FAILED
+NamesTest > case, accents and spaces around or between words do not matter() FAILED
+NamesTest > letters are counted as a person counts them, with no digits, spaces or marks() FAILED
+RecipientsTest > a draft from a name or a number closes the open choices() FAILED
+RecipientsTest > nine lookups in the last hour leave room for a tenth() FAILED
+RecipientsTest > a pick from the latest choices is that number, once() FAILED
+RecipientsTest > a lookup the phone may not make is refused with where to allow it, and is not counted() FAILED
+RecipientsTest > no match is not found, and says so() FAILED
+RecipientsTest > a query under two letters is refused, and is no lookup() FAILED
+RecipientsTest > a contact with only a work number is a choice of one, never a silent draft() FAILED
+RecipientsTest > a pick from another request is refused() FAILED
+RecipientsTest > a name with one mobile number is that number, with the name for the read-back() FAILED
+RecipientsTest > a name with several numbers answers choices, each a pick and words, never a whole number() FAILED
+RecipientsTest > ten lookups in an hour block the eleventh until the oldest is an hour old() FAILED
+75 tests completed, 27 failed
+## The contacts capability, against a stub, red
+ContactsTest > answers nothing, and reads nothing, when the phone may not read contacts FAILED
+ContactsTest > answers the numbers whose contact's name the caller's rule accepts, in the book's order FAILED
+ContactsTest > a number is the phone's own international form when it has one, else as written without spaces or dashes FAILED
+ContactsTest > a number's label is mobile, home, work or other FAILED
+ContactsTest > answers at most as many numbers as the caller asks for FAILED
+5 tests completed, 5 failed
+## A plugin brings the capabilities it uses into the build, against a stub, red
+ModulePicksTest > the capabilities a plugin uses are the ones its build file depends on, never an adapter() FAILED
+ModulePicksTest > a picked plugin brings the capabilities it uses, each once, and an unpicked one brings none() FAILED
+41 tests completed, 2 failed
+## The code-health measure walks capabilities too, red
+FAILED tests/test_levels.py::test_a_capability_is_measured_and_tested_too_but_not_mutated
+1 failed, 22 passed in 1.05s
+## The merged manifest's record of where each permission came from, against a stub parser, red
+MergedPermissionsTest > the_sending_plugin_holds_send_sms_and_never_the_right_to_read_texts_or_contacts FAILED
+MergedPermissionsTest > the_record_names_each_module_a_permission_came_from_and_the_app_for_its_own FAILED
+21 tests completed, 2 failed
+## The same test, green parser, with READ_CONTACTS planted in the sending plugin's manifest, red
+MergedPermissionsTest > the_sending_plugin_holds_send_sms_and_never_the_right_to_read_texts_or_contacts FAILED
+MergedPermissionsTest > only_the_contacts_capability_asks_to_read_contacts FAILED
+21 tests completed, 2 failed

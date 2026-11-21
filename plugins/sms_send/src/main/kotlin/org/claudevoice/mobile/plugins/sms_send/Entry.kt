@@ -6,8 +6,11 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.telephony.SmsManager
 import android.util.Log
+import org.claudevoice.mobile.capabilities.contacts.Contacts
 import org.claudevoice.mobile.pluginapi.Plugin
+import org.claudevoice.mobile.plugins.sms_send.rules.Contact
 import org.claudevoice.mobile.plugins.sms_send.rules.Outbox
+import org.claudevoice.mobile.plugins.sms_send.rules.Recipients
 
 /**
  * Where the app builds this plugin (ADR-CVM-007). Only what needs Android is here: whether the
@@ -18,7 +21,11 @@ object Entry {
     fun plugin(context: Context): Plugin {
         val app = context.applicationContext
         val outbox = Outbox.onThePhone(send = { to, text -> send(app, to, text) }, failed = { Log.w(TAG, it) })
-        return SmsSendPlugin(outbox) {
+        val contacts = Contacts.on(app)
+        val recipients = Recipients.onThePhone { matches, most ->
+            contacts.numbers(matches, most)?.map { Contact(it.name, it.number, it.label) }
+        }
+        return SmsSendPlugin(outbox, recipients) {
             app.checkSelfPermission(Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
         }
     }
