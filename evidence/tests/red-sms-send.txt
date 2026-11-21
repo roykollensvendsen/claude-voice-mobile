@@ -38,3 +38,7 @@ OutboxTest > the eleventh send in an hour is refused at request, saying when to 
 OutboxTest > a draft made under the limit is refused at confirm once the limit is reached() FAILED
 OutboxTest > a text with a link, a long number or over 1000 characters is refused at request, and nothing is kept() FAILED
 40 tests completed, 19 failed
+## The link rule narrowed to known endings and any case: the two new tests against the rule before, red
+LimitsTest > an abbreviation with dots is no link, since its ending is no known one() FAILED
+LimitsTest > a web address is a link in any case, with a known ending or a path after it() FAILED
+43 tests completed, 2 failed

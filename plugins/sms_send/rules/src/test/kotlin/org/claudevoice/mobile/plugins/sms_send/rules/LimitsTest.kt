@@ -67,6 +67,21 @@ class LimitsTest {
     }
 
     @Test
+    fun `a web address is a link in any case, with a known ending or a path after it`() {
+        val links = listOf("EXAMPLE.COM", "Vg.No", "vg.no", "see example.com/x", "WWW.x", "HTTPS://x", "Se navn.ukjent/x")
+        for (text in links) {
+            assertEquals(LINKS, Limits.text(text), text)
+        }
+    }
+
+    @Test
+    fun `an abbreviation with dots is no link, since its ending is no known one`() {
+        for (text in listOf("f.eks", "bl.a", "f.eks.", "bl.a.", "ca.ti", "Det er f.eks. bra", "navn@vert.ukjent")) {
+            assertNull(Limits.text(text), text)
+        }
+    }
+
+    @Test
     fun `ordinary words with a dot, numbers with a decimal point and abbreviations are no link`() {
         for (text in listOf("Hei.Kommer snart", "Det er 1.5 km", "Kl. 10 i morgen", "Osv. Ok", "e.g. dette")) {
             assertNull(Limits.text(text), text)
