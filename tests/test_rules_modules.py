@@ -19,7 +19,7 @@ def plugins_applied(build: str) -> str:
 
 
 def test_the_walk_finds_the_rules_modules_in_the_tree():
-    assert [b.parent.parent.name for b in BUILDS] == ["sms"]
+    assert [b.parent.parent.name for b in BUILDS] == ["sms", "sms_send"]
 
 
 @pytest.mark.parametrize("build", BUILDS, ids=lambda b: b.parent.parent.name)

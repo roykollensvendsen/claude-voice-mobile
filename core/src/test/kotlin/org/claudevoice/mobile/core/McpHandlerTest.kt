@@ -203,6 +203,15 @@ class McpHandlerTest {
     }
 
     @Test
+    fun `tools list never marks a tool read-only, so the hub asks before any of them changes the world`() {
+        // The hub reads read_only from annotations.readOnlyHint; a phone tool that sends a text
+        // must never carry it. The phone sends no annotations at all.
+        for (tool in result(rpc("tools/list"))["tools"]!!.jsonArray.map { it.jsonObject }) {
+            assertEquals(setOf("name", "description", "inputSchema"), tool.keys, tool.toString())
+        }
+    }
+
+    @Test
     fun `a call answers the plugin's structured answer, and the same as text`() {
         val result = result(rpc("tools/call", """{"name":"status_battery","arguments":{}}"""))
         val answer = buildJsonObject { put("percent", 81) }
