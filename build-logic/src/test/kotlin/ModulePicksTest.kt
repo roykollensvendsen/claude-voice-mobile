@@ -70,4 +70,28 @@ class ModulePicksTest {
             ModulePicks.included(listOf("sms", "status"), hasRules = { it == "sms" || it == "micmute" }),
         )
     }
+
+    @Test
+    fun `a picked plugin brings the capabilities it uses, each once, and an unpicked one brings none`() {
+        val uses = mapOf("sms_send" to listOf("contacts"), "sms" to listOf("contacts", "smsstore"), "call" to listOf("mute"))
+        assertEquals(
+            listOf(":plugins:sms", ":plugins:sms_send", ":capabilities:contacts", ":capabilities:smsstore"),
+            ModulePicks.included(listOf("sms", "sms_send"), hasRules = { false }, uses = { uses[it].orEmpty() }),
+        )
+    }
+
+    @Test
+    fun `the capabilities a plugin uses are the ones its build file depends on, never an adapter`() {
+        val build = """
+            dependencies {
+                implementation(project(":plugin-api"))
+                implementation(project(":capabilities:contacts"))
+                implementation(project(":plugins:sms_send:rules"))
+                implementation(project( ":capabilities:smsstore" ))
+                implementation(project(":capabilities:mute:jabra"))
+            }
+        """.trimIndent()
+        assertEquals(listOf("contacts", "smsstore"), ModulePicks.capabilities(build))
+        assertEquals(emptyList<String>(), ModulePicks.capabilities("dependencies { }"))
+    }
 }

@@ -61,18 +61,26 @@ class Parts:
 
 
 def parts(root: Path) -> Parts:
-    """The parts, found by walking `plugins/`, so a new plugin or rules module is never left out.
+    """The parts, found by walking `plugins/` and `capabilities/`, so a new module is never left out.
 
     A plugin is a folder there with a build file, and an Android library. Its rules module,
-    `plugins/<name>/rules`, is plain Kotlin, so Pitest mutates it as it does the core.
+    `plugins/<name>/rules`, is plain Kotlin, so Pitest mutates it as it does the core. A
+    capability, `capabilities/<name>`, is an Android library too, so it is tested and measured
+    but not mutated.
     """
     folder = root / "plugins"
     plugins = sorted(
         f"plugins/{d.name}" for d in folder.iterdir() if d.is_dir() and (d / "build.gradle.kts").is_file()
     )
     rules = [f"{p}/rules" for p in plugins if (root / p / "rules" / "build.gradle.kts").is_file()]
+    shelf = root / "capabilities"
+    capabilities = sorted(
+        f"capabilities/{d.name}"
+        for d in (shelf.iterdir() if shelf.is_dir() else ())
+        if d.is_dir() and (d / "build.gradle.kts").is_file()
+    )
     return Parts(
-        modules=("core", "plugin-api", "app", *plugins, *rules),
+        modules=("core", "plugin-api", "app", *plugins, *rules, *capabilities),
         mutated=("core", "plugin-api", *rules),  # Pitest cannot run Android unit tests
         results=(
             ("core", "test"),
@@ -80,6 +88,7 @@ def parts(root: Path) -> Parts:
             ("app", "testDebugUnitTest"),
             *((p, "testDebugUnitTest") for p in plugins),
             *((r, "test") for r in rules),
+            *((c, "testDebugUnitTest") for c in capabilities),
         ),
     )
 

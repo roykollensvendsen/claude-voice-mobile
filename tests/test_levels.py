@@ -255,3 +255,19 @@ def test_every_measure_builds_with_every_plugin_picked(monkeypatch):
     monkeypatch.setattr(levels.subprocess, "run", lambda args, **_: seen.append(args))
     levels.gradle("check")
     assert "-PcvPlugins=all" in seen[0], seen[0]
+
+
+def test_a_capability_is_measured_and_tested_too_but_not_mutated(tmp_path):
+    for path in ("plugins/sms_send", "capabilities/contacts"):
+        _module(tmp_path, path)
+    (tmp_path / "capabilities" / "empty").mkdir()  # a folder with no build file is no capability
+    parts = levels.parts(tmp_path)
+    assert parts.modules == ("core", "plugin-api", "app", "plugins/sms_send", "capabilities/contacts")
+    assert "capabilities/contacts" not in parts.mutated  # an Android library, as a plugin is
+    assert parts.results[-1] == ("capabilities/contacts", "testDebugUnitTest")
+    assert parts.test_tasks[-1] == ":capabilities:contacts:testDebugUnitTest"
+
+
+def test_a_tree_with_no_capabilities_folder_has_no_capability(tmp_path):
+    _module(tmp_path, "plugins/status")
+    assert levels.parts(tmp_path).modules == ("core", "plugin-api", "app", "plugins/status")

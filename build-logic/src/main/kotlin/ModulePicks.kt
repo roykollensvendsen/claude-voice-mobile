@@ -13,12 +13,26 @@ object ModulePicks {
     /** The protocol's pattern for a plugin's name; the folder, package and name are one string. */
     private val NAME = Regex("[a-z][a-z0-9_]{0,31}")
 
+    /** A dependency on a capability, as a plugin's build file names it; an adapter is never one. */
+    private val CAPABILITY = Regex("""project\(\s*":capabilities:([a-z][a-z0-9_]*)"\s*\)""")
+
     /**
      * The Gradle paths a build includes for the [picked] plugins: each plugin, and its rules
-     * module (`plugins/<name>/rules`) when it has one. A rules module is never picked on its own.
+     * module (`plugins/<name>/rules`) when it has one, then each capability a picked plugin
+     * [uses], once. A rules module or a capability is never picked on its own, so a capability
+     * no picked plugin uses is left out, with its permissions.
      */
-    fun included(picked: List<String>, hasRules: (String) -> Boolean): List<String> =
-        picked.flatMap { name -> listOfNotNull(":plugins:$name", ":plugins:$name:rules".takeIf { hasRules(name) }) }
+    fun included(
+        picked: List<String>,
+        hasRules: (String) -> Boolean,
+        uses: (String) -> List<String> = { emptyList() },
+    ): List<String> =
+        picked.flatMap { name -> listOfNotNull(":plugins:$name", ":plugins:$name:rules".takeIf { hasRules(name) }) } +
+            picked.flatMap(uses).distinct().map { ":capabilities:$it" }
+
+    /** The capabilities a plugin's [buildFile] depends on, in its order. */
+    fun capabilities(buildFile: String): List<String> =
+        CAPABILITY.findAll(buildFile).map { it.groupValues[1] }.toList()
 
     /** The plugins [given] names, in order and once each; refused when a name is not in [known]. */
     fun picked(given: String?, known: Set<String>): List<String> {
