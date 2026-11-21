@@ -33,20 +33,31 @@ object Limits {
     private const val MAX_LENGTH = 1000
     private const val MAX_DIGITS = 6
 
-    // The endings a bare domain is taken as a link by, in any case. A short list, so an
-    // abbreviation such as "f.eks." or "ca.ti" is no link.
-    private val ENDINGS = listOf(
-        "no", "com", "net", "org", "io", "se", "dk", "fi", "de", "uk", "eu", "info", "biz", "app", "dev",
-        "me", "co", "tv", "xyz", "ly", "gl", "to",
+    // The only words with a dot that are no link: a whole word that is one of these
+    // abbreviations, in any case, with or without one dot after. This list only ever exempts
+    // abbreviations. Never add a web ending to it: the rule fails closed on any ending.
+    private val ABBREVIATIONS = setOf(
+        "f.eks", "bl.a", "m.m", "o.l", "osv", "dvs", "evt", "inkl", "jf", "pga", "tlf",
+        "nr", "kl", "mht", "ifm", "iht", "mv", "ca", "e.g", "i.e", "etc",
     )
 
-    // A scheme (https://) or "www.", in any case, or a domain, as "example.no", "Vg.No" or
-    // "name@example.no", whose ending is on the list or which a "/" follows, as "name.any/x".
+    // A scheme (https://) or "www.", in any case; a dotted word whose last part is 2 to 63
+    // letters in any case, as "example.com", "Vg.No", "pay.click" or "name@host.any"; or a
+    // dotted word a "/" follows, as "10.0.0.1/x".
     private val LINK = Regex(
-        """(?i:[a-z][a-z0-9+.-]*://|www\.)|""" +
-            """(?<![\p{L}\p{N}])[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)*\.""" +
-            """(?:(?i:${ENDINGS.joinToString("|")})(?![\p{L}\p{N}])|\p{L}{2,63}/)""",
+        """(?i:[a-z][a-z0-9+.-]*://|www\.)|[\p{L}\p{N}-]\.\p{L}{2,63}(?![\p{L}\p{N}])|""" +
+            """[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+/""",
     )
+
+    private val SPACE = Regex("""[\s\p{Zs}]+""")
+
+    // Brackets, quotes and marks a word may stand inside or end with, as "(f.eks." or "bl.a.,".
+    private val WRAP = Regex("""^[()\[\]{}"'«»“”‘’]+|[()\[\]{}"'«»“”‘’,;:!?]+$""")
+
+    private fun link(word: String): Boolean {
+        val bare = WRAP.replace(word, "")
+        return bare.lowercase().removeSuffix(".") !in ABBREVIATIONS && LINK.containsMatchIn(bare)
+    }
 
     // More than MAX_DIGITS digits of any script, apart only by spaces, dots or dashes, so a
     // number written "123 456 789" is one run of nine.
@@ -77,7 +88,8 @@ object Limits {
         return when {
             length > MAX_LENGTH ->
                 "Not drafted: a text can be at most $MAX_LENGTH characters, and this one has $length."
-            LINK.containsMatchIn(text) -> "Not drafted: texts can't contain links or web addresses."
+            SPACE.toPattern().splitAsStream(text).anyMatch(::link) ->
+                "Not drafted: texts can't contain links or web addresses."
             DIGITS.containsMatchIn(text) ->
                 "Not drafted: texts can't contain more than $MAX_DIGITS digits in a row, " +
                     "such as a phone or account number."

@@ -67,23 +67,38 @@ class LimitsTest {
     }
 
     @Test
-    fun `a web address is a link in any case, with a known ending or a path after it`() {
-        val links = listOf("EXAMPLE.COM", "Vg.No", "vg.no", "see example.com/x", "WWW.x", "HTTPS://x", "Se navn.ukjent/x")
+    fun `any dotted word ending in letters is a link, in any case and whatever the ending`() {
+        val links = listOf(
+            "login-bank.ru", "pay.click", "x.shop", "evil.ru", "login.site", "EXAMPLE.COM", "Vg.No", "vg.no",
+            "ca.ti", "navn@vert.ukjent", "se example.com/x", "WWW.x", "HTTPS://x", "Se 10.0.0.1/x",
+        )
         for (text in links) {
             assertEquals(LINKS, Limits.text(text), text)
         }
     }
 
     @Test
-    fun `an abbreviation with dots is no link, since its ending is no known one`() {
-        for (text in listOf("f.eks", "bl.a", "f.eks.", "bl.a.", "ca.ti", "Det er f.eks. bra", "navn@vert.ukjent")) {
+    fun `a sentence run on without a space reads as a link, a false positive the owner can say again`() {
+        assertEquals(LINKS, Limits.text("Ses i morgen.Takk"))
+    }
+
+    @Test
+    fun `only a whole word that is a known abbreviation is no link, in any case and with a dot after`() {
+        val words = listOf(
+            "f.eks", "f.eks.", "F.eks.", "bl.a", "bl.a.", "kl.14", "m.m.", "dvs.", "E.G.", "Det er f.eks. bra",
+            "Ta med noe («f.eks. kaffe») bl.a.,",
+        )
+        for (text in words) {
             assertNull(Limits.text(text), text)
+        }
+        for (text in listOf("xf.eks", "f.eks.no", "f.eks..")) {
+            assertEquals(LINKS, Limits.text(text), text)
         }
     }
 
     @Test
-    fun `ordinary words with a dot, numbers with a decimal point and abbreviations are no link`() {
-        for (text in listOf("Hei.Kommer snart", "Det er 1.5 km", "Kl. 10 i morgen", "Osv. Ok", "e.g. dette")) {
+    fun `numbers with a decimal point, a slash between plain words and spaced abbreviations are no link`() {
+        for (text in listOf("Det er 1.5 km", "Kl. 10 i morgen", "Osv. Ok", "e.g. dette", "og/eller 80 km/t")) {
             assertNull(Limits.text(text), text)
         }
     }

@@ -42,3 +42,8 @@ OutboxTest > a text with a link, a long number or over 1000 characters is refuse
 LimitsTest > an abbreviation with dots is no link, since its ending is no known one() FAILED
 LimitsTest > a web address is a link in any case, with a known ending or a path after it() FAILED
 43 tests completed, 2 failed
+## The link rule made to fail closed: the three new tests against the known-ending rule, red
+LimitsTest > any dotted word ending in letters is a link, in any case and whatever the ending() FAILED
+LimitsTest > a sentence run on without a space reads as a link, a false positive the owner can say again() FAILED
+LimitsTest > only a whole word that is a known abbreviation is no link, in any case and with a dot after() FAILED
+44 tests completed, 3 failed
