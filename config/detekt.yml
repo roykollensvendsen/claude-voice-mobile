@@ -5,3 +5,7 @@ naming:
   # must agree, or the check for a new survivor in a touched file would miss that file.
   InvalidPackageDeclaration:
     active: true
+  # A plugin's package ends in its name (ADR-CVM-007), and a plugin name may hold "_", as in
+  # sms_send, whose tool names the hub matches exactly. Otherwise detekt's default pattern.
+  PackageNaming:
+    packagePattern: '[a-z]+(\.[a-z][A-Za-z0-9_]*)*'

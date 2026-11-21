@@ -1,0 +1,19 @@
+## The sending rules, before the code: every body left unwritten, red
+OutboxTest > a stale version is refused, and nothing is armed() FAILED
+OutboxTest > confirm sends the stored text of the latest version, after the undo delay() FAILED
+OutboxTest > a draft once sent, stopped or never made cannot be confirmed() FAILED
+OutboxTest > the tools are offered by exactly the names the hub's deny rule expects() FAILED
+OutboxTest > confirm takes no text of its own, so only the stored text can go() FAILED
+OutboxTest > a number not in E164 form is refused() FAILED
+OutboxTest > a request keeps a draft and sends nothing, and reads it back() FAILED
+OutboxTest > a send the radio refuses is logged on the phone, never thrown() FAILED
+OutboxTest > without the permission to send, every tool is refused with the way to grant it() FAILED
+OutboxTest > stop before the timer means nothing goes() FAILED
+OutboxTest > when stop and the timer race, exactly one wins, every time() FAILED
+OutboxTest > a request after one was confirmed makes a new draft, not a new version of it() FAILED
+OutboxTest > an undo delay under the floor is refused, and the floor itself is allowed() FAILED
+OutboxTest > stop after the timer says it is too late, without claiming delivery() FAILED
+14 tests completed, 14 failed
+## The phone's tool list, with every tool marked read-only for the run: the guarding test goes red
+McpHandlerTest > tools list never marks a tool read-only, so the hub asks before any of them changes the world() FAILED
+37 tests completed, 1 failed

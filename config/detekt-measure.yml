@@ -5,6 +5,9 @@ naming:
   # As in the gate (config/detekt.yml): a file's package must match its folder.
   InvalidPackageDeclaration:
     active: true
+  # As in the gate: a plugin's package ends in its name, which may hold "_".
+  PackageNaming:
+    packagePattern: '[a-z]+(\.[a-z][A-Za-z0-9_]*)*'
 complexity:
   CyclomaticComplexMethod:
     active: true

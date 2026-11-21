@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sending a text for the owner (messages-v1 §8, choice B). Only a build that names `sms_send` holds this. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Restricted: after a sideloaded install, Android may first ask for "Allow restricted settings". -->
+    <uses-permission android:name="android.permission.SEND_SMS" />
+</manifest>
