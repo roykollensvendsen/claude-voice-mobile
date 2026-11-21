@@ -33,12 +33,19 @@ object Limits {
     private const val MAX_LENGTH = 1000
     private const val MAX_DIGITS = 6
 
-    // A scheme (https://), "www.", or a domain whose last part is 2 to 63 small letters, as
-    // "example.no" or "name@example.no", which a text app turns into a link. "Hei.Kommer" is no
-    // domain, since a domain's end is written small.
+    // The endings a bare domain is taken as a link by, in any case. A short list, so an
+    // abbreviation such as "f.eks." or "ca.ti" is no link.
+    private val ENDINGS = listOf(
+        "no", "com", "net", "org", "io", "se", "dk", "fi", "de", "uk", "eu", "info", "biz", "app", "dev",
+        "me", "co", "tv", "xyz", "ly", "gl", "to",
+    )
+
+    // A scheme (https://) or "www.", in any case, or a domain, as "example.no", "Vg.No" or
+    // "name@example.no", whose ending is on the list or which a "/" follows, as "name.any/x".
     private val LINK = Regex(
-        """[A-Za-z][A-Za-z0-9+.-]*://|(?i:www\.)|""" +
-            """(?<![\p{L}\p{N}])[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)*\.[a-z]{2,63}(?![\p{L}\p{N}])""",
+        """(?i:[a-z][a-z0-9+.-]*://|www\.)|""" +
+            """(?<![\p{L}\p{N}])[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)*\.""" +
+            """(?:(?i:${ENDINGS.joinToString("|")})(?![\p{L}\p{N}])|\p{L}{2,63}/)""",
     )
 
     // More than MAX_DIGITS digits of any script, apart only by spaces, dots or dashes, so a

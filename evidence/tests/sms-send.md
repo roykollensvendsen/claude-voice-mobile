@@ -74,6 +74,15 @@ unwritten, while the 21 tests before them still passed.
   "123 456 789" is a run of nine. The tests cover exactly 1000 and 1001 characters, exactly 6 and
   7 digits, and a phone number written with spaces.
 
+**The link rule, narrowed.** The first rule took any domain whose ending was written in small
+letters as a link. So it refused "f.eks." and "ca.ti", and let "EXAMPLE.COM" and "Vg.No"
+through. Now a bare domain is a link only when its ending is on a short list of known ones (no,
+com, net, org, io, se, dk, fi, de, uk, eu, info, biz, app, dev, me, co, tv, xyz, ly, gl, to),
+in any case, or when a "/" follows it. A scheme and "www." are refused in any case, as before,
+and so is an e-mail address with a known ending. The two new tests failed against the rule
+before; that run is the last part of `red-sms-send.txt`. Dates and times written with dots are
+still a run of digits, and refused; issue #159 holds that.
+
 Pitest then left one survivor of 76: when two limits lift at the same moment, the answer could
 name either. A test now pins that it names the first in order, the hour's. That test came after
 the code, and the mutation run is what shows it catches something; all 76 mutants are now killed.
