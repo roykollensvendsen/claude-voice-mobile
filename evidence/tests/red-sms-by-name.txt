@@ -49,3 +49,29 @@ MergedPermissionsTest > the_record_names_each_module_a_permission_came_from_and_
 MergedPermissionsTest > the_sending_plugin_holds_send_sms_and_never_the_right_to_read_texts_or_contacts FAILED
 MergedPermissionsTest > only_the_contacts_capability_asks_to_read_contacts FAILED
 21 tests completed, 2 failed
+
+## Review fixes: repeats dropped before the cap, every match passed up, a 40-character name, a refused text closing the choices, the confirm naming the contact; against the old code, red
+ContactsTest > answers every match, however many, so the caller's rule decides what is shown FAILED
+5 tests completed, 1 failed
+ByNameTest > a request whose text is refused still closes the open choices() FAILED
+ByNameTest > the answer to a confirm names the contact and the whole number too() FAILED
+NamesTest > a shown name is cleaned and cut to 40 characters, as a sender's is() FAILED
+NamesTest > more than one number is a choice of at most five, and says when more match() FAILED
+NamesTest > rows with one number are one number, and a mobile label among them wins() FAILED
+NamesTest > duplicates are dropped before the cap, so they never crowd out a real number() FAILED
+RecipientsTest > the name that comes back with a number is cut to 40 characters() FAILED
+RecipientsTest > more matches than five are five choices, and the owner hears that more match() FAILED
+84 tests completed, 8 failed
+## A number saved without a country code is read in the SIM's country, as a guess offered only as a choice; against stubs, red
+ContactsTest > a guess whose code cannot be told from the number says only that it was guessed FAILED
+ContactsTest > a local number with a trunk zero names the code before it FAILED
+ContactsTest > a local number in country NO becomes +47, marked as a guess FAILED
+11 tests completed, 3 failed
+ByNameTest > a guessed number is offered as a choice, and its draft reads the whole number back() FAILED
+NamesTest > of rows with one number, a mobile one wins, and then one the provider wrote over a guessed one() FAILED
+NamesTest > a choice of a guessed number says which country code was guessed() FAILED
+NamesTest > a guessed number alone is a choice, never a draft() FAILED
+CountriesTest > a blank SIM falls back to the phone's own region setting() FAILED
+CountriesTest > the SIM's country comes first, so a saved number is never given another country's code() FAILED
+CountriesTest > a country is in capitals, with no spaces around() FAILED
+92 tests completed, 7 failed

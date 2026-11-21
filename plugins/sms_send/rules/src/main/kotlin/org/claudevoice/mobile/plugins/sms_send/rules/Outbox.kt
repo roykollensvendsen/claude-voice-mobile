@@ -52,6 +52,9 @@ class Outbox(
     }
 
     private class Draft(val token: String, val to: String, var text: String, var version: Int, var state: State) {
+        /** How the answers name the recipient: the number, or the contact's name and the number. */
+        var named: String = to
+
         /** When the owner's yes armed it; it counts toward the limits until it is stopped. */
         var confirmed: Instant? = null
     }
@@ -60,19 +63,18 @@ class Outbox(
 
     /**
      * Keeps [text] for [to] and sends nothing. A new text for a held draft is its next version.
-     * [resolve] turns `to` into a number, or the answer the owner hears instead; it is asked only
-     * once the text has passed, so a refused text costs no name lookup.
+     * [recipients] turns `to` into a number, or the answer the owner hears instead; without it
+     * `to` is a number. It is asked only once the text has passed, so a refused text costs no
+     * name lookup, but a refused text still closes the open choices, as any request does.
      */
     @Synchronized
-    fun request(to: String, text: String, resolve: (String) -> Recipients.Resolved = Recipients::number): Reply {
-        val wrong = Limits.text(text)
-        return when {
-            text.isEmpty() -> Reply.Refused(EMPTY)
-            wrong != null -> Reply.Refused(wrong, Limits.TEXT_REFUSED)
-            else -> when (val resolved = resolve(to)) {
-                is Recipients.Resolved.Answered -> resolved.reply
-                is Recipients.Resolved.To -> numbered(resolved, text)
-            }
+    fun request(to: String, text: String, recipients: Recipients? = null): Reply {
+        val refused = refusal(text)
+        // A refused text still closes the open choices, so no later pick lands on them.
+        if (refused != null) recipients?.close()
+        return refused ?: when (val resolved = recipients?.resolve(to) ?: Recipients.number(to)) {
+            is Recipients.Resolved.Answered -> resolved.reply
+            is Recipients.Resolved.To -> numbered(resolved, text)
         }
     }
 
@@ -91,6 +93,7 @@ class Outbox(
             this.text = text
             version += 1
         } ?: Draft(tokens(), to, text, 1, State.Held).also { drafts[it.token] = it }
+        draft.named = named
         return answer(
             "token" to JsonPrimitive(draft.token),
             "version" to JsonPrimitive(draft.version),
@@ -115,7 +118,7 @@ class Outbox(
         draft.state = State.Armed
         draft.confirmed = clock.instant()
         later.run(delay) { fire(draft) }
-        return answer("say" to JsonPrimitive("Sending to ${draft.to} in ${delay.seconds} seconds. $STOP_HINT"))
+        return answer("say" to JsonPrimitive("Sending to ${draft.named} in ${delay.seconds} seconds. $STOP_HINT"))
     }
 
     /** Stops an armed or held draft; after the timer, says when it was handed to the phone. */
@@ -157,6 +160,14 @@ class Outbox(
     private fun answer(vararg pairs: Pair<String, JsonPrimitive>) = Reply.Answer(JsonObject(mapOf(*pairs)))
 
     companion object {
+        /** Why [text] cannot be drafted, or null when it can. */
+        private fun refusal(text: String): Reply.Refused? =
+            if (text.isEmpty()) {
+                Reply.Refused(EMPTY)
+            } else {
+                Limits.text(text)?.let { Reply.Refused(it, Limits.TEXT_REFUSED) }
+            }
+
         /**
          * The outbox the phone uses: the phone's clock and zone, a timer thread of its own, and
          * tokens no one can guess. [send] and [failed] are the phone's radio and log.

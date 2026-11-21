@@ -66,11 +66,69 @@ class NamesTest {
     }
 
     @Test
-    fun `more than one number is a choice of at most five`() {
+    fun `more than one number is a choice of at most five, and says when more match`() {
         assertEquals(Names.Decision.Choose(listOf(kari, kariHome)), Names.decide(listOf(kari, kariHome)))
-        val many = (1..7).map { kari.copy(number = "+470000002$it") }
-        assertEquals(Names.Decision.Choose(many.take(5)), Names.decide(many))
+        val six = (1..6).map { kari.copy(number = "+470000002$it") }
+        assertEquals(Names.Decision.Choose(six.take(5), more = true), Names.decide(six))
+        assertEquals(Names.Decision.Choose(six.take(5), more = false), Names.decide(six.take(5)))
         assertEquals(5, Names.MOST)
+    }
+
+    @Test
+    fun `rows with one number are one number, and a mobile label among them wins`() {
+        val synced = listOf(kari.copy(label = "other"), kari, kari.copy(label = "home"))
+        assertEquals(Names.Decision.One(kari), Names.decide(synced))
+        assertEquals(Names.Decision.Choose(listOf(kariHome)), Names.decide(listOf(kariHome, kariHome)))
+    }
+
+    @Test
+    fun `duplicates are dropped before the cap, so they never crowd out a real number`() {
+        val found = List(5) { kari } + ola
+        assertEquals(Names.Decision.Choose(listOf(kari, ola)), Names.decide(found))
+    }
+
+    @Test
+    fun `numbers that cannot be sent to are left out before the cap`() {
+        val local = (1..5).map { kari.copy(number = "900 00 01$it") }
+        assertEquals(Names.Decision.One(ola), Names.decide(local + ola))
+    }
+
+    @Test
+    fun `a shown name is cleaned and cut to 40 characters, as a sender's is`() {
+        assertEquals("K".repeat(40), Names.shown("K".repeat(41)))
+        assertEquals("Kari Nordmann", Names.shown("  Kari\u200B \n Nordmann\u202E "))
+        assertEquals(40, Names.LONGEST)
+        val long = kari.copy(name = "Kari " + "N".repeat(45))
+        assertEquals("Kari " + "N".repeat(35) + ", mobile ending 12", Names.choice(long))
+    }
+
+    @Test
+    fun `a guessed number alone is a choice, never a draft`() {
+        val guessed = kari.copy(number = "+4700000034", guessed = "+47")
+        assertEquals(Names.Decision.Choose(listOf(guessed)), Names.decide(listOf(guessed)))
+    }
+
+    @Test
+    fun `a choice of a guessed number says which country code was guessed`() {
+        val guessed = kari.copy(number = "+4700000034", guessed = "+47")
+        assertEquals("Kari Nordmann, mobile ending 34, guessed +47", Names.choice(guessed))
+    }
+
+    @Test
+    fun `of rows with one number, a mobile one wins, and then one the provider wrote over a guessed one`() {
+        val guessed = kari.copy(guessed = "+47")
+        assertEquals(Names.Decision.One(kari), Names.decide(listOf(guessed, kari)))
+        assertEquals(Names.Decision.One(kari), Names.decide(listOf(kari, guessed)))
+        val home = kari.copy(label = "home")
+        assertEquals(Names.Decision.Choose(listOf(guessed)), Names.decide(listOf(home, guessed)))
+        assertEquals(Names.Decision.Choose(listOf(home)), Names.decide(listOf(home.copy(guessed = "+47"), home)))
+    }
+
+    @Test
+    fun `of rows with one number and nothing to tell them apart, the first found is kept`() {
+        val other = kari.copy(name = "Kari Nordmann Berg")
+        assertEquals(Names.Decision.One(kari), Names.decide(listOf(kari, other)))
+        assertEquals(Names.Decision.One(other), Names.decide(listOf(other, kari)))
     }
 
     @Test

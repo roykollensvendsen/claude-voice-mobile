@@ -15,13 +15,13 @@ import kotlinx.serialization.json.JsonPrimitive
  * number. A new answer, or any draft, closes the choices before it, so an older pick is refused.
  *
  * At most [LOOKUPS] lookups an hour are made, counted in memory, so a restart starts again. [find]
- * gives at most `most` numbers whose contact's name `matches` accepts, or null when the phone may
+ * gives every number whose contact's name `matches` accepts, or null when the phone may
  * not read contacts; such a call is no lookup. [tokens] makes picks no one can guess.
  */
 class Recipients(
     private val clock: Clock,
     private val tokens: () -> String,
-    private val find: (matches: (String) -> Boolean, most: Int) -> List<Contact>?,
+    private val find: (matches: (String) -> Boolean) -> List<Contact>?,
 ) {
     /** What `to` comes to: a number, with the contact's name when it came from one, or an answer. */
     sealed interface Resolved {
@@ -39,13 +39,19 @@ class Recipients(
         val picked = picks[to]
         picks = emptyMap()
         return when {
-            picked != null -> Resolved.To(picked.number, picked.name)
+            picked != null -> Resolved.To(picked.number, Names.shown(picked.name))
             to.startsWith(PICK) -> refused(STALE, UNKNOWN_PICK)
             !LETTER.containsMatchIn(to) -> Resolved.To(to, null)
             Names.letters(to) < Names.FEWEST_LETTERS -> refused(TOO_SHORT, Outbox.INVALID_RECIPIENT)
             blocked() -> refused(TOO_MANY, Limits.RATE_LIMITED)
             else -> looked(to) ?: refused(NO_CONTACTS, SmsSend.PERMISSION_MISSING)
         }
+    }
+
+    /** Closes the open choices, as any request does, even one refused before `to` is read. */
+    @Synchronized
+    fun close() {
+        picks = emptyMap()
     }
 
     private fun blocked(): Boolean {
@@ -55,23 +61,24 @@ class Recipients(
     }
 
     private fun looked(name: String): Resolved? {
-        val found = find({ Names.matches(name, it) }, Names.MOST) ?: return null
+        val found = find { Names.matches(name, it) } ?: return null
         lookups += clock.instant()
         return when (val decision = Names.decide(found)) {
-            is Names.Decision.One -> Resolved.To(decision.contact.number, decision.contact.name)
-            is Names.Decision.Choose -> choose(decision.contacts)
+            is Names.Decision.One -> Resolved.To(decision.contact.number, Names.shown(decision.contact.name))
+            is Names.Decision.Choose -> choose(decision.contacts, decision.more)
             Names.Decision.None ->
                 refused("No contact is called $name; say another name or the number.", Names.NOT_FOUND)
         }
     }
 
-    private fun choose(contacts: List<Contact>): Resolved {
+    private fun choose(contacts: List<Contact>, more: Boolean): Resolved {
         picks = contacts.associateBy { PICK + tokens() }
         val words = picks.values.map(Names::choice)
         val items = picks.keys.zip(words) { pick, say ->
             JsonObject(mapOf("pick" to JsonPrimitive(pick), "say" to JsonPrimitive(say)))
         }
-        val say = words.withIndex().joinToString("; ", "Which one? ", ".") { (i, it) -> "${i + 1}: $it" }
+        val say = words.withIndex().joinToString("; ", "Which one? ", ".") { (i, it) -> "${i + 1}: $it" } +
+            (if (more) " $MORE" else "")
         return Resolved.Answered(
             Reply.Answer(JsonObject(mapOf("choices" to JsonArray(items), "say" to JsonPrimitive(say)))),
         )
@@ -81,7 +88,7 @@ class Recipients(
 
     companion object {
         /** The recipients the phone uses: the phone's clock, and picks no one can guess. */
-        fun onThePhone(find: (matches: (String) -> Boolean, most: Int) -> List<Contact>?): Recipients =
+        fun onThePhone(find: (matches: (String) -> Boolean) -> List<Contact>?): Recipients =
             Recipients(Clock.systemDefaultZone(), { UUID.randomUUID().toString() }, find)
 
         /** `to` as a number, with no lookup: the outbox's own reading when no contacts are wired. */
@@ -102,6 +109,7 @@ class Recipients(
         private val LETTER = Regex("""\p{L}""")
         private const val STALE = "That choice is from another request; say the name again."
         private const val TOO_SHORT = "Say at least two letters of a name, or the number."
+        private const val MORE = "And more match; say the full name."
         private const val TOO_MANY = "Not drafted: too many name lookups; say the number instead."
     }
 }
