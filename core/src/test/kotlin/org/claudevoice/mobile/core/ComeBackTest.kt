@@ -19,6 +19,11 @@ class ComeBackTest {
         }
     }
 
+    private companion object {
+        const val BOOT = "android.intent.action.BOOT_COMPLETED"
+        const val UPDATED = "android.intent.action.MY_PACKAGE_REPLACED"
+    }
+
     private fun pairedStore(): Memory {
         val store = Memory()
         val pairing = Pairing(clock = { Instant.EPOCH }, random = SecureRandom())
@@ -29,21 +34,30 @@ class ComeBackTest {
 
     @Test
     fun `a named phone paired with a hub listens again after a restart or an update`() {
-        assertTrue(ComeBack.afterRestart(name = "phone-a", hub = pairedStore()))
+        assertTrue(ComeBack.starts(BOOT, name = "phone-a", hub = pairedStore()))
+        assertTrue(ComeBack.starts(UPDATED, name = "phone-a", hub = pairedStore()))
+    }
+
+    @Test
+    fun `any other broadcast starts nothing, the locked boot included`() {
+        val others = listOf("android.intent.action.LOCKED_BOOT_COMPLETED", "android.intent.action.SCREEN_ON", "", null)
+        for (other in others) {
+            assertFalse(ComeBack.starts(other, name = "phone-a", hub = pairedStore()), "$other")
+        }
     }
 
     @Test
     fun `a phone that was never paired starts nothing by itself`() {
-        assertFalse(ComeBack.afterRestart(name = "phone-a", hub = Memory()))
+        assertFalse(ComeBack.starts(BOOT, name = "phone-a", hub = Memory()))
     }
 
     @Test
     fun `a kept pairing that cannot be read starts nothing by itself`() {
-        assertFalse(ComeBack.afterRestart(name = "phone-a", hub = Memory("{not a pairing")))
+        assertFalse(ComeBack.starts(BOOT, name = "phone-a", hub = Memory("{not a pairing")))
     }
 
     @Test
     fun `a phone with no confirmed name starts nothing by itself, whatever is kept`() {
-        assertFalse(ComeBack.afterRestart(name = null, hub = pairedStore()))
+        assertFalse(ComeBack.starts(BOOT, name = null, hub = pairedStore()))
     }
 }

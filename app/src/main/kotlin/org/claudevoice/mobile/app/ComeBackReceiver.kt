@@ -13,12 +13,7 @@ import org.claudevoice.mobile.core.ComeBack
  */
 class ComeBackReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action !in ACTIONS) return
         val app = context.applicationContext as App
-        if (ComeBack.afterRestart(app.machine.name, app.hub)) ListenerService.start(context)
-    }
-
-    private companion object {
-        val ACTIONS = setOf(Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_MY_PACKAGE_REPLACED)
+        if (ComeBack.starts(intent.action, app.machine.name, app.hub)) ListenerService.start(context)
     }
 }

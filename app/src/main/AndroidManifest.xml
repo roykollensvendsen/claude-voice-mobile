@@ -42,10 +42,10 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="A listener for the owner's own assistant hub" />
         </service>
-        <!-- Only the system sends these two; the receiver starts only a named, paired phone. -->
+        <!-- Not exported: only the system, which may reach any receiver, sends these two. -->
         <receiver
             android:name=".ComeBackReceiver"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
