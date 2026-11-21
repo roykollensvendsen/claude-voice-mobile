@@ -5,25 +5,31 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.telephony.SmsManager
+import android.telephony.TelephonyManager
 import android.util.Log
 import org.claudevoice.mobile.capabilities.contacts.Contacts
 import org.claudevoice.mobile.pluginapi.Plugin
 import org.claudevoice.mobile.plugins.sms_send.rules.Contact
+import org.claudevoice.mobile.plugins.sms_send.rules.Countries
 import org.claudevoice.mobile.plugins.sms_send.rules.Outbox
 import org.claudevoice.mobile.plugins.sms_send.rules.Recipients
+import java.util.Locale
 
 /**
  * Where the app builds this plugin (ADR-CVM-007). Only what needs Android is here: whether the
- * owner still lets the app send, asked at each call, and the default SIM that sends. A send
+ * owner still lets the app send, asked at each call, the default SIM that sends, and the SIM's
+ * country that a contact's number saved without a code is read in. A send
  * Android refuses is logged by its code alone, never with the number or the text.
  */
 object Entry {
     fun plugin(context: Context): Plugin {
         val app = context.applicationContext
         val outbox = Outbox.onThePhone(send = { to, text -> send(app, to, text) }, failed = { Log.w(TAG, it) })
-        val contacts = Contacts.on(app)
-        val recipients = Recipients.onThePhone { matches, most ->
-            contacts.numbers(matches, most)?.map { Contact(it.name, it.number, it.label) }
+        val telephony = app.getSystemService(TelephonyManager::class.java)
+        // The SIM's country, else the phone's region; never the network's, which roams (Countries).
+        val contacts = Contacts.on(app) { Countries.chosen(telephony?.simCountryIso, Locale.getDefault().country) }
+        val recipients = Recipients.onThePhone { matches ->
+            contacts.numbers(matches)?.map { Contact(it.name, it.number, it.label, it.guessed) }
         }
         return SmsSendPlugin(outbox, recipients) {
             app.checkSelfPermission(Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED

@@ -26,7 +26,6 @@ class RecipientsTest {
         var book = listOf(kari, kariHome, ola, per)
         var permitted = true
         var lookups = 0
-        var asked = -1
         private var next = 0
         val clock = object : Clock() {
             override fun instant() = now
@@ -35,11 +34,10 @@ class RecipientsTest {
 
             override fun withZone(zone: ZoneId) = this
         }
-        val recipients = Recipients(clock, tokens = { "t${++next}" }) { matches, most ->
-            asked = most
+        val recipients = Recipients(clock, tokens = { "t${++next}" }) { matches ->
             if (permitted) {
                 lookups += 1
-                book.filter { matches(it.name) }.take(most)
+                book.filter { matches(it.name) }
             } else {
                 null
             }
@@ -57,7 +55,7 @@ class RecipientsTest {
 
     @Test
     fun `on the phone, picks are never the same twice`() {
-        val recipients = Recipients.onThePhone { _, _ -> listOf(kari, kariHome) }
+        val recipients = Recipients.onThePhone { listOf(kari, kariHome) }
         val first = picks(choices(recipients.resolve("Kari")))
         val second = picks(choices(recipients.resolve("Kari")))
         assertEquals(4, (first + second).toSet().size)
@@ -77,7 +75,24 @@ class RecipientsTest {
         val phone = Phone()
         assertEquals(Recipients.Resolved.To("+4700000056", "Ola Nordmann"), phone.recipients.resolve("ola"))
         assertEquals(1, phone.lookups)
-        assertEquals(Names.MOST, phone.asked)
+    }
+
+    @Test
+    fun `more matches than five are five choices, and the owner hears that more match`() {
+        val phone = Phone()
+        phone.book = (1..6).map { Contact("Kari $it", "+470000002$it", "mobile") }
+        val content = choices(phone.recipients.resolve("Kari"))
+        assertEquals(5, picks(content).size)
+        assertTrue(
+            content.getValue("say").jsonPrimitive.content.endsWith("5: Kari 5, mobile ending 25. And more match; say the full name."),
+        )
+    }
+
+    @Test
+    fun `the name that comes back with a number is cut to 40 characters`() {
+        val phone = Phone()
+        phone.book = listOf(Contact("Ola " + "N".repeat(45), "+4700000056", "mobile"))
+        assertEquals(Recipients.Resolved.To("+4700000056", "Ola " + "N".repeat(36)), phone.recipients.resolve("Ola"))
     }
 
     @Test

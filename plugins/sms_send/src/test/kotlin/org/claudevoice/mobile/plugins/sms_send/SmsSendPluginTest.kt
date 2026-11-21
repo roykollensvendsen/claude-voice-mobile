@@ -26,7 +26,7 @@ class SmsSendPluginTest {
         tokens = { "t1" },
     )
     // A made-up contact, with a number in the +47 00 range no one is given.
-    private val recipients = Recipients(Clock.fixed(Instant.EPOCH, ZoneId.of("UTC")), { "p1" }) { matches, _ ->
+    private val recipients = Recipients(Clock.fixed(Instant.EPOCH, ZoneId.of("UTC")), { "p1" }) { matches ->
         listOf(Contact("Ola Nordmann", "+4700000056", "mobile")).filter { matches(it.name) }
     }
     private val plugin = SmsSendPlugin(outbox, recipients) { permitted }

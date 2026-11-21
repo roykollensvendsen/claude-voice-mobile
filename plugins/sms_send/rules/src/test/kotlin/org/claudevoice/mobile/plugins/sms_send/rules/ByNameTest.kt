@@ -20,6 +20,7 @@ class ByNameTest {
         Contact("Ola Nordmann", "+4700000056", "mobile"),
         Contact("Kari Nordmann", "+4700000012", "mobile"),
         Contact("Kari Nordmann", "+4700000034", "home"),
+        Contact("Per Berg", "+4700000078", "mobile", guessed = "+47"),
     )
     private var lookups = 0
     private val timers = mutableListOf<Runnable>()
@@ -33,13 +34,13 @@ class ByNameTest {
         override fun withZone(zone: ZoneId) = this
     }
     private val outbox = Outbox(clock, { _, task -> timers += task }, { to, text -> sent += to to text }, {}, { "t${++next}" })
-    private val recipients = Recipients(clock, { "p${++next}" }) { matches, most ->
+    private val recipients = Recipients(clock, { "p${++next}" }) { matches ->
         lookups += 1
-        book.filter { matches(it.name) }.take(most)
+        book.filter { matches(it.name) }
     }
 
     private fun call(tool: String, arguments: String) =
-        SmsSend.call(outbox, tool, Json.parseToJsonElement(arguments).jsonObject, true, recipients::resolve)
+        SmsSend.call(outbox, tool, Json.parseToJsonElement(arguments).jsonObject, true, recipients)
 
     private fun content(reply: Reply): JsonObject = (reply as Reply.Answer).content
 
@@ -55,6 +56,25 @@ class ByNameTest {
     }
 
     @Test
+    fun `the answer to a confirm names the contact and the whole number too`() {
+        val reply = confirmed(call("sms_send_request", """{"to":"Ola","text":"Hei"}"""))
+        assertEquals(
+            "Sending to Ola Nordmann, +4700000056 in 10 seconds. Say stop to cancel. I can't yet confirm delivery.",
+            field(reply, "say"),
+        )
+    }
+
+    @Test
+    fun `a request whose text is refused still closes the open choices`() {
+        val choices = content(call("sms_send_request", """{"to":"Kari","text":"Hei"}"""))
+        val pick = choices.getValue("choices").jsonArray[0].jsonObject.getValue("pick").jsonPrimitive.content
+        val refused = call("sms_send_request", """{"to":"$pick","text":"Se pay.click"}""") as Reply.Refused
+        assertEquals(Limits.TEXT_REFUSED, refused.code)
+        val stale = call("sms_send_request", """{"to":"$pick","text":"Hei"}""") as Reply.Refused
+        assertEquals(Recipients.UNKNOWN_PICK, stale.code)
+    }
+
+    @Test
     fun `the read-back of a draft by number is as before`() {
         val reply = call("sms_send_request", """{"to":"+4700000001","text":"Hei"}""")
         assertEquals("Draft to +4700000001: 'Hei'", field(reply, "say"))
@@ -67,6 +87,15 @@ class ByNameTest {
         val pick = choices.getValue("choices").jsonArray[1].jsonObject.getValue("pick").jsonPrimitive.content
         val draft = call("sms_send_request", """{"to":"$pick","text":"Hei"}""")
         assertEquals("Draft to Kari Nordmann, +4700000034: 'Hei'", field(draft, "say"))
+    }
+
+    @Test
+    fun `a guessed number is offered as a choice, and its draft reads the whole number back`() {
+        val choices = content(call("sms_send_request", """{"to":"Per","text":"Hei"}"""))
+        val item = choices.getValue("choices").jsonArray.single().jsonObject
+        assertEquals("Per Berg, mobile ending 78, guessed +47", item.getValue("say").jsonPrimitive.content)
+        val draft = call("sms_send_request", """{"to":"${item.getValue("pick").jsonPrimitive.content}","text":"Hei"}""")
+        assertEquals("Draft to Per Berg, +4700000078: 'Hei'", field(draft, "say"))
     }
 
     @Test

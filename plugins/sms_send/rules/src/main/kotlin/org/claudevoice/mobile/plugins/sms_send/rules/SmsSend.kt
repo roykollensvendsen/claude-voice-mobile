@@ -68,14 +68,14 @@ object SmsSend {
         tool: String,
         arguments: JsonObject,
         permitted: Boolean,
-        resolve: (String) -> Recipients.Resolved = Recipients::number,
+        recipients: Recipients? = null,
     ): Reply {
         val spec = TOOLS.firstOrNull { it.name == tool }
         return when {
             spec == null -> Reply.Refused("sms_send has no tool $tool.")
             !permitted -> Reply.Refused(NOT_PERMITTED, PERMISSION_MISSING)
             arguments.keys != spec.keys -> Reply.Refused("$tool takes exactly ${spec.keys.joinToString()}.")
-            else -> handed(outbox, tool, arguments, resolve)
+            else -> handed(outbox, tool, arguments, recipients)
                 ?: Reply.Refused("$tool was given an argument of the wrong kind.")
         }
     }
@@ -85,12 +85,12 @@ object SmsSend {
         outbox: Outbox,
         tool: String,
         arguments: JsonObject,
-        resolve: (String) -> Recipients.Resolved,
+        recipients: Recipients?,
     ): Reply? {
         val token = text(arguments, "token")
         return when (tool) {
             REQUEST -> text(arguments, "to")?.let { to ->
-                text(arguments, "text")?.let { outbox.request(to, it, resolve) }
+                text(arguments, "text")?.let { outbox.request(to, it, recipients) }
             }
             CONFIRM -> token?.let { number(arguments)?.let { version -> outbox.confirm(token, version) } }
             else -> token?.let(outbox::cancel)

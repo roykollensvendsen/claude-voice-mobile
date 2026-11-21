@@ -27,7 +27,7 @@ class SmsSendPlugin(
     override val confirms = SmsSend.CONFIRMS
 
     override suspend fun call(tool: String, arguments: JsonObject): ToolResult =
-        when (val reply = SmsSend.call(outbox, tool, arguments, permitted(), recipients::resolve)) {
+        when (val reply = SmsSend.call(outbox, tool, arguments, permitted(), recipients)) {
             is Reply.Answer -> ToolResult.Answer(reply.content)
             is Reply.Refused -> ToolResult.Refused(reply.say, reply.code)
         }
