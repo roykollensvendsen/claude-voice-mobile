@@ -1,0 +1,7 @@
+red-come-back.log:ComeBackTest > a phone with no confirmed name starts nothing by itself, whatever is kept() FAILED
+red-come-back.log:ComeBackTest > a phone that was never paired starts nothing by itself() FAILED
+red-come-back.log:ComeBackTest > a kept pairing that cannot be read starts nothing by itself() FAILED
+red-come-back.log:ComeBackTest > a named phone paired with a hub listens again after a restart or an update() FAILED
+red-come-back.log:4 tests completed, 4 failed
+red-come-back.log:> Task :core:test FAILED
+red-come-back.log:BUILD FAILED in 1m 5s

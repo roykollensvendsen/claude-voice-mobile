@@ -35,10 +35,10 @@ class ListenerService : Service() {
         watcher = TailnetWatcher(this) { found.follow(it) }.also { it.start() }
     }
 
-    // Not recreated by the system after a kill: from Android 12 that would start a foreground
-    // service from the background, which Android may refuse. Opening the app starts it again;
-    // a proper restart path comes with #78.
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_NOT_STICKY
+    // Recreated by the system after Android kills the app, as it does whenever the owner takes a
+    // permission away; else the hub hears nothing until the owner opens the app (#152). On the
+    // owner's Android 16 phone the recreated service went back to the foreground at once.
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
 
     override fun onBind(intent: Intent?): IBinder? = null
 

@@ -94,7 +94,7 @@ class KeptGate(
         if (builtFor === pairing && now != null) keep(now.withHighest(version))
     }
 
-    private class Kept(val keyHash: ByteArray, val name: String, val address: InetAddress, val highest: Int) {
+    internal class Kept(val keyHash: ByteArray, val name: String, val address: InetAddress, val highest: Int) {
         fun withHighest(version: Int) = Kept(keyHash, name, address, version)
 
         fun json(): String = buildJsonObject {
