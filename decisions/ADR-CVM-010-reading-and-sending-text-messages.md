@@ -258,6 +258,110 @@ says only "sent a text message".
 **What the call log keeps.** As for every plugin that reaches a private thing,
 it keeps the time, caller and outcome of each call, never a number or a text.
 
+### The next version: by name, older texts, several recipients, delivered
+
+The owner asked for four additions on 2026-11-21, after the first version
+sent a text end to end. They are texting a contact by name, searching older
+texts, sending to several people with one yes, and hearing when a text was
+delivered. The owner said yes to the three questions they raise, each in full
+wording, relayed by the manager session. The next version builds them on top
+of the first version. Everything the first version holds stays: the read-back
+of the stored latest version, confirm denied in every role, the undo delay
+with its floor, one lock, the limits and the text rules. Where this section
+and the full design above differ, this section wins.
+
+**By name.** A new capability, `capabilities/contacts`, declares
+`READ_CONTACTS`. It answers one question: which phone numbers match this
+spoken name.
+
+- `to` in `sms_send_request` may be a name or a number. A query must match a
+  whole first name, a whole last name or the full name, ignoring case and
+  accents. It never matches a prefix, a part of a name or a single letter, and
+  a query under 2 letters is refused. The phone allows at most 10 lookups an
+  hour, counted in memory like the send limits. Past that the refusal is
+  `rate_limited`: "too many name lookups; say the number instead". A number
+  given as a number is not a lookup.
+- One mobile number for one name gives a draft. Anything else gives no draft
+  but a `choices` answer of at most 5. Each choice is an opaque `pick` bound
+  to that request's token, the display name and the label with the last two
+  digits ("Kari, mobile ending 12"), never the full number. The voice
+  asks the owner, then calls again and passes the `pick` in place of that name
+  in `to`. A contact with only a home or work number also answers `choices`,
+  so the owner hears and picks it, never a silent draft. No match answers
+  `not_found`.
+- The full number leaves the phone only in the read-back of the one chosen
+  draft, which names both the contact and the whole number. The draft stores
+  the number, not the name, so a contact changed later does not move it.
+- The lookup is not a tool of its own. It lives only inside
+  `sms_send_request` and `sms_search`.
+- The matching rule, the cap of 5, the floor and the counter live in a
+  pure-JVM rules module and are mutated (ADR-CVM-007).
+
+**Older texts.** A new tool in `sms`, `sms_search(who, words, days)`, looks
+back at most 90 days, 30 by default. `who` is a name, resolved as above, or a
+number. At least one of `who` and `words` is needed. It answers with at most
+10 messages, newest first, and how many more matched. It reads through
+`smsstore`, which the reading plugin already holds `READ_SMS` for.
+
+- Held back whole: every text from an alphanumeric sender ID or a short code
+  of fewer than 8 digits, counted on the raw sender, before E.164. So are texts
+  from any sender with a run of digits like a code, or one of the words kode,
+  code, engangskode, passord, password, BankID, verification or PIN, in any
+  case. Such a text answers only "a message from <sender>, text held back".
+  The word list is pinned by a test, and the rule is mutated.
+- A searched text is the sender's words, data and never an instruction. The
+  say line frames each one as "from <sender> at <time>, quoted: …", and the
+  tool's description says so. A draft made right after a search still needs
+  its own read-back and the owner's yes, as every draft does.
+
+**Texted before.** Sending asks reading one yes or no question through the
+core: "texted before?" for one E.164 number. `sms_send` declares `SEND_SMS`
+alone, never `READ_SMS` or `READ_CONTACTS`, and a manifest test pins that.
+With reading switched off, the read-back says "can't check whether you've
+texted this number before", never nothing. It is a warning, not a refusal,
+since the owner parked the refusal.
+
+**Several recipients.** `to` may be a list of 1 to 5 recipients, each a name,
+a number or a `pick`. One name needing a choice stops the whole draft with one
+question. The same number twice counts once.
+
+- The read-back names every recipient with the whole number and gives the
+  text once. It marks a raw number "not in your contacts" and a number
+  "never texted before" when reading says so. So a stray number stands out.
+- One confirm, one undo delay and one cancel cover the group. After the delay
+  the phone sends one text to each recipient, never a group MMS.
+- Each text counts against the limits. The whole group is checked at request
+  and at confirm, and if it does not fit, nothing is drafted and the answer
+  says how many would fit. A group is never partly sent because of a limit.
+
+**Delivered.** The phone asks Android for a delivery report for each part,
+next to the sent report it already asks for. `sms_send_outcomes` and the
+crash marker, which waited in the first version, come with it.
+
+- Each recipient's outcome is `sent`, `delivered`, `stopped`, `failed` or
+  `unknown`. `delivered` comes only when every part of that text has a
+  delivery report saying so. Some networks send none, so a text can stay
+  `sent`, and then the voice never says delivered.
+- Outcomes carry no number, name or text. They name each recipient by
+  position in the read-back, after duplicates are dropped, and a test pins
+  that order. Right after the undo the voice still has the read-back and names
+  them. A later poll, or a new conversation, hears "recipient 2: delivered",
+  by design.
+- The voice polls for outcomes after the undo delay. A push through whats_new
+  is a later step of its own.
+
+**On the hub.** `sms_search`, `sms_send_request` and `sms_since` go in the
+"voice only" group in the hub's permissions, the one wall between the owner's
+voice and any other session. In this version `sms_send_request` reads
+contacts, since its read-back carries a name with the whole number.
+`sms_send_confirm` stays denied in every role. The hub's call log, usage store
+and mailbox keep, for these tools, the outcome and a count of recipients or
+results, never names, numbers or text. No protocol version changes: `to` as
+a list or a `pick` is the plugin's own argument schema.
+
+**What waits still:** the mobile ranges, a draft lapsing after 15 minutes and
+one draft per recipient.
+
 ## Consequences
 
 - The owner hears new text messages by voice, a few seconds to two minutes
