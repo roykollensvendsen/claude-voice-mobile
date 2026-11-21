@@ -156,6 +156,33 @@ owner reads the code.
 
 It sends by drafting first, with an undo delay, and with no tap on the phone.
 
+**The first version of sending.** The owner chose a smaller first version on
+2026-11-21, relayed by the manager session. It is choice B in the messages
+design. What follows this paragraph is the full design. The first version
+builds the part of it below, and the rest waits for a later version.
+
+- **It holds:** the draft with its token and version, the read-back, confirm
+  sending only the stored text of the latest version, the undo delay with its
+  floor, and cancel and the timer under one lock. It also holds the owner's
+  limits: no more than 10 sends an hour, 30 in 24 hours, and 3 to one number
+  in 10 minutes, and at most 1000 characters, with no link and no run of more
+  than 6 digits. A run counts across spaces, dots and dashes.
+- **The limits are checked twice:** when a draft is made, so the owner hears
+  it early, and again at confirm. A send counts from its confirm, and a
+  stopped one stops counting. A refusal names the limit and when it lifts,
+  with the code `rate_limited`, or `text_refused` for what a text holds. The
+  counts live in the app's memory, like the drafts, so a restart of the app
+  starts the counts again. Each send still needs the owner's spoken yes.
+- **It differs:** the read-back names the whole number, not its last four
+  digits. Every answer after confirm says "I can't yet confirm delivery", and
+  a cancel that comes too late says when the text was handed to the phone.
+  Nothing says "sent", since the phone does not yet learn whether it arrived.
+- **It waits:** the sent-before check, the mobile ranges, a draft lapsing
+  after 15 minutes, one draft per recipient, the crash marker, and
+  `sms_send_outcomes`. Without the sent-before check the plugin does not need
+  `READ_SMS`, so the first version declares `SEND_SMS` alone. Any E.164 number
+  may be drafted. Android's own warning for premium numbers stays on.
+
 **`sms_send_request(to, text)`** sends nothing. It stores a draft on the phone
 and answers with a `token`, a `version` and a `say` line. The line reads back
 the recipient, the text, and how many messages the text becomes. The phone

@@ -1,0 +1,13 @@
+$ uv run pytest -q tests/test_sms_send_first_version.py --tb=line
+(run before ADR-CVM-010 had the paragraph on the first version of sending)
+
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+E   ValueError: substring not found
+tests/test_sms_send_first_version.py:18: ValueError: substring not found
+E   ValueError: substring not found
+tests/test_sms_send_first_version.py:18: ValueError: substring not found
+=========================== short test summary info ============================
+FAILED tests/test_sms_send_first_version.py::test_the_record_says_what_the_first_version_of_sending_holds
+FAILED tests/test_sms_send_first_version.py::test_the_record_says_what_waits_for_the_full_version
+2 failed in 0.23s
