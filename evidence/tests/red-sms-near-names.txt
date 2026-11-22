@@ -1,0 +1,28 @@
+........F.                                                               [100%]
+=================================== FAILURES ===================================
+_______ test_near_names_relations_and_own_numbers_keep_the_lookup_guards _______
+
+    def test_near_names_relations_and_own_numbers_keep_the_lookup_guards() -> None:
+        """D4, the owner's yes on 22.11: looser matching, never a silent draft from a guess."""
+        part = next_version()
+        for guard in (
+            "**Near names, nicknames and relations.**",
+            "the contact's own nickname field",
+            "the owner's own profile card",
+            "A relation word not in the table is never guessed",
+            "one letter off",
+            "only ever as `choices`, never as a draft",
+            "at most 3",
+            "People named on the owner's own card come first",
+            "changes the order only",
+            "Every try counts against the 10 lookups an hour",
+            "`READ_PROFILE`",
+        ):
+>           assert guard in part, guard
+E           AssertionError: **Near names, nicknames and relations.**
+E           assert '**Near names, nicknames and relations.**' in '### The next version: by name, older texts, several recipients, delivered The owner asked for four additions on 2026-...gument schema. **What waits still:** the mobile ranges, a draft lapsing after 15 minutes and one draft per recipient. '
+
+tests/test_sms_next_version.py:126: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_sms_next_version.py::test_near_names_relations_and_own_numbers_keep_the_lookup_guards
+1 failed, 9 passed in 0.41s
