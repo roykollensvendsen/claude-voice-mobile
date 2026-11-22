@@ -2,10 +2,8 @@ package org.claudevoice.mobile.app
 
 import android.Manifest
 import android.app.Activity
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import java.io.File
@@ -42,16 +40,10 @@ object AskNotifications {
         activity.requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), LINE_REQUEST)
     }
 
-    /** The app's notification settings, or its info page on a phone without that page. */
+    /** The app's notification settings, a page every Android from 8, the app's oldest, has. */
     fun openSettings(activity: Activity) {
-        val pkg = activity.packageName
-        val notices = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, pkg)
-        try {
-            activity.startActivity(notices)
-        } catch (_: ActivityNotFoundException) {
-            val info = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", pkg, null))
-            activity.startActivity(info)
-        }
+        val notices = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+        activity.startActivity(notices.putExtra(Settings.EXTRA_APP_PACKAGE, activity.packageName))
     }
 
     private fun granted(activity: Activity) =

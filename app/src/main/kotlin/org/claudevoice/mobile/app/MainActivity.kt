@@ -60,12 +60,7 @@ class MainActivity : Activity() {
             addView(NameStep(this@MainActivity, app.machine, app.suggestedName) { listen() }.view)
             addView(message)
             addView(open)
-            hidden = TextView(this@MainActivity).apply {
-                textSize = TEXT_SIZE_SP
-                setText(R.string.notice_hidden)
-                visibility = View.GONE
-                setOnClickListener { line.tap(canAsk = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) }
-            }
+            hidden = hiddenNoticeLine()
             addView(hidden)
             pairing = PairingPanel(this@MainActivity) { app.agent() }
             pairing.views.forEach(::addView)
@@ -93,6 +88,14 @@ class MainActivity : Activity() {
         super.onStart()
         watcher.start()
         tick.run()
+    }
+
+    // Hidden until onResume finds the notice refused while the listener runs.
+    private fun hiddenNoticeLine() = TextView(this).apply {
+        textSize = TEXT_SIZE_SP
+        setText(R.string.notice_hidden)
+        visibility = View.GONE
+        setOnClickListener { line.tap(canAsk = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) }
     }
 
     override fun onResume() {
