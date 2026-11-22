@@ -26,11 +26,13 @@ object Access {
      * asked for before, and never_asked when none of those was.
      */
     fun of(needs: List<String>, permissions: Permissions): String {
-        val missing = needs.filterNot(permissions::granted)
-        return when {
-            missing.isEmpty() -> GRANTED
-            missing.any(permissions::asked) -> REFUSED
-            else -> NEVER_ASKED
+        // A plain loop: the standard library's inlined any() leaves a mutant no test can tell apart.
+        var answer = GRANTED
+        for (permission in needs) {
+            if (permissions.granted(permission)) continue
+            if (permissions.asked(permission)) return REFUSED
+            answer = NEVER_ASKED
         }
+        return answer
     }
 }

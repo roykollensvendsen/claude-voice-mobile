@@ -16,6 +16,7 @@ class AgentInfoTest {
     private val status = object : Plugin {
         override val name = "status"
         override val uses = listOf<String>()
+        override val needs = mapOf<String, List<String>>()
         override val confirms = listOf<String>()
         override val tools = listOf("battery", "ring").map { Tool("status_$it", "", JsonObject(mapOf())) }
 

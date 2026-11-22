@@ -57,6 +57,7 @@ class PhoneAgentTest {
     private val held = object : Plugin {
         override val name = "held"
         override val uses = listOf<String>()
+        override val needs = mapOf<String, List<String>>()
         override val confirms = listOf<String>()
         override val tools = listOf(Tool("held_wait", "", input), Tool("held_now", "", input))
 
