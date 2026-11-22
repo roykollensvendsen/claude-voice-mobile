@@ -392,8 +392,21 @@ crash marker, which waited in the first version, come with it.
   [`docs/plugins/sms/sms-send-outcomes-input.json`](../docs/plugins/sms/sms-send-outcomes-input.json)
   and
   [`docs/plugins/sms/sms-send-outcomes-answer.json`](../docs/plugins/sms/sms-send-outcomes-answer.json).
-  It is the plugin's own tool, so no protocol version changes. A recipient
-  whose text is later delivered gets a second item after its `sent` one.
+  It is the plugin's own tool, so no protocol version changes.
+- After `sent`, a later item for the same recipient can say `delivered` or
+  `failed`. The voice reports the latest item for each recipient, so a text
+  that was sent and then failed is never told as sent.
+- The token an outcome echoes is already spent, and can never confirm again.
+- An `unknown` text is never sent again.
+- `reason` is one of a closed list of phrases, never free text, so a number
+  or Android's own error can't reach the voice or a log. Each outcome has its
+  own phrases:
+  - `sent`: "handed to the network".
+  - `delivered`: "the network reported it delivered".
+  - `stopped`: "stopped by the owner", "the app restarted while it was held".
+  - `failed`: "no service", "radio off", "no default subscription", "refused
+    by Android", "the network reported it failed".
+  - `unknown`: "it may have been sent; check the text app".
 
 **On the hub.** `sms_search`, `sms_send_request` and `sms_since` go in the
 "voice only" group in the hub's permissions, the one wall between the owner's

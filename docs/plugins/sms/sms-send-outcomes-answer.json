@@ -2,15 +2,23 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/roykollensvendsen/claude-voice-mobile/blob/main/docs/plugins/sms/sms-send-outcomes-answer.json",
   "title": "sms_send_outcomes answer",
-  "description": "The structuredContent of the phone's sms_send_outcomes tool (ADR-CVM-010). How each held text ended, one item per recipient, oldest first, after the cursor that was passed. An item never holds a number, a name or a text: it names its recipient by position in the read-back. Nothing is deleted on the phone until a later call passes back this answer's cursor, so an answer lost on the way is given again, with the same ids. A recipient whose text is later delivered gets a second item, delivered, after its sent one.",
+  "description": "The structuredContent of the phone's sms_send_outcomes tool (ADR-CVM-010). How each held text ended, one item per recipient, oldest first, after the cursor that was passed. An item never holds a number, a name or a text: it names its recipient by position in the read-back. Nothing is deleted on the phone until a later call passes back this answer's cursor, so an answer lost on the way is given again, with the same ids. After sent, a later item for the same recipient can say delivered or failed; the latest item for a recipient is its outcome.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["outcomes", "cursor", "more", "dropped", "reset"],
+  "required": [
+    "outcomes",
+    "cursor",
+    "more",
+    "dropped",
+    "reset"
+  ],
   "properties": {
     "outcomes": {
       "type": "array",
       "maxItems": 50,
-      "items": {"$ref": "#/$defs/outcome"},
+      "items": {
+        "$ref": "#/$defs/outcome"
+      },
       "description": "Oldest first. Empty when nothing has ended since the cursor: the caller marks sms_send_outcomes as a poll, so an empty answer is counted, not logged."
     },
     "cursor": {
@@ -36,7 +44,14 @@
     "outcome": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "token", "recipient", "outcome", "at", "reason"],
+      "required": [
+        "id",
+        "token",
+        "recipient",
+        "outcome",
+        "at",
+        "reason"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -47,17 +62,29 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 64,
-          "description": "The token sms_send_request answered with, so the caller ties the outcome to the request it made. Opaque."
+          "description": "The token sms_send_request answered with, so the caller ties the outcome to the request it made. Opaque, and already spent: it can never confirm again."
         },
         "recipient": {
           "type": "integer",
-          "enum": [1, 2, 3, 4, 5],
+          "enum": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
           "description": "The recipient's position in the read-back, after duplicates were dropped; 1 for a text to one recipient. Never a number or a name: right after the undo the voice still has the read-back and names them; a later poll says 'recipient 2'."
         },
         "outcome": {
           "type": "string",
-          "enum": ["sent", "delivered", "stopped", "failed", "unknown"],
-          "description": "sent: Android reported every part sent. delivered: every part also has a delivery report saying so; some networks send none, so a text may stay sent. stopped: cancelled, or held when the app stopped, and never handed to Android. failed: Android reported a part failed, or refused the text at once. unknown: the app stopped after handing it to Android and cannot tell; it is never sent again."
+          "enum": [
+            "sent",
+            "delivered",
+            "stopped",
+            "failed",
+            "unknown"
+          ],
+          "description": "sent: Android reported every part sent. delivered: every part also has a delivery report saying so; some networks send none, so a text may stay sent. stopped: cancelled, or held when the app stopped, and never handed to Android. failed: Android reported a part failed, or refused the text at once. unknown: the app stopped after handing it to Android and cannot tell; it is never sent again. After sent, a later item may say delivered or failed: the latest item is the outcome."
         },
         "at": {
           "type": "string",
@@ -67,9 +94,19 @@
         },
         "reason": {
           "type": "string",
-          "minLength": 1,
-          "maxLength": 120,
-          "description": "In words, for the voice: 'stopped by the owner', 'the app restarted while it was held', 'no service', 'it may have been sent; check the text app'. Never a number, a name or any of the text."
+          "enum": [
+            "handed to the network",
+            "the network reported it delivered",
+            "stopped by the owner",
+            "the app restarted while it was held",
+            "no service",
+            "radio off",
+            "no default subscription",
+            "refused by Android",
+            "the network reported it failed",
+            "it may have been sent; check the text app"
+          ],
+          "description": "A fixed phrase for the voice, never free text, so no number, name, text or raw Android error can pass. ADR-CVM-010 lists which phrases belong to which outcome."
         }
       }
     }
@@ -77,9 +114,30 @@
   "examples": [
     {
       "outcomes": [
-        {"id": "p4w8c1z6-17", "token": "t-9f3a1c", "recipient": 1, "outcome": "sent", "at": "2026-11-22T14:02:21+01:00", "reason": "handed to the network"},
-        {"id": "p4w8c1z6-18", "token": "t-9f3a1c", "recipient": 2, "outcome": "failed", "at": "2026-11-22T14:02:21+01:00", "reason": "no service"},
-        {"id": "p4w8c1z6-19", "token": "t-9f3a1c", "recipient": 1, "outcome": "delivered", "at": "2026-11-22T14:02:30+01:00", "reason": "the network reported it delivered"}
+        {
+          "id": "p4w8c1z6-17",
+          "token": "t-9f3a1c",
+          "recipient": 1,
+          "outcome": "sent",
+          "at": "2026-11-22T14:02:21+01:00",
+          "reason": "handed to the network"
+        },
+        {
+          "id": "p4w8c1z6-18",
+          "token": "t-9f3a1c",
+          "recipient": 2,
+          "outcome": "failed",
+          "at": "2026-11-22T14:02:21+01:00",
+          "reason": "no service"
+        },
+        {
+          "id": "p4w8c1z6-19",
+          "token": "t-9f3a1c",
+          "recipient": 1,
+          "outcome": "delivered",
+          "at": "2026-11-22T14:02:30+01:00",
+          "reason": "the network reported it delivered"
+        }
       ],
       "cursor": "Qm7Tz2pL0aVd",
       "more": false,

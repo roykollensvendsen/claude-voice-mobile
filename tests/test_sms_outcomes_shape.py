@@ -58,8 +58,49 @@ def test_the_checker_refuses_an_outcome_carrying_a_number_or_an_unknown_value() 
         {**item, "outcome": "probably_sent"},
         {**item, "recipient": 6},
         {**item, "at": "2026-11-22T14:02:11"},
+        {**item, "reason": "failed: +4700000021 unreachable"},
     ):
         assert matches({**good, "outcomes": [bad]}, doc, doc) != [], bad
+
+
+REASONS = {
+    "sent": ["handed to the network"],
+    "delivered": ["the network reported it delivered"],
+    "stopped": ["stopped by the owner", "the app restarted while it was held"],
+    "failed": [
+        "no service",
+        "radio off",
+        "no default subscription",
+        "refused by Android",
+        "the network reported it failed",
+    ],
+    "unknown": ["it may have been sent; check the text app"],
+}
+
+
+def record() -> str:
+    return " ".join(ADR.read_text().split())
+
+
+def test_a_reason_is_a_fixed_phrase_listed_beside_its_outcome() -> None:
+    reason = schema(ANSWER)["$defs"]["outcome"]["properties"]["reason"]
+    assert sorted(reason["enum"]) == sorted(p for ps in REASONS.values() for p in ps)
+    text = record()
+    for outcome, phrases in REASONS.items():
+        line = f"- `{outcome}`: " + ", ".join(f'"{p}"' for p in phrases) + "."
+        assert line in text, line
+
+
+def test_the_record_pins_what_follows_an_outcome() -> None:
+    text = record()
+    for guard in (
+        "The voice reports the latest item for each recipient",
+        "a text that was sent and then failed is never told as sent",
+        "The token an outcome echoes is already spent, and can never confirm again.",
+        "An `unknown` text is never sent again.",
+        "never free text",
+    ):
+        assert guard in text, guard
 
 
 def test_the_record_points_to_the_files() -> None:
