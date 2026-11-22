@@ -88,18 +88,18 @@ class Outbox(
         if (refused != null) recipients?.close()
         return refused ?: when (val resolved = recipients?.resolve(to) ?: Recipients.numbers(to)) {
             is Recipients.Group.Answered -> resolved.reply
-            is Recipients.Group.To -> numbered(resolved.all.distinctBy { it.number }, text)
+            is Recipients.Group.To -> numbered(resolved.all.distinctBy { it.number }, text, recipients)
         }
     }
 
-    private fun numbered(to: List<Recipients.Resolved.To>, text: String): Reply {
+    private fun numbered(to: List<Recipients.Resolved.To>, text: String, recipients: Recipients?): Reply {
         val numbers = to.map { it.number }
         val wrong = numbers.filterNot(E164::matches)
         val blocked = Limits.group(counted(), numbers, clock.instant()).refused("Not drafted", clock.zone)
         return when {
             wrong.isNotEmpty() -> Reply.Refused(NOT_A_NUMBER, INVALID_RECIPIENT)
             blocked != null -> blocked
-            else -> drafted(numbers, to.map { one -> one.name?.let { "$it, ${one.number}" } ?: one.number }, text)
+            else -> drafted(numbers, to.map { readBack(it, recipients) }, text)
         }
     }
 
@@ -199,6 +199,13 @@ class Outbox(
             count <= 0 -> ""
             count == 1 -> " (replaces 1 other held draft)"
             else -> " (replaces $count other held drafts)"
+        }
+
+        /** How the read-back names [one]: the number, or the contact's name and the number, then any marks. */
+        private fun readBack(one: Recipients.Resolved.To, recipients: Recipients?): String {
+            val named = one.name?.let { "$it, ${one.number}" } ?: one.number
+            val marks = recipients?.marks(one).orEmpty()
+            return if (marks.isEmpty()) named else marks.joinToString(", ", "$named (", ")")
         }
 
         /** Why [text] cannot be drafted, or null when it can. */
