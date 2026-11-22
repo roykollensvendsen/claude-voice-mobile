@@ -50,6 +50,7 @@ def test_whether_android_asked_is_told_by_the_flag_before_and_after_not_by_the_s
         "a turn of the phone",
         "If the owner closes that one too",
         "kept in the line's saved state",
+        "On Android 8 to 12, `POST_NOTIFICATIONS` is not a permission the app can ask for",
         "a second refusal in a row from the line opens the settings",
         "never becomes a button that does nothing",
     ):

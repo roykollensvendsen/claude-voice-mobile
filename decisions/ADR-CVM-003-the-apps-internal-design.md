@@ -168,6 +168,11 @@ once, so the screen pauses either way, and a turn of the phone pauses it too.
 The emulator run in `evidence/tests/notice-tap-emulator.md` shows it. Android
 13 and 14 were not run. The flag does not depend on the screen.
 
+On Android 8 to 12, `POST_NOTIFICATIONS` is not a permission the app can ask
+for: the owner turns notifications off only in the settings. There the tap
+never asks and never reads the flag. It opens the notification settings at
+once.
+
 As a backstop, a second refusal in a row from the line opens the settings too.
 So the line never becomes a button that does nothing. The choice is a rule in
 the pure rules code, which the app only feeds with the two readings of the
