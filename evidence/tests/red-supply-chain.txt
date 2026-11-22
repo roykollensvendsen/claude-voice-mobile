@@ -1,0 +1,18 @@
+tests/test_supply_chain.py, written before the checksum file, the pinned images and offline Robolectric:
+
+FAILED tests/test_supply_chain.py::test_gradle_verifies_every_dependency_by_its_sha256
+FAILED tests/test_supply_chain.py::test_every_robolectric_test_class_names_its_android_version
+FAILED tests/test_supply_chain.py::test_each_android_version_a_test_runs_on_is_a_pinned_gradle_dependency
+FAILED tests/test_supply_chain.py::test_robolectric_runs_offline_from_the_images_gradle_fetched
+FAILED tests/test_supply_chain.py::test_each_pinned_image_has_a_checksum - Fi...
+5 failed
+
+A wrong checksum: the sha256 of android-all-instrumented-15-robolectric-12650502-i7.jar in
+gradle/verification-metadata.xml replaced with 64 zeros, then :app:testDebugUnitTest:
+
+> Dependency verification failed for configuration ':app:detachedConfiguration6'
+One artifact failed verification: android-all-instrumented-15-robolectric-12650502-i7.jar (org.robolectric:android-all-instrumented:15-robolectric-12650502-i7) from repository MavenRepo
+This can indicate that a dependency has been compromised. Please carefully verify the checksums.
+BUILD FAILED
+
+The real sha256 put back, the same run passes.

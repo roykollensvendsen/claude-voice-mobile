@@ -1,4 +1,4 @@
-"""The measured test time leaves Robolectric's tests out, and they have a limit of their own.
+"""The measured test time leaves Robolectric's tests out, and no test run has a time cap.
 
 Robolectric starts an Android image before its first test. On CI (#169, run 45022042624) the
 app's test task took 13 to 21 s with it, and the timed run went to 51.5 s against a budget of

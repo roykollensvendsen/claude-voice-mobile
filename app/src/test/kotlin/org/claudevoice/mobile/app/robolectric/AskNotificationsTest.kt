@@ -17,6 +17,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class AskNotificationsTest {
     private val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
     private val notices = arrayOf(Manifest.permission.POST_NOTIFICATIONS)
@@ -24,7 +25,6 @@ class AskNotificationsTest {
     private fun asked() = (activity.application as App).asks.asked(Manifest.permission.POST_NOTIFICATIONS)
 
     @Test
-    @Config(sdk = [33])
     fun at_first_start_it_asks_once_and_writes_the_ask_down_first() {
         AskNotifications.once(activity)
         val request = shadowOf(activity).lastRequestedPermission
@@ -34,7 +34,6 @@ class AskNotificationsTest {
     }
 
     @Test
-    @Config(sdk = [33])
     fun it_never_asks_on_its_own_a_second_time() {
         AskNotifications.once(activity)
         // A later start: a new screen, the same install.
@@ -44,7 +43,6 @@ class AskNotificationsTest {
     }
 
     @Test
-    @Config(sdk = [33])
     fun with_notifications_allowed_it_does_not_ask() {
         shadowOf(activity.application).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
         AskNotifications.once(activity)
@@ -59,7 +57,6 @@ class AskNotificationsTest {
     }
 
     @Test
-    @Config(sdk = [33])
     fun the_line_asks_with_its_own_request_code_and_writes_the_ask_down_first() {
         AskNotifications.fromLine(activity)
         val request = shadowOf(activity).lastRequestedPermission

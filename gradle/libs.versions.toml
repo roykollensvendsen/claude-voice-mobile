@@ -19,6 +19,11 @@ junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+# The Android images Robolectric runs the app's tests on, one per version a test names with
+# @Config; Robolectric runs offline from these, so Gradle fetches and checks them (#170).
+robolectric-sdk32 = { module = "org.robolectric:android-all-instrumented", version = "12.1-robolectric-8229987-i7" }
+robolectric-sdk33 = { module = "org.robolectric:android-all-instrumented", version = "13-robolectric-9030017-i7" }
+robolectric-sdk35 = { module = "org.robolectric:android-all-instrumented", version = "15-robolectric-12650502-i7" }
 junit-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 
