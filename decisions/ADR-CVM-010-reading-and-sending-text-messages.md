@@ -372,6 +372,26 @@ question. The same number twice counts once.
 - Each text counts against the limits. The whole group is checked at request
   and at confirm, and if it does not fit, nothing is drafted and the answer
   says how many would fit. A group is never partly sent because of a limit.
+- `to` is a string for one recipient or a list of 1 to 5 strings, each a
+  name, a number or a `pick`, in the plugin's own schema. A list of one
+  behaves as the string. Changing the list makes a new version with a new
+  read-back, as changing the text does, so a yes always covers the list that
+  was read back. When two names need a choice, the answer asks about the first;
+  the next request, with its `pick`, asks about the second.
+- The owner's one yes and the one undo delay cover every recipient. One
+  cancel stops them all, and a cancel after the delay answers "too late",
+  naming how many were handed to Android.
+- Each recipient counts as one send against every limit, including 3 to one
+  number in 10 minutes. The text rules apply once, to the one text.
+- The phone hands every recipient's text to Android, in read-back order, under
+  the one lock, so a cancel lands before the first or not at all. Android may
+  refuse one at once, for example with no default subscription: one recipient
+  failing never stops the next. Each recipient keeps its own outcome by
+  position.
+- Until delivery outcomes are built, the answer after the undo says how many
+  were handed to Android and "I can't yet confirm delivery", as the first
+  version does. With them, `sms_send_outcomes` gives one item per recipient,
+  by position. A group with some `failed` is reported as such, never as sent.
 
 **Delivered.** The phone asks Android for a delivery report for each part,
 next to the sent report it already asks for. `sms_send_outcomes` and the
