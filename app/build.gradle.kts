@@ -34,7 +34,8 @@ tasks.withType<Test>().configureEach {
     if (providers.gradleProperty("cvLeaveOutRobolectric").isPresent) {
         filter.excludeTestsMatching("org.claudevoice.mobile.app.robolectric.*")
     }
-    timeout.set(Duration.ofSeconds(APP_TEST_LIMIT_SECONDS))
+    // On CI only, where it was measured: a loaded laptop ran these tests in 75 s, nothing wrong.
+    if (providers.environmentVariable("CI").isPresent) timeout.set(Duration.ofSeconds(APP_TEST_LIMIT_SECONDS))
     addTestListener(object : TestListener {
         override fun beforeSuite(suite: TestDescriptor) = Unit
         override fun beforeTest(testDescriptor: TestDescriptor) = Unit
@@ -158,5 +159,5 @@ dependencies {
     testImplementation(libs.robolectric)
 }
 
-/** The app's tests, Robolectric's start included: provisional until measured on CI. */
-val APP_TEST_LIMIT_SECONDS = 120L
+/** The app's tests, Robolectric's start included: the slowest of four CI runs on #169, 21.1 s, plus a quarter. */
+val APP_TEST_LIMIT_SECONDS = 27L
