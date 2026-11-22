@@ -22,5 +22,6 @@ dependencies {
     implementation(project(":plugin-api"))
     implementation(project(":plugins:sms_send:rules"))
     implementation(project(":capabilities:contacts"))
+    implementation(project(":capabilities:smsstore"))
     testImplementation(libs.junit4)
 }

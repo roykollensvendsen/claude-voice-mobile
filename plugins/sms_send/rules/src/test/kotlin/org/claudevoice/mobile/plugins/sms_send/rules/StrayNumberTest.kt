@@ -5,6 +5,7 @@ import java.time.Instant
 import java.time.ZoneId
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
@@ -136,6 +137,15 @@ class StrayNumberTest {
         val phone = Phone(contacts = emptySet(), texted = emptySet())
         phone.outbox.request(listOf(a), "", phone.recipients)
         assertEquals(0, phone.checks)
+    }
+
+    @Test
+    fun `the tool's words tell the hub the never-texted mark needs the app to read texts`() {
+        val words = SmsSend.TOOLS.first { it.name == SmsSend.REQUEST }.description
+        assertTrue(
+            "The never-texted mark needs the app to read texts; without that it is left out." in words,
+            words,
+        )
     }
 
     @Test

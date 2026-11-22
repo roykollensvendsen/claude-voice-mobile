@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The phone's own message store (ADR-CVM-010). It declares no permission: it reads only when the app already holds READ_SMS. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

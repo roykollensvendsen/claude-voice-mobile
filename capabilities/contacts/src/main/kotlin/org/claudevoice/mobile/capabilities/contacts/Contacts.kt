@@ -30,6 +30,12 @@ class Contacts(private val permitted: () -> Boolean, private val rows: () -> Lis
     fun numbers(matches: (String) -> Boolean): List<Entry>? =
         if (permitted()) rows().filter { matches(it.name) } else null
 
+    /**
+     * Whether some contact has [number], in full international form, or null when not permitted.
+     * It answers yes or no only, never which contact (ADR-CVM-010, "Several recipients").
+     */
+    fun has(number: String): Boolean? = if (permitted()) rows().any { it.number == number } else null
+
     companion object {
         // The columns read, and where each is in a row.
         private val COLUMNS = arrayOf(Phone.DISPLAY_NAME, Phone.NUMBER, Phone.NORMALIZED_NUMBER, Phone.TYPE)

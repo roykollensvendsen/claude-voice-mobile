@@ -162,8 +162,15 @@ class Recipients(
 
     companion object {
         /** The recipients the phone uses: the phone's clock, and picks no one can guess. */
-        fun onThePhone(find: (matches: (String) -> Boolean) -> List<Contact>?): Recipients =
-            Recipients(Clock.systemDefaultZone(), { UUID.randomUUID().toString() }, find = find)
+        /**
+         * The recipients on the phone. [contact] and [texted] answer yes or no about one number,
+         * or null when the owner has not allowed that reading.
+         */
+        fun onThePhone(
+            contact: (String) -> Boolean? = { null },
+            texted: (String) -> Boolean? = { null },
+            find: (matches: (String) -> Boolean) -> List<Contact>?,
+        ): Recipients = Recipients(Clock.systemDefaultZone(), { UUID.randomUUID().toString() }, contact, texted, find)
 
         private fun refused(say: String, code: String) = Resolved.Answered(Reply.Refused(say, code))
 
