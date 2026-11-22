@@ -1,0 +1,64 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+____________ test_the_record_says_which_held_draft_a_new_list_joins ____________
+
+    def test_the_record_says_which_held_draft_a_new_list_joins() -> None:
+        text = record()
+        for guard in (
+            "the oldest of them takes the new list and text as its next version, with the same token",
+            "any other held draft stays as it is",
+        ):
+>           assert guard in text, guard
+E           AssertionError: the oldest of them takes the new list and text as its next version, with the same token
+E           assert 'the oldest of them takes the new list and text as its next version, with the same token' in '# ADR-CVM-010: Reading and sending text messages ## Status Proposed 2026-11-18 by the architect session. It writes do...https://github.com/roykollensvendsen/claude-voice/blob/main/docs/agent-protocol/next-version.md): the `messages` name.'
+
+tests/test_sms_build_answers.py:27: AssertionError
+____ test_the_record_says_where_the_read_back_marks_apply_and_how_far_back _____
+
+    def test_the_record_says_where_the_read_back_marks_apply_and_how_far_back() -> None:
+        text = record()
+        for guard in (
+            "The marks apply to a list of one too",
+            "every sent text Android still holds, with no time window",
+            "without that there is no mark and no claim",
+            "before a build that sends to several reaches the owner's phone",
+        ):
+>           assert guard in text, guard
+E           AssertionError: The marks apply to a list of one too
+E           assert 'The marks apply to a list of one too' in '# ADR-CVM-010: Reading and sending text messages ## Status Proposed 2026-11-18 by the architect session. It writes do...https://github.com/roykollensvendsen/claude-voice/blob/main/docs/agent-protocol/next-version.md): the `messages` name.'
+
+tests/test_sms_build_answers.py:38: AssertionError
+_______ test_the_record_defines_one_letter_off_and_counts_a_request_once _______
+
+    def test_the_record_defines_one_letter_off_and_counts_a_request_once() -> None:
+        text = record()
+        for guard in (
+            "an edit distance of 1 after folding",
+            "two neighbouring letters swapped",
+            "one request counts as one try, however many of the steps above it walks",
+            "except the choices, each a name and the last 2 digits, and the chosen draft's read-back",
+        ):
+>           assert guard in text, guard
+E           AssertionError: an edit distance of 1 after folding
+E           assert 'an edit distance of 1 after folding' in '# ADR-CVM-010: Reading and sending text messages ## Status Proposed 2026-11-18 by the architect session. It writes do...https://github.com/roykollensvendsen/claude-voice/blob/main/docs/agent-protocol/next-version.md): the `messages` name.'
+
+tests/test_sms_build_answers.py:49: AssertionError
+__________ test_the_record_says_a_bracket_glued_to_a_date_keeps_it_in __________
+
+    def test_the_record_says_a_bracket_glued_to_a_date_keeps_it_in() -> None:
+        text = record()
+        for guard in (
+            "The word on each side is the whole run of characters between spaces",
+            '"(21.11.2026)" stays refused',
+        ):
+>           assert guard in text, guard
+E           AssertionError: The word on each side is the whole run of characters between spaces
+E           assert 'The word on each side is the whole run of characters between spaces' in '# ADR-CVM-010: Reading and sending text messages ## Status Proposed 2026-11-18 by the architect session. It writes do...https://github.com/roykollensvendsen/claude-voice/blob/main/docs/agent-protocol/next-version.md): the `messages` name.'
+
+tests/test_sms_build_answers.py:58: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_sms_build_answers.py::test_the_record_says_which_held_draft_a_new_list_joins
+FAILED tests/test_sms_build_answers.py::test_the_record_says_where_the_read_back_marks_apply_and_how_far_back
+FAILED tests/test_sms_build_answers.py::test_the_record_defines_one_letter_off_and_counts_a_request_once
+FAILED tests/test_sms_build_answers.py::test_the_record_says_a_bracket_glued_to_a_date_keeps_it_in
+4 failed in 0.09s

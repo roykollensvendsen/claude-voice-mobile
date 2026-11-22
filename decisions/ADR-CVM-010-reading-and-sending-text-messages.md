@@ -212,7 +212,9 @@ row cannot carry a long number between them:
   sentence. So "22.33" in "22.33.44.55" is no time;
 - skipping spaces, the nearest word on each side holds a letter and no digit,
   or is the edge of the text. Another number or another shape next to it
-  keeps it in.
+  keeps it in. The word on each side is the whole run of characters between
+  spaces, so a bracket glued to the front of a shape is that word, and it
+  holds no letter: "(21.11.2026)" stays refused.
 
 A shape taken out leaves a break, as a letter does, so the digits on its two
 sides are never counted as one run. Everything left is then counted as
@@ -358,21 +360,24 @@ first. The rules above still hold, and a lookup tries these in order:
 - The owner's own numbers: "my work phone", "jobbnummeret mitt". The table
   maps these words to the number types on the owner's card. One number gives
   a draft with the full read-back. Several give `choices`.
-- When none of these matches, names one letter off, after case and accents
-  are folded, such as "Ana" and "Anna", are offered. A query needs at least
-  3 letters for this. They come only ever as `choices`, never as a draft,
-  even when there is one, at most 3, with "Did you mean …?". Without even
-  that, the answer is `not_found`.
+- When none of these matches, names one letter off, after case and accents are
+  folded, such as "Ana" and "Anna", are offered. One letter off is an edit
+  distance of 1 after folding: one letter added, removed or changed, or two
+  neighbouring letters swapped. Two off is never offered. A query needs at
+  least 3 letters for this. They come only ever as `choices`, never as a draft,
+  even when there is one, at most 3, with "Did you mean …?". Without even that,
+  the answer is `not_found`.
 
 People named on the owner's own card come first among the choices, ahead of
-other matches, in today's order within each group. This changes the order
-only. One match still gives a draft, and several still give choices to say
-out loud. The caps stay at 5 for matches and 3 for near names, so a relation
-is never cut off. Choices still show only the name and the last 2 digits.
-Every try counts against the 10 lookups an hour, a relation or near name
-included. Nothing read from the card is logged or leaves the phone, except
-the chosen draft's read-back. The tables, the one-letter rule and the order
-live in the rules module and are mutated.
+other matches, in today's order within each group. This changes the order only.
+One match still gives a draft, and several still give choices to say out loud.
+The caps stay at 5 for matches and 3 for near names, so a relation is never cut
+off. Choices still show only the name and the last 2 digits. Every try counts
+against the 10 lookups an hour, a relation or near name included, and one
+request counts as one try, however many of the steps above it walks. Nothing
+read from the card is logged or leaves the phone, except the choices, each a
+name and the last 2 digits, and the chosen draft's read-back. The tables, the
+one-letter rule and the order live in the rules module and are mutated.
 
 The owner's card is read with `READ_CONTACTS`, which the capability already
 holds. `READ_PROFILE` has not been enforced since Android 6, and the app
@@ -410,6 +415,11 @@ question. The same number twice counts once.
 - The read-back names every recipient with the whole number and gives the
   text once. It marks a raw number "not in your contacts" and a number
   "never texted before" when reading says so. So a stray number stands out.
+  The marks apply to a list of one too. "Never texted before" looks at every
+  sent text Android still holds, with no time window, and only when the owner
+  has let the app read texts; without that there is no mark and no claim. The
+  owner's yes covered the marks, so they are built before a build that sends
+  to several reaches the owner's phone.
 - One confirm, one undo delay and one cancel cover the group. After the delay
   the phone sends one text to each recipient, never a group MMS.
 - Each text counts against the limits. The whole group is checked at request
@@ -419,7 +429,12 @@ question. The same number twice counts once.
   name, a number or a `pick`, in the plugin's own schema. A list of one
   behaves as the string. Changing the list makes a new version with a new
   read-back, as changing the text does, so a yes always covers the list that
-  was read back. When two names need a choice, the answer asks about the first;
+  was read back. When a new list shares a recipient with several held drafts,
+  the oldest of them takes the new list and text as its next version, with the
+  same token. Every other held draft that shares a recipient with it is
+  stopped, so one recipient is in at most one held draft and two yeses can
+  never send one person two texts. The new read-back says how many held drafts
+  it replaced. When two names need a choice, the answer asks about the first;
   the next request, with its `pick`, asks about the second. No token is issued
   while a choice is open, so nothing can be confirmed until every name is
   settled.
@@ -490,8 +505,8 @@ and mailbox keep, for these tools, the outcome and a count of recipients or
 results, never names, numbers or text. No protocol version changes: `to` as
 a list or a `pick` is the plugin's own argument schema.
 
-**What waits still:** the mobile ranges, a draft lapsing after 15 minutes and
-one draft per recipient.
+**What waits still:** the mobile ranges and a draft lapsing after 15 minutes.
+One draft per recipient comes with several recipients, as above.
 
 ## Consequences
 
