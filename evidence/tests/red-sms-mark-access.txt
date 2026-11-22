@@ -1,0 +1,19 @@
+.....F                                                                   [100%]
+=================================== FAILURES ===================================
+__ test_the_record_says_the_hub_learns_of_a_missing_mark_from_the_tool_words ___
+
+    def test_the_record_says_the_hub_learns_of_a_missing_mark_from_the_tool_words() -> None:
+        text = record()
+        for guard in (
+            "The hub learns that the mark needs the app to read texts from the words of `sms_send_request`",
+            "not from `access`",
+            "`access` for `messages` in `sms_send` stays `SEND_SMS` alone",
+        ):
+>           assert guard in text, guard
+E           AssertionError: The hub learns that the mark needs the app to read texts from the words of `sms_send_request`
+E           assert 'The hub learns that the mark needs the app to read texts from the words of `sms_send_request`' in '# ADR-CVM-010: Reading and sending text messages ## Status Proposed 2026-11-18 by the architect session. It writes do...https://github.com/roykollensvendsen/claude-voice/blob/main/docs/agent-protocol/next-version.md): the `messages` name.'
+
+tests/test_sms_build_answers.py:90: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_sms_build_answers.py::test_the_record_says_the_hub_learns_of_a_missing_mark_from_the_tool_words
+1 failed, 5 passed in 0.08s

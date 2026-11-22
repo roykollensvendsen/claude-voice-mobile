@@ -78,3 +78,13 @@ def test_the_record_says_how_the_marks_are_read_and_said() -> None:
         'never gets "not in your contacts", but can get "never texted before"',
     ):
         assert guard in text, guard
+
+
+def test_the_record_says_the_hub_learns_of_a_missing_mark_from_the_tool_words() -> None:
+    text = record()
+    for guard in (
+        "The hub learns that the mark needs the app to read texts from the words of `sms_send_request`",
+        "not from `access`",
+        "`access` for `messages` in `sms_send` stays `SEND_SMS` alone",
+    ):
+        assert guard in text, guard
