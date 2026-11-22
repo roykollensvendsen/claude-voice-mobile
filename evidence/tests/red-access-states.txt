@@ -48,3 +48,10 @@ tests/test_access_asks.py:60: AssertionError
 =========================== short test summary info ============================
 FAILED tests/test_access_asks.py::test_every_ask_in_the_app_and_its_plugins_writes_the_record_first
 1 failed, 3 passed in 0.24s
+
+B1, from the mobile architect's review, before the fix:
+AccessTest > a use with no key in needs is left out of access, so the hub reads it as unknown and never as granted() FAILED
+    org.opentest4j.AssertionFailedError at AccessTest.kt:119
+AccessTest > a plugin that reports a use with no key in needs is refused at start() FAILED
+    org.opentest4j.AssertionFailedError at AccessTest.kt:132
+296 tests completed, 2 failed

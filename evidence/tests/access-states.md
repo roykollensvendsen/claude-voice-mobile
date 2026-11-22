@@ -16,7 +16,7 @@ What the tests pin:
   - if one permission is not granted and the app asked for it before, the use is "refused", even when another permission was never asked for;
   - otherwise it is "never_asked";
   - a use with no Android permission behind it is "granted".
-- **The entry.** Each plugin entry in `agent_info` ends with `access`. It has exactly one key for each name in `uses`, in the same order. It is read again on every answer. A refusal changes `access` and never `uses`. A plugin that names permissions for a use the protocol does not know is refused when the app starts.
+- **The entry.** Each plugin entry in `agent_info` ends with `access`. It has exactly one key for each name in `uses`, in the same order. It is read again on every answer. A refusal changes `access` and never `uses`. A use with no key in the plugin's `needs` is left out, so the hub reads it as unknown and never as granted. An explicit empty list means that the use needs nothing Android grants. A plugin is refused when the app starts if it names permissions for a use the protocol does not know, or if it reports a use that has no key in `needs`.
 - **The ask record** (`AskRecordTest`):
   - an install from before the record has asked for nothing;
   - an ask is written down once, by name only, in no-backup storage;
@@ -25,7 +25,7 @@ What the tests pin:
 - **Which permissions each plugin names:**
   - `sms`: `messages` rests on `RECEIVE_SMS` and `READ_SMS`;
   - `sms_send`: `messages` rests on `SEND_SMS`, and `contacts` on `READ_CONTACTS`.
-- **Nothing that reads can ask** (`tests/test_access_asks.py`). No file in `capabilities/permissions` names `requestPermissions` or a settings action. Every `requestPermissions` call in the app and its plugins writes the record in the lines just before it. Each check also has a test proving it catches the fault.
+- **Nothing that reads can ask** (`tests/test_access_asks.py`). No file in `capabilities/permissions` names `requestPermissions`, the `RequestPermission` or `RequestMultiplePermissions` contract, or a settings action. Every `requestPermissions` call in the app and its plugins writes the record in the lines just before it. Each check also has a test proving it catches the fault.
 
 Special access, such as the data count behind `usage`, is not built yet, since no plugin uses it so far. The first plugin that does will add how its state is read.
 

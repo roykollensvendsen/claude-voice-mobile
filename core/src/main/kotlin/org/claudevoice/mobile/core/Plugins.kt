@@ -69,7 +69,9 @@ class Plugins(private val plugins: List<Plugin>) {
     private fun checkReach(plugin: Plugin) {
         val uses = plugin.uses
         require(usesKnown(uses)) { "${plugin.name} uses $uses" }
-        require(USES.containsAll(plugin.needs.keys)) { "${plugin.name} names permissions for ${plugin.needs.keys}" }
+        val needs = plugin.needs.keys
+        require(USES.containsAll(needs)) { "${plugin.name} names permissions for $needs" }
+        require(needs.containsAll(uses)) { "${plugin.name} uses $uses, not all named in needs" }
         val own = plugin.tools.map { it.name }
         val confirms = plugin.confirms
         require(own.containsAll(confirms) && confirms.toSet().size == confirms.size) {
@@ -125,10 +127,15 @@ private fun inputNames(schema: JsonElement): List<String> =
         else -> emptyList()
     }
 
-/** Whether Android allows each of [uses] now, by the permissions [plugin] names behind it (ADR-CVM-011). */
+/**
+ * Whether Android allows each of [uses] now, by the permissions [plugin] names behind it
+ * (ADR-CVM-011). A use with no key in its needs is left out, so the hub reads it as unknown and
+ * never as granted.
+ */
 private fun access(plugin: Plugin, uses: List<String>, permissions: Permissions): JsonObject {
     val needs = plugin.needs
-    return JsonObject(uses.associateWith { JsonPrimitive(Access.of(needs[it].orEmpty(), permissions)) })
+    val known = uses.mapNotNull { use -> needs[use]?.let { use to JsonPrimitive(Access.of(it, permissions)) } }
+    return JsonObject(known.toMap())
 }
 
 private fun strings(names: List<String>) = JsonArray(names.map { JsonPrimitive(it) })

@@ -531,7 +531,7 @@ class McpHandlerTest {
 
             // Known at the first read, unknown at any later one.
             override val uses get() = if (reads.incrementAndGet() == 1) listOf("calls") else listOf("micropone")
-            override val needs = mapOf<String, List<String>>()
+            override val needs = mapOf("calls" to listOf<String>())
             override val confirms = listOf<String>()
             override val tools = listOf(Tool("phone_call", "", battery.input))
 

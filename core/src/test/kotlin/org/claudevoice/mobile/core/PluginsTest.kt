@@ -19,7 +19,7 @@ class PluginsTest {
         object : Plugin {
             override val name = name
             override val uses = uses
-            override val needs = mapOf<String, List<String>>()
+            override val needs = uses.associateWith { listOf<String>() }
             override val confirms = confirms
             override val tools = tools.map { Tool(it, "", JsonObject(mapOf())) }
 

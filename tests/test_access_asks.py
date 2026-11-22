@@ -12,7 +12,9 @@ import re
 
 ROOT = pathlib.Path(__file__).parent.parent
 CAPABILITY = ROOT / "capabilities/permissions/src/main"
-ASKING = re.compile(r"requestPermissions\s*\(|ACTION_[A-Z_]*SETTINGS|Settings\.ACTION_")
+ASKING = re.compile(
+    r"requestPermissions\s*\(|RequestPermission|RequestMultiplePermissions|ACTION_[A-Z_]*SETTINGS|Settings\.ACTION_"
+)
 RECORD = re.compile(r"\.record\s*\(")
 
 # How many lines before an ask the record must be written: the same short block.
@@ -52,7 +54,9 @@ def test_the_capability_that_reads_states_never_asks() -> None:
 def test_the_reader_check_finds_an_ask_and_a_settings_page(tmp_path: pathlib.Path) -> None:
     (tmp_path / "A.kt").write_text("activity.requestPermissions(arrayOf(p), 1)\n", encoding="utf-8")
     (tmp_path / "B.kt").write_text("Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)\n", encoding="utf-8")
-    assert _reader_problems(tmp_path) == ["A.kt:1", "B.kt:1"]
+    (tmp_path / "C.kt").write_text("register(Contracts.RequestPermission())\n", encoding="utf-8")
+    (tmp_path / "D.kt").write_text("register(RequestMultiplePermissions())\n", encoding="utf-8")
+    assert _reader_problems(tmp_path) == ["A.kt:1", "B.kt:1", "C.kt:1", "D.kt:1"]
 
 
 def test_every_ask_in_the_app_and_its_plugins_writes_the_record_first() -> None:
