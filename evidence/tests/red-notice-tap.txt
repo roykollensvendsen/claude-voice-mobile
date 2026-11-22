@@ -1,0 +1,14 @@
+NoticeTapTest > a second refusal in a row opens the settings, even when the request showed() FAILED
+    kotlin.NotImplementedError at NoticeTapTest.kt:25
+NoticeTapTest > a first request closed after it showed asks again on the next tap, not the settings() FAILED
+    kotlin.NotImplementedError at NoticeTapTest.kt:20
+NoticeTapTest > refusals in a row count up on asking again and start over once the settings open() FAILED
+    kotlin.NotImplementedError at NoticeTapTest.kt:32
+NoticeTapTest > a granted request ends the line, whatever came before() FAILED
+    kotlin.NotImplementedError at NoticeTapTest.kt:9
+NoticeTapTest > a refusal with no pause means Android did not ask, so the settings open() FAILED
+    kotlin.NotImplementedError at NoticeTapTest.kt:15
+NoticeTapTest > the line shows only while the listener runs with its notice hidden() FAILED
+    kotlin.NotImplementedError at NoticeTapTest.kt:39
+6 tests completed, 6 failed
+BUILD FAILED in 3m 38s
