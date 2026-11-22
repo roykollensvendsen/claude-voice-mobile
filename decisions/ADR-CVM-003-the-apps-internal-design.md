@@ -117,15 +117,25 @@ receiver for `BOOT_COMPLETED` and for `MY_PACKAGE_REPLACED`, declared in the
 manifest with `RECEIVE_BOOT_COMPLETED`. It is not exported, so no other app can
 send to it, and it acts on those two actions only. On either, it starts the
 service with the special-use type only, and only if the phone is paired with a
-hub. Any
-other type is added later, by a plugin, from the app in the foreground. So the
-Android 15 limit above does not stop it. The receiver waits for
-`BOOT_COMPLETED`, after the first unlock, and not for the locked boot, because
-the hub's key is in storage that opens only then. It does nothing else, and
-starts nothing when the app is not paired. After a force stop the app stays
-off until the owner opens it, which is Android's rule and the owner's choice.
+hub. Any other type is added later, by a plugin, from the app in the
+foreground. So the Android 15 limit above does not stop it. The receiver waits
+for `BOOT_COMPLETED`, after the first unlock, and not for the locked boot,
+because the hub's key is in storage that opens only then. It does nothing
+else, and starts nothing when the app is not paired. After a force stop the app
+stays off until the owner opens it, which is Android's rule and the owner's
+choice.
 Whether the listener truly answers the hub after a restart and after an
 update is measured on the phone, as with Doze, before this is relied on.
+
+**The listener comes back after Android kills the app.** The service returns
+`START_STICKY`. Android kills the app whenever the owner takes a permission
+away, and may kill it when memory runs short. Without this, the hub hears
+nothing until the owner next opens the app. With it, Android creates the
+service again, with no intent. The service then does what it does at any start.
+It goes to the foreground with the special-use type only, and stops at once
+when the phone is not paired. A force stop is not undone this way, which stays
+Android's rule. On the owner's phone the recreated service went back to the
+foreground at once (#152).
 
 **When the owner refuses notifications.** The listener runs anyway, with its
 notification hidden. The app's main screen then shows one line: "The listener
@@ -137,9 +147,15 @@ settings (`ACTION_APP_NOTIFICATION_SETTINGS`) instead.
 The app does not choose from `shouldShowRequestPermissionRationale` alone. That
 flag is false both when Android will no longer ask and when the owner closed
 the first request without answering. In the second case asking still works,
-and opening the settings would be the wrong page. A refusal that comes back
-before any request could have been shown, under half a second, counts as
-Android not asking.
+and opening the settings would be the wrong page.
+
+So the app watches whether a request was shown. When Android shows it, the
+app's screen pauses, or loses the top place when two apps share the screen. A
+refusal that comes back with neither counts as Android not asking. No time is
+guessed, so a slow phone cannot make the tap ask in vain. As a backstop, a
+second refusal in a row from the line opens the settings too. So the line never
+becomes a button that does nothing. The choice is a rule in the pure rules
+code, which the app only feeds with what it saw.
 
 The line goes once the permission is granted. The app never asks on its own
 more than once at first start.
@@ -246,9 +262,10 @@ plugins.
     locked-boot action. The system still delivers its own broadcasts to a
     receiver that is not exported, and no other app can reach it;
   - with notifications refused, the line is shown, and a tap asks for the
-    permission. A refusal at once opens the notification settings. A first
-    request closed without an answer asks again on the next tap, not the
-    settings. The line goes once the permission is granted;
+    permission. A refusal with no pause opens the notification settings, and
+    a second refusal in a row opens them too. A first request closed without
+    an answer asks again on the next tap, not the settings. The line goes
+    once the permission is granted;
   - measured on the phone and written down in `evidence/`: the hub reaches the
     listener after a restart and after an update, with the screen off.
 - **Worse:** Gradle modules and a foreground service are more structure than a
