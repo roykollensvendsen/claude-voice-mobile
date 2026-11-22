@@ -1,0 +1,158 @@
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+__________________________ test_the_record_is_listed ___________________________
+
+    def test_the_record_is_listed() -> None:
+>       assert "ADR-CVM-011-saying-what-the-phone-allows-now.md" in INDEX.read_text()
+E       AssertionError: assert 'ADR-CVM-011-saying-what-the-phone-allows-now.md' in '# Decision records\n\nA decision that costs more to reverse than to take is written down here before\nthe code that r... make each worth doing, is\n[`deferred.md`](deferred.md). A thing left undone with no trigger is a thing\nforgotten.\n'
+E        +  where '# Decision records\n\nA decision that costs more to reverse than to take is written down here before\nthe code that r... make each worth doing, is\n[`deferred.md`](deferred.md). A thing left undone with no trigger is a thing\nforgotten.\n' = read_text()
+E        +    where read_text = PosixPath('decisions/README.md').read_text
+
+tests/test_access_record.py:23: AssertionError
+___________ test_reporting_never_asks_and_carries_plain_states_only ____________
+
+    def test_reporting_never_asks_and_carries_plain_states_only() -> None:
+>       text = record()
+               ^^^^^^^^
+
+tests/test_access_record.py:27: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_access_record.py:19: in record
+    return " ".join(ADR.read_text().split())
+                    ^^^^^^^^^^^^^^^
+../.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('decisions/ADR-CVM-011-saying-what-the-phone-allows-now.md')
+mode = 'r', buffering = -1, encoding = 'locale', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'decisions/ADR-CVM-011-saying-what-the-phone-allows-now.md'
+
+../.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError
+___________ test_a_use_is_granted_only_when_all_its_permissions_are ____________
+
+    def test_a_use_is_granted_only_when_all_its_permissions_are() -> None:
+>       text = record()
+               ^^^^^^^^
+
+tests/test_access_record.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_access_record.py:19: in record
+    return " ".join(ADR.read_text().split())
+                    ^^^^^^^^^^^^^^^
+../.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('decisions/ADR-CVM-011-saying-what-the-phone-allows-now.md')
+mode = 'r', buffering = -1, encoding = 'locale', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'decisions/ADR-CVM-011-saying-what-the-phone-allows-now.md'
+
+../.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError
+_______________ test_access_never_widens_uses_and_is_read_fresh ________________
+
+    def test_access_never_widens_uses_and_is_read_fresh() -> None:
+>       text = record()
+               ^^^^^^^^
+
+tests/test_access_record.py:45: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_access_record.py:19: in record
+    return " ".join(ADR.read_text().split())
+                    ^^^^^^^^^^^^^^^
+../.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('decisions/ADR-CVM-011-saying-what-the-phone-allows-now.md')
+mode = 'r', buffering = -1, encoding = 'locale', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'decisions/ADR-CVM-011-saying-what-the-phone-allows-now.md'
+
+../.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError
+_____________________ test_the_record_says_what_gets_worse _____________________
+
+    def test_the_record_says_what_gets_worse() -> None:
+>       text = record()
+               ^^^^^^^^
+
+tests/test_access_record.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_access_record.py:19: in record
+    return " ".join(ADR.read_text().split())
+                    ^^^^^^^^^^^^^^^
+../.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/pathlib/_local.py:546: in read_text
+    return PathBase.read_text(self, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/pathlib/_abc.py:632: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('decisions/ADR-CVM-011-saying-what-the-phone-allows-now.md')
+mode = 'r', buffering = -1, encoding = 'locale', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: 'decisions/ADR-CVM-011-saying-what-the-phone-allows-now.md'
+
+../.local/share/uv/python/cpython-3.13.12-linux-x86_64-gnu/lib/python3.13/pathlib/_local.py:537: FileNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_access_record.py::test_the_record_is_listed - AssertionErro...
+FAILED tests/test_access_record.py::test_reporting_never_asks_and_carries_plain_states_only
+FAILED tests/test_access_record.py::test_a_use_is_granted_only_when_all_its_permissions_are
+FAILED tests/test_access_record.py::test_access_never_widens_uses_and_is_read_fresh
+FAILED tests/test_access_record.py::test_the_record_says_what_gets_worse - Fi...
+5 failed in 0.15s
