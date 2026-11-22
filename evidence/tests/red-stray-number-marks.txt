@@ -1,0 +1,26 @@
+Red run for #188: the read-back marks a stray number (ADR-CVM-010, "Several
+recipients", as #189 and #191 settled it). StrayNumberTest, run against the
+code before the change, with the contacts check and the sent-before reading
+taken into Recipients but not yet used:
+
+StrayNumberTest > both marks for one number are one check, and one of the lookups an hour() FAILED
+    expected: <Not drafted: too many name lookups; say the number instead.> but was: <Draft to Per Hansen, +4700000090: 'Hei'>
+StrayNumberTest > a number texted before but in no contact gets only that mark() FAILED
+    expected: <Draft to +4700000001 (not in your contacts): 'Hei'> but was: <Draft to +4700000001: 'Hei'>
+StrayNumberTest > a number in the contacts that was never texted gets only that mark() FAILED
+    expected: <Draft to +4700000001 (never texted before): 'Hei'> but was: <Draft to +4700000001: 'Hei'>
+StrayNumberTest > a number checked when only the sent box may be read still counts as a lookup() FAILED
+    expected: <Draft to +4700000001 (not checked): 'Hei'> but was: <Draft to +4700000001: 'Hei'>
+StrayNumberTest > a contact found by name is never marked as not in the contacts, and its mark costs no lookup() FAILED
+    expected: <Draft to Per Hansen, +4700000090 (never texted before): 'Hei'> but was: <Draft to Per Hansen, +4700000090: 'Hei'>
+StrayNumberTest > each recipient in a list gets its own marks, in read-back order() FAILED
+    expected: <Draft to +4700000002; +4700000001 (not in your contacts, never texted before): 'Hei'> but was: <Draft to +4700000002; +4700000001: 'Hei'>
+StrayNumberTest > a number no contact has and no text went to gets both marks() FAILED
+    expected: <Draft to +4700000001 (not in your contacts, never texted before): 'Hei'> but was: <Draft to +4700000001: 'Hei'>
+StrayNumberTest > past the lookups an hour a number is read back as not checked, with neither mark() FAILED
+    expected: <Draft to +4700000001 (not checked): 'Hei'> but was: <Draft to +4700000001: 'Hei'>
+12 tests completed, 8 failed
+
+The four that passed guard what must not change: no readings, no mark; a
+number in the contacts and texted before, no mark; a refused text costs no
+check; an outbox built as before marks nothing.

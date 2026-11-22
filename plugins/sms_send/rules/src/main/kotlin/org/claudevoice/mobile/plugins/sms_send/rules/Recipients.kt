@@ -21,6 +21,8 @@ import kotlinx.serialization.json.JsonPrimitive
 class Recipients(
     private val clock: Clock,
     private val tokens: () -> String,
+    private val contact: (String) -> Boolean? = { null },
+    private val texted: (String) -> Boolean? = { null },
     private val find: (matches: (String) -> Boolean) -> List<Contact>?,
 ) {
     /** What `to` comes to: a number, with the contact's name when it came from one, or an answer. */
@@ -102,6 +104,25 @@ class Recipients(
         }
     }
 
+    /**
+     * The marks the read-back gives [one], so a stray number stands out (ADR-CVM-010, "Several
+     * recipients"). A number given as a number is one check of the contacts and the sent box
+     * together, and that check is one of the lookups an hour; past them it is "not checked", and
+     * neither is read. A contact found by name has used its lookup already, so only the sent box
+     * is read for it. A reading the owner has not allowed gives no mark and no claim.
+     */
+    @Synchronized
+    fun marks(one: Resolved.To): List<String> = when {
+        one.name != null -> listOfNotNull(NEVER_TEXTED.takeIf { texted(one.number) == false })
+        recent() >= LOOKUPS -> listOf(NOT_CHECKED)
+        else -> {
+            val known = contact(one.number)
+            val sent = texted(one.number)
+            if (known != null || sent != null) lookups += clock.instant()
+            listOfNotNull(NOT_IN_CONTACTS.takeIf { known == false }, NEVER_TEXTED.takeIf { sent == false })
+        }
+    }
+
     /** Closes the open choices, as any request does, even one refused before `to` is read. */
     @Synchronized
     fun close() {
@@ -139,12 +160,12 @@ class Recipients(
         )
     }
 
-    private fun refused(say: String, code: String) = Resolved.Answered(Reply.Refused(say, code))
-
     companion object {
         /** The recipients the phone uses: the phone's clock, and picks no one can guess. */
         fun onThePhone(find: (matches: (String) -> Boolean) -> List<Contact>?): Recipients =
-            Recipients(Clock.systemDefaultZone(), { UUID.randomUUID().toString() }, find)
+            Recipients(Clock.systemDefaultZone(), { UUID.randomUUID().toString() }, find = find)
+
+        private fun refused(say: String, code: String) = Resolved.Answered(Reply.Refused(say, code))
 
         /** Whether [to] is a name that will be looked up, rather than a pick, a number or too short. */
         private fun looksUp(to: String) =
@@ -164,6 +185,9 @@ class Recipients(
                 "or say the number instead."
 
         private const val PICK = "pick-"
+        private const val NOT_IN_CONTACTS = "not in your contacts"
+        private const val NEVER_TEXTED = "never texted before"
+        private const val NOT_CHECKED = "not checked"
         private val HOUR: Duration = Duration.ofHours(1)
         private val LETTER = Regex("""\p{L}""")
         private const val STALE = "That choice is from another request; say the name again."
