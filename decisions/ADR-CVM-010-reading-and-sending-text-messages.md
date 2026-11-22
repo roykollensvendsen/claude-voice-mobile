@@ -185,6 +185,29 @@ builds the part of it below, and the rest waits for a later version.
   `READ_SMS`, so the first version declares `SEND_SMS` alone. Any E.164 number
   may be drafted. Android's own warning for premium numbers stays on.
 
+**Dates and times in a text.** The digit rule refused ordinary dates and
+times, such as a date with its year. So each date and time of these exact
+shapes, and only these, is taken out before the run is counted:
+
+- a date as day.month.year or day/month/year, with a year of 2 or 4 digits,
+  or as year-month-day with a 4-digit year, with a day from 1 to 31, a month
+  from 1 to 12 and a 4-digit year from 1900 to 2099;
+- a date as day.month, with no year;
+- a time as hours and minutes, with a dot or a colon between them, with
+  hours from 0 to 23 and minutes from 0 to 59;
+- two times joined by a dash, a range such as a meeting's start and end.
+
+A shape is taken out only when it stands alone: it is not a date or a time
+when, just outside it, it touches another digit, dot, slash or dash. So
+"22.33" in "22.33.44.55" is no time. Day and month may have
+one or two digits. A dash never joins the parts of a date except in
+year-month-day, since numbers are often written in pairs with dashes. What is
+left is then counted as before. So "21.11.2026", "2026-11-21", "14.30-16.00"
+and "kl. 9:05" pass. "22.33.44.55", "22-33-44-55", "1234.56.78901" and
+"21.11.2026.55" stay refused. The shapes live in the rules module, are
+mutated, and each example above is a test. This loosens a limit the owner
+set, and the pull request says so for the owner's yes.
+
 **`sms_send_request(to, text)`** sends nothing. It stores a draft on the phone
 and answers with a `token`, a `version` and a `say` line. The line reads back
 the recipient, the text, and how many messages the text becomes. The phone
