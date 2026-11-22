@@ -19,6 +19,7 @@ class PluginsTest {
         object : Plugin {
             override val name = name
             override val uses = uses
+            override val needs = mapOf<String, List<String>>()
             override val confirms = confirms
             override val tools = tools.map { Tool(it, "", JsonObject(mapOf())) }
 
@@ -76,6 +77,7 @@ class PluginsTest {
                 object : Plugin {
                     override val name = "status"
                     override val uses = listOf<String>()
+                    override val needs = mapOf<String, List<String>>()
                     override val confirms = listOf<String>()
                     override val tools = listOf(Tool("status_set", "", input))
 
@@ -100,6 +102,7 @@ class PluginsTest {
                 object : Plugin {
                     override val name = "status"
                     override val uses = listOf<String>()
+                    override val needs = mapOf<String, List<String>>()
                     override val confirms = listOf<String>()
                     override val tools = listOf(Tool("status_set", "", input))
 
@@ -146,6 +149,7 @@ class PluginsTest {
         val phone = object : Plugin {
             override val name = "phone"
             override val uses get() = reach.toList()
+            override val needs = mapOf<String, List<String>>()
             override val confirms = listOf<String>()
             override val tools = listOf(Tool("phone_call", "", JsonObject(mapOf())))
 
@@ -178,6 +182,7 @@ class PluginsTest {
         val phone = object : Plugin {
             override val name = "phone"
             override val uses get() = reach.toList()
+            override val needs = mapOf<String, List<String>>()
             override val confirms = listOf<String>()
             override val tools = listOf(Tool("phone_call", "", JsonObject(mapOf())))
 

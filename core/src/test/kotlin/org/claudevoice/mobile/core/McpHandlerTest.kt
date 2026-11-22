@@ -65,6 +65,7 @@ class McpHandlerTest {
     private val status = object : Plugin {
         override val name = "status"
         override val uses = listOf<String>()
+        override val needs = mapOf<String, List<String>>()
         override val confirms = listOf<String>()
         override val tools = listOf("hang", "break", "later", "later_break", "slow", "block", "locked").map { Tool("status_$it", "", battery.input) }
             .let { listOf(battery, ring) + it }
@@ -505,6 +506,7 @@ class McpHandlerTest {
         val phone = object : Plugin {
             override val name = "phone"
             override val uses get() = reach.toList()
+            override val needs = mapOf<String, List<String>>()
             override val confirms = listOf<String>()
             override val tools = listOf(Tool("phone_call", "", battery.input))
 
@@ -529,6 +531,7 @@ class McpHandlerTest {
 
             // Known at the first read, unknown at any later one.
             override val uses get() = if (reads.incrementAndGet() == 1) listOf("calls") else listOf("micropone")
+            override val needs = mapOf<String, List<String>>()
             override val confirms = listOf<String>()
             override val tools = listOf(Tool("phone_call", "", battery.input))
 

@@ -26,9 +26,9 @@ interface Plugin {
      * The Android permissions behind each name in [uses], such as `android.permission.READ_SMS`
      * for `messages` (ADR-CVM-011). The core reads their state for the `access` it reports, and
      * never asks for one. A use left out, or with no permission, needs nothing Android grants.
+     * Every plugin states it, an empty map included, so none forgets it by default.
      */
     val needs: Map<String, List<String>>
-        get() = emptyMap()
 
     /** Which of [tools] confirm a spoken yes, by their full names; each is also in [tools]. */
     val confirms: List<String>

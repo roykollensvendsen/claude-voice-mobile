@@ -56,9 +56,10 @@ def test_the_reader_check_finds_an_ask_and_a_settings_page(tmp_path: pathlib.Pat
 
 
 def test_every_ask_in_the_app_and_its_plugins_writes_the_record_first() -> None:
-    found = {p.relative_to(ROOT).as_posix(): _unrecorded_asks(p.read_text(encoding="utf-8")) for p in _sources()}
-    assert {path: lines for path, lines in found.items() if lines} == {}
-    assert any("requestPermissions" in p.read_text(encoding="utf-8") for p in _sources()), "the check saw no ask"
+    texts = {p.relative_to(ROOT).as_posix(): p.read_text(encoding="utf-8") for p in _sources()}
+    unrecorded = {path: _unrecorded_asks(text) for path, text in texts.items() if _unrecorded_asks(text)}
+    assert unrecorded == {}
+    assert any("requestPermissions" in text for text in texts.values()), "the check saw no ask"
 
 
 def test_the_ask_check_refuses_an_ask_with_no_record_before_it() -> None:

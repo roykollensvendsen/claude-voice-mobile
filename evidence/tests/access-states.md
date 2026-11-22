@@ -28,3 +28,17 @@ What the tests pin:
 - **Nothing that reads can ask** (`tests/test_access_asks.py`). No file in `capabilities/permissions` names `requestPermissions` or a settings action. Every `requestPermissions` call in the app and its plugins writes the record in the lines just before it. Each check also has a test proving it catches the fault.
 
 Special access, such as the data count behind `usage`, is not built yet, since no plugin uses it so far. The first plugin that does will add how its state is read.
+
+## On an emulator
+
+Android 15 emulator, a build with `status`, `sms` and `sms_send`, and no contacts. A local helper, never committed, logged the plugin entries as `agent_info` builds them, with the app's own reader. Permissions were changed with `pm grant` and `pm revoke`, as the settings page changes them.
+
+| State | `sms` messages | `sms_send` messages | `sms_send` contacts |
+|---|---|---|---|
+| Fresh install, text permissions on, contacts off | granted | granted | never_asked |
+| Contacts turned on, app not restarted | granted | granted | granted |
+| Contacts turned off again | granted | granted | never_asked |
+| The same, with a recorded ask for contacts | granted | granted | refused |
+| `READ_SMS` off, `RECEIVE_SMS` on | never_asked | granted | refused |
+
+`uses` stayed `["messages"]` and `["messages","contacts"]` throughout. After `pm clear`, the record did not exist. The first start of the app asked for notifications, and the record then held `android.permission.POST_NOTIFICATIONS` and nothing else.
