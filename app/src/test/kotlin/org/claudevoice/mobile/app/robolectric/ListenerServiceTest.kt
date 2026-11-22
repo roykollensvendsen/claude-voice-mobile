@@ -1,5 +1,8 @@
-package org.claudevoice.mobile.app
+package org.claudevoice.mobile.app.robolectric
 
+import org.claudevoice.mobile.app.App
+import org.claudevoice.mobile.app.ListenerService
+import org.claudevoice.mobile.app.R
 import android.net.ConnectivityManager
 import org.claudevoice.mobile.core.ListenStatus
 import org.junit.Assert.assertEquals

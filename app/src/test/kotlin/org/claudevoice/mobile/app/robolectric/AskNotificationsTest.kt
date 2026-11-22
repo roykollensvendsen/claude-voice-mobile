@@ -1,5 +1,7 @@
-package org.claudevoice.mobile.app
+package org.claudevoice.mobile.app.robolectric
 
+import org.claudevoice.mobile.app.App
+import org.claudevoice.mobile.app.AskNotifications
 import android.Manifest
 import android.app.Activity
 import android.provider.Settings

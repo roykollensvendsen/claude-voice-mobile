@@ -1,5 +1,6 @@
-package org.claudevoice.mobile.app
+package org.claudevoice.mobile.app.robolectric
 
+import org.claudevoice.mobile.app.PairingPanel
 import android.app.Activity
 import android.view.View
 import android.view.WindowManager

@@ -1,0 +1,10 @@
+tests/test_robolectric_apart.py, written before levels.timed_tests, the leave-out flag in
+app/build.gradle.kts, and the move of the Robolectric tests into their own package:
+
+FAILED tests/test_robolectric_apart.py::test_the_timed_run_leaves_the_robolectric_tests_out
+FAILED tests/test_robolectric_apart.py::test_every_robolectric_test_is_in_the_package_the_timed_run_leaves_out
+FAILED tests/test_robolectric_apart.py::test_the_app_build_leaves_that_package_out_when_asked_and_limits_the_task
+3 failed
+
+After: all pass. With -PcvLeaveOutRobolectric the app's test task ran no Robolectric test
+(no result file from that package); without it, all three classes ran.
