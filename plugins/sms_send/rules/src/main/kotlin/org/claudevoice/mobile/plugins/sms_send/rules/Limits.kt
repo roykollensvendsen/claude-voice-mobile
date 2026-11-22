@@ -44,10 +44,11 @@ object Limits {
 
     // A scheme (https://) or "www.", in any case; a dotted word whose last part is 2 to 63
     // letters in any case, as "example.com", "Vg.No", "pay.click" or "name@host.any"; or a
-    // dotted word a "/" follows, as "10.0.0.1/x".
+    // dotted word a "/" follows, as "10.0.0.1/x". A name may hold symbols and marks, as a
+    // heart in "i❤.ws", since the receiving phone makes a link of those too.
     private val LINK = Regex(
-        """(?i:[a-z][a-z0-9+.-]*://|www\.)|[\p{L}\p{N}-]\.\p{L}{2,63}(?![\p{L}\p{N}])|""" +
-            """[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+/""",
+        """(?i:[a-z][a-z0-9+.-]*://|www\.)|[\p{L}\p{N}\p{S}\p{M}-]\.\p{L}{2,63}(?![\p{L}\p{N}])|""" +
+            """[\p{L}\p{N}\p{S}\p{M}-]+(?:\.[\p{L}\p{N}\p{S}\p{M}-]+)+/""",
     )
 
     // An address written as four numbers, as "10.0.0.1"; three, as a date or a version, is none.
