@@ -45,7 +45,7 @@ def test_the_record_keeps_numbers_written_with_dots_or_dashes_refused() -> None:
         "the shapes match the ASCII digits 0 to 9 only",
         "slashes, colons, commas, brackets, underscores, apostrophes and middle dots",
         '"1.12.2026"',
-        '"14.30–16.00"',
+        '"14.30\u201316.00"',  # the en dash a time range may use
         "A dash never joins the parts of a date except in year-month-day",
     ):
         assert guard in text, guard
