@@ -9,3 +9,25 @@ ListenerServiceTest > when_it_ends_it_stops_watching_and_tells_the_agent_there_i
 PairingPanelTest > a_code_shows_with_the_address_and_keeps_the_window_out_of_screenshots FAILED
 PairingPanelTest > a_code_still_working_stays FAILED
 15 tests completed, 4 failed
+
+A second run, for the tests the first did not prove, with ten more lines broken at once and then restored:
+- ListenerService: startForeground with the notice; stopSelf() with no agent
+- PairingPanel: the button's visibility follows the address; a code hides only once it stops working;
+  a tap with no address shows nothing; clearFlags when the code goes
+- AskNotifications: REQUEST = 1; the SDK_INT check; the asked-file and granted() checks; EXTRA_APP_PACKAGE
+
+AskNotificationsTest > with_notifications_allowed_it_does_not_ask FAILED
+AskNotificationsTest > before_android_13_there_is_nothing_to_ask FAILED
+AskNotificationsTest > the_settings_open_on_the_apps_own_notification_page FAILED
+AskNotificationsTest > at_first_start_it_asks_once_and_writes_the_ask_down_first FAILED
+AskNotificationsTest > it_never_asks_on_its_own_a_second_time FAILED
+ListenerServiceTest > once_named_it_runs_in_the_foreground_and_follows_the_network FAILED
+ListenerServiceTest > with_no_confirmed_name_there_is_no_agent_and_it_stops_itself FAILED
+PairingPanelTest > when_the_agent_goes_the_code_goes_too FAILED
+PairingPanelTest > a_code_that_ran_out_clears_the_text_and_the_flag FAILED
+PairingPanelTest > with_no_agent_or_no_address_a_tap_shows_nothing FAILED
+PairingPanelTest > a_code_still_working_stays FAILED
+PairingPanelTest > the_button_shows_only_while_the_phone_listens FAILED
+15 tests completed, 12 failed
+
+Between the two runs every one of the 15 new tests was seen red.
