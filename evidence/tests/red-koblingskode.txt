@@ -1,0 +1,4 @@
+## The Norwegian strings say koblingskode, never pare or paringskode, against the old strings, red
+FAILED tests/test_norwegian_words.py::test_the_pairing_code_is_a_koblingskode
+FAILED tests/test_norwegian_words.py::test_no_norwegian_string_says_pare - As...
+2 failed in 0.04s
