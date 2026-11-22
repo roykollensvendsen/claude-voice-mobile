@@ -21,3 +21,22 @@ SeveralRecipientsTest > one recipient Android refuses never stops the next, and 
 SeveralRecipientsTest > one cancel stops them all() FAILED
 SeveralRecipientsTest > the read-back names every recipient with the whole number and gives the text once() FAILED
 21 tests completed, 21 failed
+
+Second red run, after ADR-CVM-010 "Several recipients" merged in #168. The record
+asks the too-late answer to say "handed N of M to Android" and to name each
+recipient Android refused, and the texts to go under the one lock. Four new tests,
+run against the code before this change:
+
+SeveralRecipientsTest > a cancel after the delay names refused recipients as the read-back named them, in its order() FAILED
+    expected: <Too late to stop; handed 1 of 3 to Android at 08.30; it refused the text to Per Hansen, +4700000090 and +4700000001. I can't yet confirm delivery.>
+    but was: <Too late to stop; 1 of 3 were handed to the phone at 08.30. I can't yet confirm delivery.>
+SeveralRecipientsTest > a cancel after the delay with every text handed names no refusal() FAILED
+    expected: <Too late to stop; handed 2 of 2 to Android at 08.30. I can't yet confirm delivery.>
+    but was: <Too late to stop; 2 of 2 were handed to the phone at 08.30. I can't yet confirm delivery.>
+SeveralRecipientsTest > a cancel after the delay names how many were handed to Android, and each it refused() FAILED
+    expected: <Too late to stop; handed 2 of 3 to Android at 08.30; it refused the text to +4700000002. I can't yet confirm delivery.>
+    but was: <Too late to stop; 2 of 3 were handed to the phone at 08.30. I can't yet confirm delivery.>
+SeveralRecipientsTest > a cancel while the texts are being handed over waits, and hears the whole outcome() FAILED
+    expected: <Too late to stop; handed 2 of 2 to Android at 08.30. I can't yet confirm delivery.>
+    but was: <Too late to stop; 1 of 2 were handed to the phone at 08.30. I can't yet confirm delivery.>
+24 tests completed, 4 failed
