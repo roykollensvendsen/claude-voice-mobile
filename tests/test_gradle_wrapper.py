@@ -38,3 +38,16 @@ def test_each_wrapper_file_is_gradles_own(root):
         assert hashlib.sha256(path.read_bytes()).hexdigest() == digest, (
             f"{path.relative_to(ROOT)} is not Gradle's"
         )
+
+
+# The sha256 Gradle publishes for gradle-8.11.1-bin.zip, at
+# services.gradle.org/distributions/gradle-8.11.1-bin.zip.sha256 (#170).
+DISTRIBUTION = "f397b287023acdba1e9f6fc5ea72d22dd63669d59ed4a289a29b1a76eee151c6"
+
+
+@pytest.mark.parametrize("root", wrapper_roots(), ids=lambda r: r.relative_to(ROOT).as_posix() or ".")
+def test_each_wrapper_checks_the_gradle_it_downloads(root):
+    """The wrapper refuses a downloaded Gradle whose sha256 is not the one Gradle publishes."""
+    properties = (root / "gradle/wrapper/gradle-wrapper.properties").read_text(encoding="utf-8")
+    assert "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.11.1-bin.zip\n" in properties
+    assert f"distributionSha256Sum={DISTRIBUTION}\n" in properties

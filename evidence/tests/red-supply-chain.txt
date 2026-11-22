@@ -16,3 +16,17 @@ This can indicate that a dependency has been compromised. Please carefully verif
 BUILD FAILED
 
 The real sha256 put back, the same run passes.
+
+The Gradle the wrapper downloads: distributionSha256Sum in gradle-wrapper.properties.
+
+tests/test_gradle_wrapper.py, before the property was added:
+FAILED tests/test_gradle_wrapper.py::test_each_wrapper_checks_the_gradle_it_downloads[.]
+FAILED tests/test_gradle_wrapper.py::test_each_wrapper_checks_the_gradle_it_downloads[prototype/audio-focus]
+FAILED tests/test_gradle_wrapper.py::test_each_wrapper_checks_the_gradle_it_downloads[prototype/mic-mute]
+3 failed, 4 passed in 0.28s
+
+A sum of 64 zeros, then ./gradlew --version from an empty Gradle home:
+java.lang.RuntimeException: Verification of Gradle distribution failed!
+Confirm that the 'distributionSha256Sum' property in your gradle-wrapper.properties file is correct and you are downloading the wrapper from a trusted source.
+
+With Gradle's published sum for gradle-8.11.1-bin.zip, the same run passes.
