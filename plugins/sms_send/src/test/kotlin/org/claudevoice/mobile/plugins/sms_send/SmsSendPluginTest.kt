@@ -52,6 +52,17 @@ class SmsSendPluginTest {
     }
 
     @Test
+    fun `sending rests on SEND_SMS, and a name on READ_CONTACTS, for the access the hub reads`() {
+        assertEquals(
+            mapOf(
+                "messages" to listOf("android.permission.SEND_SMS"),
+                "contacts" to listOf("android.permission.READ_CONTACTS"),
+            ),
+            plugin.needs,
+        )
+    }
+
+    @Test
     fun `an answer reaches the hub as the rules gave it`() {
         val answer = call("sms_send_request", """{"to":"+4700000001","text":"Hei"}""") as ToolResult.Answer
         assertEquals("Draft to +4700000001: 'Hei'", answer.content["say"]!!.jsonPrimitive.content)

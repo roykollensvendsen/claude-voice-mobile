@@ -24,3 +24,7 @@ plugins {
 
 rootProject.name = "claude-voice-mobile"
 include(":core", ":plugin-api", ":app")
+
+// The one capability the app itself uses, in every build: reading what Android allows now, for
+// the access every agent_info answer reports (ADR-CVM-011). It declares no permission.
+include(":capabilities:permissions")

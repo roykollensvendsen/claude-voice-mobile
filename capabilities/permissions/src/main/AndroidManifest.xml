@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Reads permission states only (ADR-CVM-011), so it declares no permission of its own. -->
+<manifest />

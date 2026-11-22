@@ -19,6 +19,7 @@ class SmsPlugin(private val inbox: (() -> Inbox)? = null, private val permitted:
     override val name = "sms"
     override val tools = listOfNotNull(inbox?.let { Tool(SmsSince.TOOL, SmsSince.DESCRIPTION, SmsSince.INPUT) })
     override val uses = listOfNotNull(inbox?.let { "messages" })
+    override val needs = mapOf("messages" to listOf("android.permission.RECEIVE_SMS", "android.permission.READ_SMS"))
     override val confirms = listOf<String>()
 
     override suspend fun call(tool: String, arguments: JsonObject): ToolResult =

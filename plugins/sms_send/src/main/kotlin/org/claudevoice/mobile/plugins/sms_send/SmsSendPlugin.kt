@@ -24,6 +24,10 @@ class SmsSendPlugin(
     override val name = "sms_send"
     override val tools = SmsSend.TOOLS.map { Tool(it.name, it.description, it.input) }
     override val uses = listOf("messages", "contacts")
+    override val needs = mapOf(
+        "messages" to listOf("android.permission.SEND_SMS"),
+        "contacts" to listOf("android.permission.READ_CONTACTS"),
+    )
     override val confirms = SmsSend.CONFIRMS
 
     override suspend fun call(tool: String, arguments: JsonObject): ToolResult =

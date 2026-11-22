@@ -112,7 +112,7 @@ class McpHandlerTest {
         override fun hub() = "laptop-a"
     }
 
-    private fun about() = AgentInfo(Plugins(listOf(status)), "0.1.0", "phone-a", SettingsKeeper().settings, place)
+    private fun about() = AgentInfo(Plugins(listOf(status)), "0.1.0", "phone-a", SettingsKeeper().settings, place, GrantedAll)
 
     private fun handler(limit: Duration = Duration.ofSeconds(5), keptIds: Int = 10_000) = McpHandler(
         about(),
@@ -510,7 +510,7 @@ class McpHandlerTest {
 
             override suspend fun call(tool: String, arguments: JsonObject) = ToolResult.Answer(JsonObject(emptyMap()))
         }
-        val info = AgentInfo(Plugins(listOf(status, phone)), "0.1.0", "phone-a", SettingsKeeper().settings, place)
+        val info = AgentInfo(Plugins(listOf(status, phone)), "0.1.0", "phone-a", SettingsKeeper().settings, place, GrantedAll)
         val withPhone = McpHandler(info, log = log)
         assertFalse(isError(result(call("agent_info"), withPhone)))
         reach.add("micropone")
@@ -536,7 +536,7 @@ class McpHandlerTest {
         }
         val plugins = Plugins(listOf(status, phone))
         reads.set(0)
-        val info = AgentInfo(plugins, "0.1.0", "phone-a", SettingsKeeper().settings, place)
+        val info = AgentInfo(plugins, "0.1.0", "phone-a", SettingsKeeper().settings, place, GrantedAll)
         val answer = post(call("agent_info"), McpHandler(info, log = log))
         assertEquals(200, answer.status)
         val result = Json.parseToJsonElement(String(answer.body)).jsonObject["result"]!!.jsonObject

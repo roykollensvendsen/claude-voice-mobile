@@ -12,6 +12,9 @@ import org.claudevoice.mobile.core.MachineName
 import org.claudevoice.mobile.core.OnceNamed
 import org.claudevoice.mobile.core.FileLogStore
 import org.claudevoice.mobile.core.AgentInfo
+import org.claudevoice.mobile.core.Permissions
+import org.claudevoice.mobile.capabilities.permissions.AskRecord
+import org.claudevoice.mobile.capabilities.permissions.PermissionStates
 import org.claudevoice.mobile.core.PhoneAgent
 import org.claudevoice.mobile.core.Plugins
 import org.claudevoice.mobile.core.SettingsKeeper
@@ -34,6 +37,19 @@ class App : Application() {
     /** The name the owner confirmed for the phone; none before. A different one is refused once kept. */
     val machine by lazy { MachineName(FileTextStore(File(noBackupFilesDir, MACHINE_FILE))) }
 
+    /** Which permissions this install has asked for; every ask writes here first (ADR-CVM-011). */
+    val asks by lazy { AskRecord(noBackupFilesDir) }
+
+    /** What Android allows now, read fresh for every agent_info answer; it never asks. */
+    private val permissions by lazy {
+        val states = PermissionStates(this, asks)
+        object : Permissions {
+            override fun granted(permission: String) = states.granted(permission)
+
+            override fun asked(permission: String) = states.asked(permission)
+        }
+    }
+
     /** What the owner is offered to confirm: a name made from the phone's model. */
     val suggestedName: String get() = suggestedMachine(Build.MODEL.orEmpty())
 
@@ -52,7 +68,7 @@ class App : Application() {
             hubName(address.canonicalHostName.orEmpty(), address.hostAddress.orEmpty())
         }
         return PhoneAgent(hub, calls, nameOf) { place ->
-            AgentInfo(plugins, version, name, settings.settings, place)
+            AgentInfo(plugins, version, name, settings.settings, place, permissions)
         }
     }
 

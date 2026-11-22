@@ -32,11 +32,14 @@ class Plugins(private val plugins: List<Plugin>) {
     }
 
     /** Each plugin's entry in `agent_info`, as protocol version 1's `plugin.json` gives it. */
-    fun entries(): JsonArray = entries(usesNow())
+    fun entries(permissions: Permissions): JsonArray = entries(usesNow(), permissions)
 
-    /** The entries from [uses], read once by [usesNow], so the check and the report agree. */
-    fun entries(uses: List<List<String>>): JsonArray =
-        JsonArray(plugins.zip(uses) { plugin, own -> entry(plugin, own) })
+    /**
+     * The entries from [uses], read once by [usesNow], so the check and the report agree, each
+     * with whether Android allows each use now, read from [permissions] on every call.
+     */
+    fun entries(uses: List<List<String>>, permissions: Permissions): JsonArray =
+        JsonArray(plugins.zip(uses) { plugin, own -> entry(plugin, own, permissions) })
 
     /** What each plugin says it uses now, in the plugins' order, read once. */
     fun usesNow(): List<List<String>> = plugins.map { it.uses }
@@ -66,6 +69,7 @@ class Plugins(private val plugins: List<Plugin>) {
     private fun checkReach(plugin: Plugin) {
         val uses = plugin.uses
         require(usesKnown(uses)) { "${plugin.name} uses $uses" }
+        require(USES.containsAll(plugin.needs.keys)) { "${plugin.name} names permissions for ${plugin.needs.keys}" }
         val own = plugin.tools.map { it.name }
         val confirms = plugin.confirms
         require(own.containsAll(confirms) && confirms.toSet().size == confirms.size) {
@@ -121,13 +125,19 @@ private fun inputNames(schema: JsonElement): List<String> =
         else -> emptyList()
     }
 
+/** Whether Android allows each of [uses] now, by the permissions [plugin] names behind it (ADR-CVM-011). */
+private fun access(plugin: Plugin, uses: List<String>, permissions: Permissions): JsonObject {
+    val needs = plugin.needs
+    return JsonObject(uses.associateWith { JsonPrimitive(Access.of(needs[it].orEmpty(), permissions)) })
+}
+
 private fun strings(names: List<String>) = JsonArray(names.map { JsonPrimitive(it) })
 
 /**
  * One plugin as `agent_info` reports it, with what it uses read now and checked again: a plugin
  * may change it while running. A name the hub cannot know fails the answer loudly, never sent.
  */
-private fun entry(plugin: Plugin, uses: List<String>): JsonObject {
+private fun entry(plugin: Plugin, uses: List<String>, permissions: Permissions): JsonObject {
     check(Plugins.usesKnown(uses)) { "${plugin.name} now uses $uses" }
     return JsonObject(
         mapOf(
@@ -135,6 +145,7 @@ private fun entry(plugin: Plugin, uses: List<String>): JsonObject {
             "tools" to strings(plugin.tools.map { it.name }),
             "confirms" to strings(plugin.confirms),
             "uses" to strings(uses),
+            "access" to access(plugin, uses, permissions),
         ),
     )
 }
