@@ -25,6 +25,7 @@ def test_the_record_says_which_held_draft_a_new_list_joins() -> None:
         "Every other held draft that shares a recipient with it is stopped",
         "two yeses can never send one person two texts",
         "says how many held drafts it replaced",
+        "A confirm with a stopped draft's token is refused with the same words as for no such draft",
     ):
         assert guard in text, guard
 
@@ -45,7 +46,9 @@ def test_the_record_defines_one_letter_off_and_counts_a_request_once() -> None:
     for guard in (
         "an edit distance of 1 after folding",
         "two neighbouring letters swapped",
-        "one request counts as one try, however many of the steps above it walks",
+        "Each name counts as one try, however many of the steps above it walks",
+        "each name in a list counts as its own try",
+        "A list that would pass the 10 is refused before any lookup, saying how many tries are left",
         "except the choices, each a name and the last 2 digits, and the chosen draft's read-back",
     ):
         assert guard in text, guard

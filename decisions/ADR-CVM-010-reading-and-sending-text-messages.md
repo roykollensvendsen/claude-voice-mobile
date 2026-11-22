@@ -373,8 +373,10 @@ other matches, in today's order within each group. This changes the order only.
 One match still gives a draft, and several still give choices to say out loud.
 The caps stay at 5 for matches and 3 for near names, so a relation is never cut
 off. Choices still show only the name and the last 2 digits. Every try counts
-against the 10 lookups an hour, a relation or near name included, and one
-request counts as one try, however many of the steps above it walks. Nothing
+against the 10 lookups an hour, a relation or near name included. Each name
+counts as one try, however many of the steps above it walks, and each name in
+a list counts as its own try. A list that would pass the 10 is refused before
+any lookup, saying how many tries are left. Nothing
 read from the card is logged or leaves the phone, except the choices, each a
 name and the last 2 digits, and the chosen draft's read-back. The tables, the
 one-letter rule and the order live in the rules module and are mutated.
@@ -433,7 +435,9 @@ question. The same number twice counts once.
   the oldest of them takes the new list and text as its next version, with the
   same token. Every other held draft that shares a recipient with it is
   stopped, so one recipient is in at most one held draft and two yeses can
-  never send one person two texts. The new read-back says how many held drafts
+  never send one person two texts. A confirm with a stopped draft's token is
+  refused with the same words as for no such draft, so an old yes is refused
+  out loud. The new read-back says how many held drafts
   it replaced. When two names need a choice, the answer asks about the first;
   the next request, with its `pick`, asks about the second. No token is issued
   while a choice is open, so nothing can be confirmed until every name is
