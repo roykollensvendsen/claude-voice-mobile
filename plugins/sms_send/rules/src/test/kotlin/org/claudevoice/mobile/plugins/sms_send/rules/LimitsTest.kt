@@ -4,6 +4,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
@@ -170,7 +171,40 @@ class LimitsTest {
         )
     }
 
+    @Test
+    fun `an address written as four numbers is a link, while a date is no link`() {
+        for (text in listOf("5.9.1.2", "Se 10.0.0.1", "Gå til 192.0.2.10.", "(100.64.0.1)")) {
+            assertEquals(LINKS, Limits.text(text), text)
+        }
+        assertNotEquals(LINKS, Limits.text("Vi ses 21.11.2026"))
+        assertNull(Limits.text("Versjon 1.2.3 er ute"))
+    }
+
+    @Test
+    fun `look-alike dots and wide letters are read as the plain ones`() {
+        for (text in listOf("evil\u3002ru", "evil\uFF0Eru", "evil\uFF61ru", "ｅｖｉｌ.ｒｕ", "www\u3002x")) {
+            assertEquals(LINKS, Limits.text(text), text)
+        }
+        assertNull(Limits.text("Takk\u3002 Ses"))
+    }
+
+    @Test
+    fun `a punycode ending is an ending too, in any case`() {
+        for (text in listOf("evil.xn--p1ai", "EVIL.XN--P1AI", "Se b.xn--90ais/x")) {
+            assertEquals(LINKS, Limits.text(text), text)
+        }
+    }
+
+    @Test
+    fun `a text with an invisible character is refused, so none can hide a link`() {
+        for (text in listOf("evil\u200B.ru", "Hei\u200Bdu", "a\u00ADb", "\u2066Hei\u2069", "Hei\uFEFF")) {
+            assertEquals(INVISIBLE, Limits.text(text), text)
+        }
+    }
+
     private companion object {
+        const val INVISIBLE = "Not drafted: texts can't contain invisible characters."
+
         const val DIGITS =
             "Not drafted: texts can't contain more than 6 digits in a row, such as a phone or account number."
         const val LINKS = "Not drafted: texts can't contain links or web addresses."
