@@ -61,3 +61,17 @@ def test_the_record_says_a_bracket_glued_to_a_date_keeps_it_in() -> None:
         '"(21.11.2026)" stays refused',
     ):
         assert guard in text, guard
+
+
+def test_the_record_says_how_the_marks_are_read_and_said() -> None:
+    text = record()
+    for guard in (
+        "`sms_send` does not declare `READ_SMS` for it",
+        "needs the owner's yes in a pull request of its own",
+        "A number given as a number is read back as the number, never with a contact's name",
+        "The check counts as one of the 10 lookups an hour",
+        '"contacts not checked"',
+        "A mark goes in brackets right after the number it is about",
+        'never gets "not in your contacts", but can get "never texted before"',
+    ):
+        assert guard in text, guard

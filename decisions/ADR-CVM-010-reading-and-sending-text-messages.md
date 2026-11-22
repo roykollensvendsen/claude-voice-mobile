@@ -422,6 +422,22 @@ question. The same number twice counts once.
   has let the app read texts; without that there is no mark and no claim. The
   owner's yes covered the marks, so they are built before a build that sends
   to several reaches the owner's phone.
+  - "Never texted before" asks `capabilities/smsstore` its one question.
+    `sms_send` does not declare `READ_SMS` for it: the capability answers
+    only when the app holds `READ_SMS` already, which a build with the `sms`
+    plugin and the owner's grant gives. Otherwise there is no mark and no
+    claim. Declaring `READ_SMS` in `sms_send` is a change to the phone's
+    permissions and needs the owner's yes in a pull request of its own.
+  - "Not in your contacts" asks `capabilities/contacts` whether a number
+    belongs to a contact, as a yes or no only. A number given as a number is
+    read back as the number, never with a contact's name. The check counts as
+    one of the 10 lookups an hour, since its answer tells the hub whether a
+    number is among the owner's contacts. Past the 10, the read-back says
+    "contacts not checked" for that number instead of a mark.
+  - A mark goes in brackets right after the number it is about, as in "Draft
+    to +4700000001 (not in your contacts, never texted before); <name>,
+    +4700000012: '...'". A contact found by name never gets "not in your
+    contacts", but can get "never texted before".
 - One confirm, one undo delay and one cancel cover the group. After the delay
   the phone sends one text to each recipient, never a group MMS.
 - Each text counts against the limits. The whole group is checked at request
