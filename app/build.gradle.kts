@@ -1,3 +1,5 @@
+import java.time.Duration
+
 // The screens, the settings and the service. The one module that may see every other.
 plugins {
     alias(libs.plugins.android.application)
@@ -23,6 +25,25 @@ android {
 }
 
 kotlin { jvmToolchain(17) }
+
+// Robolectric spends about 40 seconds starting an Android image before its first test, whatever
+// the tests do. The measured test time (scripts/levels.py) leaves those tests out when it passes
+// -PcvLeaveOutRobolectric; the app's test task has a limit of its own instead, from CI runs plus
+// a quarter (#169). Each run logs its time, which is what the limit is set from.
+tasks.withType<Test>().configureEach {
+    if (providers.gradleProperty("cvLeaveOutRobolectric").isPresent) {
+        filter.excludeTestsMatching("org.claudevoice.mobile.app.robolectric.*")
+    }
+    timeout.set(Duration.ofSeconds(APP_TEST_LIMIT_SECONDS))
+    addTestListener(object : TestListener {
+        override fun beforeSuite(suite: TestDescriptor) = Unit
+        override fun beforeTest(testDescriptor: TestDescriptor) = Unit
+        override fun afterTest(testDescriptor: TestDescriptor, result: TestResult) = Unit
+        override fun afterSuite(suite: TestDescriptor, result: TestResult) {
+            if (suite.parent == null) logger.lifecycle("$path took ${result.endTime - result.startTime} ms")
+        }
+    })
+}
 
 // NoBackupTest reads the manifest the build merged for the variant under test, and the rules
 // file it names, so what it checks is what ships. MergedPermissionsTest reads where each
@@ -136,3 +157,6 @@ dependencies {
     testImplementation(libs.junit4)
     testImplementation(libs.robolectric)
 }
+
+/** The app's tests, Robolectric's start included: provisional until measured on CI. */
+val APP_TEST_LIMIT_SECONDS = 120L

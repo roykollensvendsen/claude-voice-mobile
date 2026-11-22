@@ -341,12 +341,22 @@ def pitest(module: str) -> Path:
     return ROOT / module / "build" / "reports" / "pitest" / "mutations.xml"
 
 
+# Robolectric spends about 40 s starting an Android image, whatever its tests do, so the timed
+# run leaves its tests out; the app's test task has a Gradle timeout of its own instead (#169).
+LEAVE_OUT_ROBOLECTRIC = "-PcvLeaveOutRobolectric"
+
+
+def timed_tests(found: Parts) -> tuple[str, ...]:
+    """What the timed test run passes Gradle: every test task, run again, without Robolectric's."""
+    return (LEAVE_OUT_ROBOLECTRIC, *(a for task in found.test_tasks for a in (task, "--rerun")))
+
+
 def measure() -> dict[str, object]:
     """Every measure, from the tree as it is."""
     found = parts(ROOT)
     compiled = _must(gradle("--rerun-tasks", "compileTestKotlin", "compileDebugUnitTestKotlin"), "Compiling")
     started = time.monotonic()
-    _must(gradle(*(a for task in found.test_tasks for a in (task, "--rerun"))), "The tests")
+    _must(gradle(*timed_tests(found)), "The tests")
     seconds = round(time.monotonic() - started, 1)
     reports = (
         "koverXmlReport",
