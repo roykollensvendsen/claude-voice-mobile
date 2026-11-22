@@ -341,8 +341,9 @@ def pitest(module: str) -> Path:
     return ROOT / module / "build" / "reports" / "pitest" / "mutations.xml"
 
 
-# Robolectric spends about 40 s starting an Android image, whatever its tests do, so the timed
-# run leaves its tests out; the app's test task has a Gradle timeout of its own instead (#169).
+# Robolectric starts an Android image before its first test; on CI that put the timed run at
+# 51.5 s against a budget of 30 (#169), so the timed run leaves its tests out.
+# Nothing caps any test run's time: the owner's rule.
 LEAVE_OUT_ROBOLECTRIC = "-PcvLeaveOutRobolectric"
 
 

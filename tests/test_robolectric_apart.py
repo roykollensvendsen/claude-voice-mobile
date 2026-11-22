@@ -1,9 +1,9 @@
 """The measured test time leaves Robolectric's tests out, and they have a limit of their own.
 
-Robolectric starts an Android image before its first test, which takes about 40 seconds
-whatever the tests do (#169). Timed with the rest, that start would use up the tests' time
-budget and say nothing about the tests themselves. So the timed run in scripts/levels.py
-leaves every Robolectric test out, and the app's test task has a Gradle timeout instead.
+Robolectric starts an Android image before its first test. On CI (#169, run 45022042624) the
+app's test task took 13 to 21 s with it, and the timed run went to 51.5 s against a budget of
+30, a cost that says nothing about the tests themselves. So the timed run in scripts/levels.py
+leaves every Robolectric test out. No test run gets a time cap in its place: the owner's rule.
 """
 
 import pathlib
@@ -39,9 +39,9 @@ def test_every_robolectric_test_is_in_the_package_the_timed_run_leaves_out():
     assert [p for p in runs_robolectric if not p.startswith(folder)] == []
 
 
-def test_the_app_build_leaves_that_package_out_when_asked_and_limits_the_task():
+def test_the_app_build_leaves_that_package_out_when_asked_and_caps_no_test_run():
     build = BUILD.read_text(encoding="utf-8")
     flag = levels.LEAVE_OUT_ROBOLECTRIC.removeprefix("-P")
     assert f'gradleProperty("{flag}")' in build
     assert f'excludeTestsMatching("{PACKAGE}.*")' in build
-    assert re.search(r"timeout\.set\(Duration\.ofSeconds\(", build)
+    assert not re.search(r"\btimeout\s*\.", build)
