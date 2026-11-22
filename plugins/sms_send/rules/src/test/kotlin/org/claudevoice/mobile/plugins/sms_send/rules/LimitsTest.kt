@@ -236,6 +236,13 @@ class LimitsTest {
     }
 
     @Test
+    fun `a price run into the next word reads as a link, a false positive kept on purpose`() {
+        for (text in listOf("5\u20AC.Ok", "1.5$/t")) {
+            assertEquals(LINKS, Limits.text(text), text)
+        }
+    }
+
+    @Test
     fun `five numbers with dots are no address, while an address with a port is one`() {
         assertNull(Limits.text("1.2.3.4.5"))
         assertEquals(LINKS, Limits.text("10.0.0.1:8080"))
