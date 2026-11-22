@@ -29,7 +29,22 @@ kotlin { jvmToolchain(17) }
 // 30. The measured test time (scripts/levels.py) leaves those tests out when it passes
 // -PcvLeaveOutRobolectric (#169). No test run has a time cap; each run logs its time, as a
 // measure only, and a test that waits bounds its own wait.
+// Robolectric runs offline, from Android images Gradle fetched and checked against
+// gradle/verification-metadata.xml like any other dependency, never from its own download (#170).
+// One configuration per image: in one, Gradle would keep only the newest of the same module.
+val robolectricImages = listOf(libs.robolectric.sdk32, libs.robolectric.sdk33, libs.robolectric.sdk35).map { image ->
+    configurations.detachedConfiguration(dependencies.create(image.get())).apply { isTransitive = false }
+}
+val robolectricDir = tasks.register<Sync>("robolectricImages") {
+    from(robolectricImages)
+    into(layout.buildDirectory.dir("robolectric-images"))
+}
+
 tasks.withType<Test>().configureEach {
+    dependsOn(robolectricDir)
+    inputs.files(robolectricImages)
+    systemProperty("robolectric.offline", "true")
+    systemProperty("robolectric.dependency.dir", robolectricDir.get().destinationDir.absolutePath)
     if (providers.gradleProperty("cvLeaveOutRobolectric").isPresent) {
         filter.excludeTestsMatching("org.claudevoice.mobile.app.robolectric.*")
     }

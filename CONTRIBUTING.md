@@ -37,6 +37,18 @@ it may not reach: the core on a plugin, a plugin on anything but `plugin-api`, o
 one plugin on another. The rules are in `build-logic/src/main/kotlin/LayerRules.kt`,
 and a new module is refused until it is placed in a layer there.
 
+Every file Gradle downloads is checked against its sha256 in
+`gradle/verification-metadata.xml`, and the build fails on a file that is missing
+from it or differs. Robolectric's Android images are Gradle dependencies too
+(`robolectric-sdk*` in `gradle/libs.versions.toml`), and Robolectric runs offline
+from them. After adding or bumping a dependency, write the new checksums with
+the tasks CI runs, then read the diff before committing it:
+
+<!-- not run: it runs the whole gate and the mutation runs -->
+```
+./gradlew -PcvPlugins=all --write-verification-metadata sha256 check koverXmlReport detektMeasure checkLayers lintDebug :core:pitest :plugin-api:pitest :plugins:sms:rules:pitest :plugins:sms_send:rules:pitest
+```
+
 Run them after the last edit, not before it. A file edited after the format
 gate ran will fail in continuous integration, which is the cheapest possible
 way to learn that the gates are not a ritual performed once.

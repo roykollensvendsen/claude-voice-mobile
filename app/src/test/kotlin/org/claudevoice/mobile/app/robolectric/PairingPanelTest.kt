@@ -19,8 +19,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class PairingPanelTest {
     private val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
     private var now = Instant.parse("2026-11-22T10:00:00Z")

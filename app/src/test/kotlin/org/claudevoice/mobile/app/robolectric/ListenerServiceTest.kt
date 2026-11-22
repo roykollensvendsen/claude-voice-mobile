@@ -12,10 +12,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class ListenerServiceTest {
     private val app = RuntimeEnvironment.getApplication() as App
     private val callbacks get() = shadowOf(app.getSystemService(ConnectivityManager::class.java)).networkCallbacks
