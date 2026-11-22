@@ -1,5 +1,3 @@
-import java.time.Duration
-
 // The screens, the settings and the service. The one module that may see every other.
 plugins {
     alias(libs.plugins.android.application)
@@ -26,16 +24,15 @@ android {
 
 kotlin { jvmToolchain(17) }
 
-// Robolectric spends about 40 seconds starting an Android image before its first test, whatever
-// the tests do. The measured test time (scripts/levels.py) leaves those tests out when it passes
-// -PcvLeaveOutRobolectric; the app's test task has a limit of its own instead, from CI runs plus
-// a quarter (#169). Each run logs its time, which is what the limit is set from.
+// Robolectric starts an Android image before its first test. On CI (#169, run 45022042624) the
+// app's test task took 13 to 21 s with it, and the timed run went to 51.5 s against a budget of
+// 30. The measured test time (scripts/levels.py) leaves those tests out when it passes
+// -PcvLeaveOutRobolectric (#169). No test run has a time cap; each run logs its time, as a
+// measure only, and a test that waits bounds its own wait.
 tasks.withType<Test>().configureEach {
     if (providers.gradleProperty("cvLeaveOutRobolectric").isPresent) {
         filter.excludeTestsMatching("org.claudevoice.mobile.app.robolectric.*")
     }
-    // On CI only, where it was measured: a loaded laptop ran these tests in 75 s, nothing wrong.
-    if (providers.environmentVariable("CI").isPresent) timeout.set(Duration.ofSeconds(APP_TEST_LIMIT_SECONDS))
     addTestListener(object : TestListener {
         override fun beforeSuite(suite: TestDescriptor) = Unit
         override fun beforeTest(testDescriptor: TestDescriptor) = Unit
@@ -158,6 +155,3 @@ dependencies {
     testImplementation(libs.junit4)
     testImplementation(libs.robolectric)
 }
-
-/** The app's tests, Robolectric's start included: the slowest of four CI runs on #169, 21.1 s, plus a quarter. */
-val APP_TEST_LIMIT_SECONDS = 27L
