@@ -59,6 +59,13 @@ object Limits {
     // Format characters (category Cf), as a zero-width space or a direction mark.
     private val INVISIBLE = Regex("""\p{Cf}""")
 
+    // The two places a format character is part of an emoji, and can't split a link: a joiner
+    // (U+200D) between two symbols, the first maybe with its emoji form or skin tone after, as in
+    // a family; and the tags that make the black flag a part of a country, as England's. Every
+    // other format character still refuses the text.
+    private val EMOJI_JOINER = Regex("""(\p{So}[\x{FE0F}\x{1F3FB}-\x{1F3FF}]?)\x{200D}(?=\p{So})""")
+    private val TAG_FLAG = Regex("""\x{1F3F4}[\x{E0020}-\x{E007E}]+\x{E007F}""")
+
     private val SPACE = Regex("""[\s\p{Zs}]+""")
 
     // Brackets, quotes and marks a word may stand inside or end with, as "(f.eks." or "bl.a.,".
@@ -99,18 +106,20 @@ object Limits {
         return if (length > MAX_LENGTH) {
             "Not drafted: a text can be at most $MAX_LENGTH characters, and this one has $length."
         } else {
-            held(Normalizer.normalize(text, Normalizer.Form.NFKC).replace(IDEOGRAPHIC_DOT, "."))
+            val read = Normalizer.normalize(text, Normalizer.Form.NFKC).replace(IDEOGRAPHIC_DOT, ".")
+            held(TAG_FLAG.replace(EMOJI_JOINER.replace(read, "$1"), "\uD83C\uDFF4"))
         }
     }
 
     /**
      * Why what [text] holds may not be drafted, read as a browser reads it: wide letters as plain
      * ones and look-alike dots as dots (NFKC first). An invisible character could split a link
-     * the rule would otherwise see, so any one refuses the text.
+     * the rule would otherwise see, so any one outside an emoji refuses the text.
      */
     private fun held(text: String): String? =
         when {
-            INVISIBLE.containsMatchIn(text) -> "Not drafted: texts can't contain invisible characters."
+            INVISIBLE.containsMatchIn(text) ->
+                "Not drafted: the text has a hidden character. Leave out any emoji, or say it again."
             SPACE.toPattern().splitAsStream(text).anyMatch(::link) ->
                 "Not drafted: texts can't contain links or web addresses."
             DIGITS.containsMatchIn(text) ->

@@ -1,0 +1,6 @@
+## Joined emoji, tag flags and a clearer refusal (#159 follow-up), against the rule before this change, red
+LimitsTest > a joiner or a tag anywhere else is still refused() FAILED
+LimitsTest > a text with an invisible character is refused, so none can hide a link() FAILED
+LimitsTest > an emoji joined of several, or a flag of a part of a country, may go() FAILED
+25 tests completed, 3 failed
+The two pins (1.2.3.4.5 is no address, 10.0.0.1:8080 is one) passed from the start: they hold behaviour that was already there.
