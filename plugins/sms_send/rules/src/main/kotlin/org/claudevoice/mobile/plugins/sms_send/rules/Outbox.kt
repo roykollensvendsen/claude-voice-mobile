@@ -99,14 +99,16 @@ class Outbox(
         return when {
             wrong.isNotEmpty() -> Reply.Refused(NOT_A_NUMBER, INVALID_RECIPIENT)
             blocked != null -> blocked
-            else -> drafted(numbers, to.map { readBack(it, recipients) }, text)
+            else -> drafted(numbers, to.map(::named), to.map { readBack(it, recipients) }, text)
         }
     }
 
     // The oldest held draft that shares a recipient takes the new list and text as its next
     // version. Every other held draft sharing one is stopped, so one recipient is in at most one
     // held draft and two yeses never send one person two texts (ADR-CVM-010, "Several recipients").
-    private fun drafted(to: List<String>, named: List<String>, text: String): Reply {
+    // [named] is kept for later answers; [said] adds the marks, read back now and never again,
+    // since a mark such as "never texted before" goes stale once the text is sent.
+    private fun drafted(to: List<String>, named: List<String>, said: List<String>, text: String): Reply {
         val sharing = drafts.values.filter { it.state == State.Held && it.to.intersect(to.toSet()).isNotEmpty() }
         sharing.drop(1).forEach { it.state = State.Stopped }
         val draft = sharing.firstOrNull()?.apply {
@@ -118,7 +120,7 @@ class Outbox(
         return answer(
             "token" to JsonPrimitive(draft.token),
             "version" to JsonPrimitive(draft.version),
-            "say" to JsonPrimitive("Draft to ${draft.names}: '$text'${replaced(sharing.size - 1)}"),
+            "say" to JsonPrimitive("Draft to ${said.joinToString("; ")}: '$text'${replaced(sharing.size - 1)}"),
         )
     }
 
@@ -203,10 +205,12 @@ class Outbox(
 
         /** How the read-back names [one]: the number, or the contact's name and the number, then any marks. */
         private fun readBack(one: Recipients.Resolved.To, recipients: Recipients?): String {
-            val named = one.name?.let { "$it, ${one.number}" } ?: one.number
             val marks = recipients?.marks(one).orEmpty()
-            return if (marks.isEmpty()) named else marks.joinToString(", ", "$named (", ")")
+            return if (marks.isEmpty()) named(one) else marks.joinToString(", ", "${named(one)} (", ")")
         }
+
+        /** How every answer names [one]: the number, or the contact's name and the number. */
+        private fun named(one: Recipients.Resolved.To) = one.name?.let { "$it, ${one.number}" } ?: one.number
 
         /** Why [text] cannot be drafted, or null when it can. */
         private fun refusal(text: String): Reply.Refused? =

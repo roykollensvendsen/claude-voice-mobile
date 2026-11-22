@@ -140,6 +140,31 @@ class StrayNumberTest {
     }
 
     @Test
+    fun `the marks are said in the read-back only, never again when the text is confirmed`() {
+        val phone = Phone(contacts = emptySet(), texted = emptySet())
+        phone.request(a)
+        assertEquals(
+            "Sending to +4700000001 in 10 seconds. Say stop to cancel. I can't yet confirm delivery.",
+            say(phone.outbox.confirm("t1", 1)),
+        )
+    }
+
+    @Test
+    fun `a too-late answer names a refused number without its marks, which may be stale by then`() {
+        val phone = Phone(contacts = emptySet(), texted = emptySet())
+        var fire = Runnable {}
+        val outbox = Outbox(clock, { _, task -> fire = task }, { to, _ -> check(to != a) { "refused" } }, {}, { "t1" })
+        outbox.request(listOf(a, b), "Hei", phone.recipients)
+        outbox.confirm("t1", 1)
+        fire.run()
+        assertEquals(
+            "Too late to stop; handed 1 of 2 to Android at 08.30; it refused the text to +4700000001. " +
+                "I can't yet confirm delivery.",
+            say(outbox.cancel("t1")),
+        )
+    }
+
+    @Test
     fun `the tool's words tell the hub the never-texted mark needs the app to read texts`() {
         val words = SmsSend.TOOLS.first { it.name == SmsSend.REQUEST }.description
         assertTrue(
