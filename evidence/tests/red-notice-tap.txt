@@ -12,3 +12,22 @@ NoticeTapTest > the line shows only while the listener runs with its notice hidd
     kotlin.NotImplementedError at NoticeTapTest.kt:39
 6 tests completed, 6 failed
 BUILD FAILED in 3m 38s
+
+app, NoticeLine, against bodies left unwritten:
+NoticeLineTest > a_pause_before_the_tap_does_not_count_as_a_request_shown FAILED
+    kotlin.NotImplementedError at NoticeLineTest.kt:45
+NoticeLineTest > a_first_refusal_after_the_screen_paused_asks_again_on_the_next_tap FAILED
+    kotlin.NotImplementedError at NoticeLineTest.kt:25
+NoticeLineTest > a_tap_always_asks_first FAILED
+    kotlin.NotImplementedError at NoticeLineTest.kt:12
+NoticeLineTest > where_android_has_no_request_to_show_the_tap_opens_the_settings FAILED
+    kotlin.NotImplementedError at NoticeLineTest.kt:73
+NoticeLineTest > an_answer_the_line_did_not_ask_for_changes_nothing FAILED
+    kotlin.NotImplementedError at NoticeLineTest.kt:53
+NoticeLineTest > a_second_refusal_in_a_row_opens_the_settings_even_when_the_screen_paused FAILED
+    kotlin.NotImplementedError at NoticeLineTest.kt:36
+NoticeLineTest > a_refusal_with_no_pause_opens_the_settings FAILED
+    kotlin.NotImplementedError at NoticeLineTest.kt:18
+NoticeLineTest > a_grant_starts_the_count_over FAILED
+    kotlin.NotImplementedError at NoticeLineTest.kt:59
+8 tests completed, 8 failed

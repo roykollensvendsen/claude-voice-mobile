@@ -18,4 +18,5 @@
     <string name="listener_running">Listening for your hub.</string>
     <string name="pairing_show">Show a pairing code</string>
     <string name="pairing_code">Pairing code: %1$s\nIt works once, for 10 minutes. Showing a new one ends it.\nThe phone\'s tailnet address: %2$s</string>
+    <string name="notice_hidden">The listener is running, but Android hides its notice. Tap to show it.</string>
 </resources>
