@@ -1,0 +1,5 @@
+## A price run into the next word, "5€.Ok" and "1.5$/t", with symbols taken out of a web name again, red
+LimitsTest > a price run into the next word reads as a link, a false positive kept on purpose() FAILED
+LimitsTest > a name with a symbol in it is a link too, while a symbol ending a sentence is none() FAILED
+27 tests completed, 2 failed
+With symbols back in a web name, as on main, both pass.
