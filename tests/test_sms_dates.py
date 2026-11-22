@@ -36,9 +36,16 @@ def test_the_record_names_the_date_and_time_shapes_that_pass() -> None:
 def test_the_record_keeps_numbers_written_with_dots_or_dashes_refused() -> None:
     text = record()
     for guard in (
-        '"21.11.2026", "2026-11-21", "14.30-16.00" and "kl. 9:05" pass',
-        '"22.33.44.55", "22-33-44-55", "1234.56.78901" and "21.11.2026.55" stay refused',
-        "touches another digit, dot, slash or dash",
+        '"kl. 9:05" and "21.11.2026 kl. 14.30" pass',
+        '"21.11.2026 14.30", "12.05.2034 13.08.1999"',
+        '"12.11 13.10 14.09 15.08", "1234 21.11.2026 5678", "41/23/45/67"',
+        "touches no other digit, dot, slash or dash",
+        "the nearest word on each side holds a letter and no digit",
+        "A shape taken out leaves a break",
+        "the shapes match the ASCII digits 0 to 9 only",
+        "slashes, colons, commas, brackets, underscores, apostrophes and middle dots",
+        '"1.12.2026"',
+        '"14.30–16.00"',
         "A dash never joins the parts of a date except in year-month-day",
     ):
         assert guard in text, guard

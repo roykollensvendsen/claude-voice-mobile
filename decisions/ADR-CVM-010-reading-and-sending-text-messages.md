@@ -195,18 +195,38 @@ shapes, and only these, is taken out before the run is counted:
 - a date as day.month, with no year;
 - a time as hours and minutes, with a dot or a colon between them, with
   hours from 0 to 23 and minutes from 0 to 59;
-- two times joined by a dash, a range such as a meeting's start and end.
+- two times joined by a dash or an en dash, a range such as a meeting's start
+  and end.
 
-A shape is taken out only when it stands alone: it is not a date or a time
-when, just outside it, it touches another digit, dot, slash or dash. So
-"22.33" in "22.33.44.55" is no time. Day and month may have
-one or two digits. A dash never joins the parts of a date except in
-year-month-day, since numbers are often written in pairs with dashes. What is
-left is then counted as before. So "21.11.2026", "2026-11-21", "14.30-16.00"
-and "kl. 9:05" pass. "22.33.44.55", "22-33-44-55", "1234.56.78901" and
-"21.11.2026.55" stay refused. The shapes live in the rules module, are
-mutated, and each example above is a test. This loosens a limit the owner
-set, and the pull request says so for the owner's yes.
+Day, month and hour may have one or two digits. A dash never joins the parts
+of a date except in year-month-day, since numbers are often written in pairs
+with dashes. The text is first put in NFKC form, and the shapes match the
+ASCII digits 0 to 9 only. Any other character Unicode calls a digit still
+counts toward a run.
+
+A shape is taken out only when it stands alone, so that several shapes in a
+row cannot carry a long number between them:
+
+- just outside it, it touches no other digit, dot, slash or dash; one closing
+  `.`, `,`, `!`, `?` or `)` at its end is allowed, as at the end of a
+  sentence. So "22.33" in "22.33.44.55" is no time;
+- skipping spaces, the nearest word on each side holds a letter and no digit,
+  or is the edge of the text. Another number or another shape next to it
+  keeps it in.
+
+A shape taken out leaves a break, as a letter does, so the digits on its two
+sides are never counted as one run. Everything left is then counted as
+before. A run counts across spaces, dots, dashes and en dashes, slashes,
+colons, commas, brackets, underscores, apostrophes and middle dots, so a number
+written with any of them is still one run.
+
+So "21.11.2026", "1.12.2026", "2026-11-21", "14.30-16.00", "14.30–16.00",
+"kl. 9:05" and "21.11.2026 kl. 14.30" pass. "22.33.44.55", "22-33-44-55",
+"1234.56.78901", "21.11.2026.55", "21.11.2026 14.30", "12.05.2034 13.08.1999",
+"12.11 13.10 14.09 15.08", "1234 21.11.2026 5678", "41/23/45/67" and
+"(412) 34 567" stay refused. The shapes live in the rules module, are mutated,
+and each example above is a test. This loosens a limit the owner set, and the
+pull request says so for the owner's yes.
 
 **`sms_send_request(to, text)`** sends nothing. It stores a draft on the phone
 and answers with a `token`, a `version` and a `say` line. The line reads back
