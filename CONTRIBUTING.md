@@ -41,12 +41,16 @@ Every file Gradle downloads is checked against its sha256 in
 `gradle/verification-metadata.xml`, and the build fails on a file that is missing
 from it or differs. Robolectric's Android images are Gradle dependencies too
 (`robolectric-sdk*` in `gradle/libs.versions.toml`), and Robolectric runs offline
-from them. After adding or bumping a dependency, write the new checksums with
-the tasks CI runs, then read the diff before committing it:
+from them. The wrapper checks the Gradle it downloads against
+`distributionSha256Sum`; when bumping Gradle, take the new sum from
+`services.gradle.org/distributions/gradle-<version>-bin.zip.sha256`. After adding
+or bumping a dependency, write the new checksums from an empty Gradle home (a
+warm cache hides files a clean machine fetches) with the tasks CI runs, then
+read the diff before committing it:
 
 <!-- not run: it runs the whole gate and the mutation runs -->
 ```
-./gradlew -PcvPlugins=all --write-verification-metadata sha256 check koverXmlReport detektMeasure checkLayers lintDebug :core:pitest :plugin-api:pitest :plugins:sms:rules:pitest :plugins:sms_send:rules:pitest
+GRADLE_USER_HOME=build/fresh-gradle-home ./gradlew -PcvPlugins=all --write-verification-metadata sha256 check koverXmlReport detektMeasure checkLayers lintDebug :core:pitest :plugin-api:pitest :plugins:sms:rules:pitest :plugins:sms_send:rules:pitest
 ```
 
 Run them after the last edit, not before it. A file edited after the format
