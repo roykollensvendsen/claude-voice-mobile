@@ -19,6 +19,19 @@ data class Blocked(val words: String, val until: Instant) {
     }
 }
 
+/** A group of [of] checked against the limits: the first limit that blocks one of it, if any, and how many fit. */
+class GroupCheck(private val blocked: Blocked?, private val fit: Int, private val of: Int) {
+    /**
+     * The refusal when the group does not all fit, as "Not sent: that's 10 texts in the last hour;
+     * try again after 09.30. 2 of the 3 would go now.", or null when it does. A group of one keeps
+     * the words of one text.
+     */
+    fun refused(lead: String, zone: ZoneId): Reply.Refused? = blocked?.let {
+        val more = if (of > 1) " $fit of the $of would go now." else ""
+        Reply.Refused(it.say(lead, zone) + more, Limits.RATE_LIMITED)
+    }
+}
+
 /**
  * What may be sent, and how often (messages-v1 §8, choice B, with the limits the owner added).
  * A text is checked when it is drafted. The counts are checked when it is drafted, so the owner
@@ -175,4 +188,17 @@ object Limits {
             .sorted()
         if (times.size < rule.most) null else Blocked(rule.words, times[times.size - rule.most].plus(rule.window))
     }.maxByOrNull { it.until }
+
+    /**
+     * Each of [numbers] checked in turn as one more send [now], every one that fits counting
+     * toward the next (ADR-CVM-010, "Several recipients"): the first limit that blocks one, and
+     * how many fit.
+     */
+    fun group(counted: List<Counted>, numbers: List<String>, now: Instant): GroupCheck {
+        val sends = counted.toMutableList()
+        val blocks = numbers.mapNotNull { number ->
+            blocked(sends, number, now).also { if (it == null) sends += Counted(number, now) }
+        }
+        return GroupCheck(blocks.firstOrNull(), numbers.size - blocks.size, numbers.size)
+    }
 }

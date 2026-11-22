@@ -3,6 +3,7 @@ package org.claudevoice.mobile.plugins.sms_send.rules
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import java.util.concurrent.Executors
@@ -51,12 +52,15 @@ class Outbox(
         data object Stopped : State
     }
 
-    private class Draft(val token: String, val to: String, var text: String, var version: Int, var state: State) {
-        /** How the answers name the recipient: the number, or the contact's name and the number. */
-        var named: String = to
+    private class Draft(val token: String, var to: List<String>, var text: String, var version: Int, var state: State) {
+        /** How the answers name the recipients: each number, or the contact's name and the number. */
+        var names: String = to.joinToString("; ")
 
-        /** When the owner's yes armed it; it counts toward the limits until it is stopped. */
+        /** When the owner's yes armed it; each recipient counts toward the limits until it is stopped. */
         var confirmed: Instant? = null
+
+        /** How many of [to] the phone took, in read-back order. */
+        var handed = 0
     }
 
     private val drafts = mutableMapOf<String, Draft>()
@@ -68,36 +72,47 @@ class Outbox(
      * name lookup, but a refused text still closes the open choices, as any request does.
      */
     @Synchronized
-    fun request(to: String, text: String, recipients: Recipients? = null): Reply {
+    fun request(to: String, text: String, recipients: Recipients? = null): Reply = request(listOf(to), text, recipients)
+
+    /**
+     * One text to everyone [to] names, read back and confirmed once (ADR-CVM-010, "Several
+     * recipients"). The same number twice is one recipient, in its first place.
+     */
+    @Synchronized
+    fun request(to: List<String>, text: String, recipients: Recipients? = null): Reply {
         val refused = refusal(text)
         // A refused text still closes the open choices, so no later pick lands on them.
         if (refused != null) recipients?.close()
-        return refused ?: when (val resolved = recipients?.resolve(to) ?: Recipients.number(to)) {
-            is Recipients.Resolved.Answered -> resolved.reply
-            is Recipients.Resolved.To -> numbered(resolved, text)
+        return refused ?: when (val resolved = recipients?.resolve(to) ?: Recipients.numbers(to)) {
+            is Recipients.Group.Answered -> resolved.reply
+            is Recipients.Group.To -> numbered(resolved.all.distinctBy { it.number }, text)
         }
     }
 
-    private fun numbered(to: Recipients.Resolved.To, text: String): Reply {
-        val blocked = Limits.blocked(counted(), to.number, clock.instant())
+    private fun numbered(to: List<Recipients.Resolved.To>, text: String): Reply {
+        val numbers = to.map { it.number }
+        val wrong = numbers.filterNot(E164::matches)
+        val blocked = Limits.group(counted(), numbers, clock.instant()).refused("Not drafted", clock.zone)
         return when {
-            !E164.matches(to.number) -> Reply.Refused(NOT_A_NUMBER, INVALID_RECIPIENT)
-            blocked != null -> Reply.Refused(blocked.say("Not drafted", clock.zone), Limits.RATE_LIMITED)
-            else -> drafted(to.number, to.name?.let { "$it, ${to.number}" } ?: to.number, text)
+            wrong.isNotEmpty() -> Reply.Refused(NOT_A_NUMBER, INVALID_RECIPIENT)
+            blocked != null -> blocked
+            else -> drafted(numbers, to.map { one -> one.name?.let { "$it, ${one.number}" } ?: one.number }, text)
         }
     }
 
-    private fun drafted(to: String, named: String, text: String): Reply {
-        val held = drafts.values.firstOrNull { it.to == to && it.state == State.Held }
+    // A held draft that shares a recipient takes the new list and text as its next version.
+    private fun drafted(to: List<String>, named: List<String>, text: String): Reply {
+        val held = drafts.values.firstOrNull { it.state == State.Held && it.to.intersect(to.toSet()).isNotEmpty() }
         val draft = held?.apply {
+            this.to = to
             this.text = text
             version += 1
         } ?: Draft(tokens(), to, text, 1, State.Held).also { drafts[it.token] = it }
-        draft.named = named
+        draft.names = named.joinToString("; ")
         return answer(
             "token" to JsonPrimitive(draft.token),
             "version" to JsonPrimitive(draft.version),
-            "say" to JsonPrimitive("Draft to $named: '$text'"),
+            "say" to JsonPrimitive("Draft to ${draft.names}: '$text'"),
         )
     }
 
@@ -105,11 +120,11 @@ class Outbox(
     @Synchronized
     fun confirm(token: String, version: Int): Reply {
         val draft = drafts[token]?.takeIf { it.state == State.Held }
-        val blocked = draft?.let { Limits.blocked(counted(), it.to, clock.instant()) }
+        val blocked = draft?.let { Limits.group(counted(), it.to, clock.instant()).refused("Not sent", clock.zone) }
         return when {
             draft == null -> Reply.Refused(NO_SUCH, NO_DRAFT)
             version != draft.version -> Reply.Refused(CHANGED, STALE_VERSION)
-            blocked != null -> Reply.Refused(blocked.say("Not sent", clock.zone), Limits.RATE_LIMITED)
+            blocked != null -> blocked
             else -> armed(draft)
         }
     }
@@ -118,7 +133,7 @@ class Outbox(
         draft.state = State.Armed
         draft.confirmed = clock.instant()
         later.run(delay) { fire(draft) }
-        return answer("say" to JsonPrimitive("Sending to ${draft.named} in ${delay.seconds} seconds. $STOP_HINT"))
+        return answer("say" to JsonPrimitive("Sending to ${draft.names} in ${delay.seconds} seconds. $STOP_HINT"))
     }
 
     /** Stops an armed or held draft; after the timer, says when it was handed to the phone. */
@@ -130,14 +145,14 @@ class Outbox(
                 draft.state = State.Stopped
                 answer("say" to JsonPrimitive(STOPPED))
             }
-            is State.Handed -> answer("say" to JsonPrimitive(tooLate(state.at)))
+            is State.Handed -> answer("say" to JsonPrimitive(tooLate(draft, state.at.atZone(clock.zone))))
             State.Stopped -> Reply.Refused(NO_SUCH, NO_DRAFT)
         }
     }
 
-    /** The sends that count toward the limits: armed or handed to the phone, never stopped. */
-    private fun counted(): List<Counted> = drafts.values.mapNotNull { draft ->
-        draft.confirmed?.takeIf { draft.state != State.Stopped }?.let { Counted(draft.to, it) }
+    /** The sends that count toward the limits, one per recipient: armed or handed to the phone, never stopped. */
+    private fun counted(): List<Counted> = drafts.values.filter { it.state != State.Stopped }.flatMap { draft ->
+        draft.confirmed?.let { at -> draft.to.map { Counted(it, at) } }.orEmpty()
     }
 
     private fun fire(draft: Draft) {
@@ -145,21 +160,29 @@ class Outbox(
             if (draft.state != State.Armed) return
             draft.state = State.Handed(clock.instant())
         }
-        // Outside the lock: the state has decided, and the radio may be slow.
-        @Suppress("TooGenericExceptionCaught") // whatever the radio throws, it is logged, never thrown on
-        try {
-            send(draft.to, draft.text)
-        } catch (_: RuntimeException) {
-            failed(SEND_FAILED)
+        // Outside the lock: the state has decided, and the radio may be slow. One recipient the
+        // radio refuses never stops the next.
+        for (number in draft.to) {
+            @Suppress("TooGenericExceptionCaught") // whatever the radio throws, it is logged, never thrown on
+            try {
+                send(number, draft.text)
+                synchronized(this) { draft.handed += 1 }
+            } catch (_: RuntimeException) {
+                failed(SEND_FAILED)
+            }
         }
     }
 
-    private fun tooLate(at: Instant) =
-        "Too late to stop; it was handed to the phone at ${TIME.format(at.atZone(clock.zone))}. $NOT_CONFIRMED"
 
     private fun answer(vararg pairs: Pair<String, JsonPrimitive>) = Reply.Answer(JsonObject(mapOf(*pairs)))
 
     companion object {
+        /** The answer to a stop after the timer: when, and for several recipients, how many the phone took. */
+        private fun tooLate(draft: Draft, at: ZonedDateTime): String {
+            val which = if (draft.to.size == 1) "it was" else "${draft.handed} of ${draft.to.size} were"
+            return "Too late to stop; $which handed to the phone at ${TIME.format(at)}. $NOT_CONFIRMED"
+        }
+
         /** Why [text] cannot be drafted, or null when it can. */
         private fun refusal(text: String): Reply.Refused? =
             if (text.isEmpty()) {

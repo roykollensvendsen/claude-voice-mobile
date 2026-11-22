@@ -30,16 +30,48 @@ class Recipients(
         data class Answered(val reply: Reply) : Resolved
     }
 
+    /** What a list of `to` comes to: a number for each, in order, or the answer the owner hears instead. */
+    sealed interface Group {
+        data class To(val all: List<Resolved.To>) : Group
+
+        data class Answered(val reply: Reply) : Group
+    }
+
     private val lookups = mutableListOf<Instant>()
     private var picks = mapOf<String, Contact>()
 
     /** The number [to] names, or the answer the owner hears instead. */
     @Synchronized
-    fun resolve(to: String): Resolved {
-        val picked = picks[to]
+    fun resolve(to: String): Resolved = when (val group = resolve(listOf(to))) {
+        is Group.Answered -> Resolved.Answered(group.reply)
+        is Group.To -> group.all.single()
+    }
+
+    /**
+     * The numbers [to] names, in order, or the answer about the first that needs one. When that
+     * answer is choices, the picks this list already used stay open with them, so the next
+     * request, with its new pick, keeps the earlier ones (ADR-CVM-010, "Several recipients").
+     */
+    @Synchronized
+    fun resolve(to: List<String>): Group {
+        val open = picks
         picks = emptyMap()
+        val all = mutableListOf<Resolved.To>()
+        for (each in to) {
+            val picked = open[each]
+            when (val one = picked?.let { Resolved.To(it.number, Names.shown(it.name)) } ?: one(each)) {
+                is Resolved.To -> all += one
+                is Resolved.Answered -> {
+                    if (picks.isNotEmpty()) picks = open.filterKeys { it in to } + picks
+                    return Group.Answered(one.reply)
+                }
+            }
+        }
+        return Group.To(all)
+    }
+
+    private fun one(to: String): Resolved {
         return when {
-            picked != null -> Resolved.To(picked.number, Names.shown(picked.name))
             to.startsWith(PICK) -> refused(STALE, UNKNOWN_PICK)
             !LETTER.containsMatchIn(to) -> Resolved.To(to, null)
             Names.letters(to) < Names.FEWEST_LETTERS -> refused(TOO_SHORT, Outbox.INVALID_RECIPIENT)
@@ -91,8 +123,8 @@ class Recipients(
         fun onThePhone(find: (matches: (String) -> Boolean) -> List<Contact>?): Recipients =
             Recipients(Clock.systemDefaultZone(), { UUID.randomUUID().toString() }, find)
 
-        /** `to` as a number, with no lookup: the outbox's own reading when no contacts are wired. */
-        fun number(to: String): Resolved = Resolved.To(to, null)
+        /** Each `to` as a number, with no lookup: the outbox's own reading when no contacts are wired. */
+        fun numbers(to: List<String>): Group = Group.To(to.map { Resolved.To(it, null) })
 
         /** The most name lookups in an hour. */
         const val LOOKUPS = 10

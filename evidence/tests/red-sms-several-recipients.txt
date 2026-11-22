@@ -1,0 +1,23 @@
+## One text to several recipients (#171), against Outbox.request(List) left as TODO, red
+SeveralRecipientsTest > a pick is used once, and a later request without it closes it() FAILED
+SeveralRecipientsTest > one yes and one undo delay send one text to each, in read-back order() FAILED
+SeveralRecipientsTest > a cancel after the delay names how many were handed to Android() FAILED
+SeveralRecipientsTest > names are read back with their numbers, in the order given() FAILED
+SeveralRecipientsTest > a group is checked again at confirm, and refused whole() FAILED
+SeveralRecipientsTest > through the tool, to may be a list of one to five strings() FAILED
+SeveralRecipientsTest > two names needing a choice ask about the first, then the second, keeping the first pick() FAILED
+SeveralRecipientsTest > the same number given twice is one send against the limit per number() FAILED
+SeveralRecipientsTest > each recipient counts as one send against the limits() FAILED
+SeveralRecipientsTest > a group that does not fit is refused whole before any draft, saying how many would fit() FAILED
+SeveralRecipientsTest > changing the list makes a new version with a new read-back, so an old yes is refused() FAILED
+SeveralRecipientsTest > a list with no recipient in common is a draft of its own() FAILED
+SeveralRecipientsTest > the tool's words tell the hub a list is allowed and one yes covers it() FAILED
+SeveralRecipientsTest > the same number twice counts once, and keeps its first place() FAILED
+SeveralRecipientsTest > the tool's schema says to is a string or a list of one to five strings() FAILED
+SeveralRecipientsTest > one recipient that is no number refuses the whole group, and nothing is drafted() FAILED
+SeveralRecipientsTest > a list of one behaves as the string() FAILED
+SeveralRecipientsTest > a cancel after the delay for one recipient keeps its words() FAILED
+SeveralRecipientsTest > one recipient Android refuses never stops the next, and is logged() FAILED
+SeveralRecipientsTest > one cancel stops them all() FAILED
+SeveralRecipientsTest > the read-back names every recipient with the whole number and gives the text once() FAILED
+21 tests completed, 21 failed
