@@ -48,6 +48,8 @@ def test_whether_android_asked_is_told_by_the_flag_before_and_after_not_by_the_s
         "false both before and after",
         "Android 15 starts its permission screen even when it refuses at once",
         "a turn of the phone",
+        "If the owner closes that one too",
+        "kept in the line's saved state",
         "a second refusal in a row from the line opens the settings",
         "never becomes a button that does nothing",
     ):

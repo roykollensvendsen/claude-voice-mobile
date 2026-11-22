@@ -156,7 +156,11 @@ before and after. When Android shows the request and the owner refuses, the
 flag turns true after a first refusal, or was true before a second one, so
 neither reads as Android not asking. A first request closed without an answer
 leaves the flag false, but the next tap still asks first, and Android shows it.
-No time is guessed, so a slow phone cannot make the tap ask in vain.
+If the owner closes that one too, the refusal reads as Android not asking, and
+the settings open: a fair place to land, never a dead button. The reading
+before the request is kept in the line's saved state, so a turn of the phone
+while Android shows the request does not lose it. No time is guessed, so a
+slow phone cannot make the tap ask in vain.
 
 An earlier version told a shown request by the app's screen pausing. That
 does not hold: Android 15 starts its permission screen even when it refuses at
