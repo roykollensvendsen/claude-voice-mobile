@@ -131,3 +131,18 @@ def test_the_contacts_capability_never_asks_for_the_profile_permission() -> None
     root = ET.parse(manifest).getroot()  # noqa: S314 - our own manifest
     held = {e.get(f"{ANDROID}name", "") for e in root.iter("uses-permission")}
     assert held == {"android.permission.READ_CONTACTS"}
+
+
+def test_several_recipients_answers_how_the_list_travels_and_what_one_yes_covers() -> None:
+    """The Android build asked four things; the record answers each before it is built."""
+    part = next_version()
+    for guard in (
+        "`to` is a string for one recipient or a list of 1 to 5 strings",
+        "Changing the list makes a new version",
+        "The owner's one yes and the one undo delay cover every recipient",
+        "Each recipient counts as one send against every limit, including 3 to one number in 10 minutes",
+        "The phone hands every recipient's text to Android, in read-back order",
+        "one recipient failing never stops the next",
+        "Until delivery outcomes are built, the answer after the undo says",
+    ):
+        assert guard in part, guard
