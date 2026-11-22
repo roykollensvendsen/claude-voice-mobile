@@ -1,0 +1,23 @@
+.........F                                                               [100%]
+=================================== FAILURES ===================================
+__ test_a_yes_for_several_is_bound_to_the_stored_list_and_names_each_refusal ___
+
+    def test_a_yes_for_several_is_bound_to_the_stored_list_and_names_each_refusal() -> None:
+        """Review of #168: the token binds the list, confirm sends only to it, and a refusal is named."""
+        part = next_version()
+        for guard in (
+            "the token is bound to the ordered list of E.164 numbers after duplicates are dropped",
+            "never to the `to` of any request",
+            "the limits at confirm count over that stored list",
+            "No token is issued while a choice is open",
+            "A recipient Android refuses at once still counts against the limits",
+            "names each recipient Android refused, as the read-back named it",
+        ):
+>           assert guard in part, guard
+E           AssertionError: the token is bound to the ordered list of E.164 numbers after duplicates are dropped
+E           assert 'the token is bound to the ordered list of E.164 numbers after duplicates are dropped' in '### The next version: by name, older texts, several recipients, delivered The owner asked for four additions on 2026-...gument schema. **What waits still:** the mobile ranges, a draft lapsing after 15 minutes and one draft per recipient. '
+
+tests/test_sms_next_version.py:136: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_sms_next_version.py::test_a_yes_for_several_is_bound_to_the_stored_list_and_names_each_refusal
+1 failed, 9 passed in 0.07s

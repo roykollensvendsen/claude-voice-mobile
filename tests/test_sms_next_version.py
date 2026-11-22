@@ -146,3 +146,17 @@ def test_several_recipients_answers_how_the_list_travels_and_what_one_yes_covers
         "Until delivery outcomes are built, the answer after the undo says",
     ):
         assert guard in part, guard
+
+
+def test_a_yes_for_several_is_bound_to_the_stored_list_and_names_each_refusal() -> None:
+    """Review of #168: the token binds the list, confirm sends only to it, and a refusal is named."""
+    part = next_version()
+    for guard in (
+        "the token is bound to the ordered list of E.164 numbers after duplicates are dropped",
+        "never to the `to` of any request",
+        "the limits at confirm count over that stored list",
+        "No token is issued while a choice is open",
+        "A recipient Android refuses at once still counts against the limits",
+        "names each recipient Android refused, as the read-back named it",
+    ):
+        assert guard in part, guard
