@@ -25,6 +25,10 @@ sessions approved.
   The data count, `usage`, is a setting the owner turns on in a settings page.
 - Android tells "refused" from "never asked" only while the app asks. The app
   has to remember that it asked.
+- Today the app asks for no plugin's permission. It asks only for
+  notifications, at first start and from the notice line (ADR-CVM-003). The
+  owner gives contacts and text messages in the phone's settings. So on the
+  owner's phone today, every permission that is not granted is "never_asked".
 - Android kills the app when the owner takes a permission away. It does not
   when the owner gives one back.
 
@@ -65,7 +69,9 @@ each of the three outcomes.
 **The app remembers that it asked.** Every place in the app that asks for a
 permission, or sends the owner to a special-access page, writes that down
 first, in the app's no-backup storage. So "never_asked" means this install has
-never asked. The record holds permission names only.
+never asked. The record holds permission names only. Special access has no
+request to refuse. It is "refused" when it is off and the app has sent the
+owner to its page before, and "never_asked" when it is off otherwise.
 
 **Plain states only.** `access` holds the three words and the use names it
 already sends. It holds the states, never anything read with the access, such
@@ -73,9 +79,12 @@ as a contact or a number. The states are never logged, as with the rest of
 `agent_info`.
 
 **What the voice says.** This is the hub's part, written here so both sides
-agree. "refused" means "turn it on in the phone's settings". "never_asked"
-means "open the app once", since an app in the background cannot show the
-request. The tool's own answer stays the authority. A tool that finds its
+agree. Both "refused" and "never_asked" are fixed the same way, and the voice
+says so: "turn on <the use> for claude-voice in the phone's settings". The
+app does not ask for a plugin's permission when it opens, so "open the app"
+would fix nothing. The two values stay apart for the hub, which may word them
+differently once the app asks. That is a decision of its own, for a later
+record. The tool's own answer stays the authority. A tool that finds its
 permission missing still refuses with `permission_missing`.
 
 ## Consequences
@@ -88,10 +97,12 @@ permission missing still refuses with `permission_missing`.
 - **Worse:** late news. A permission given back shows only at the hub's next
   read, since Android does not restart the app for it. The hub fetches
   `agent_info` fresh for the owner's question, and again after any call to a
-  tool it held as refused. A warning from an older read is said as "last I
-  heard".
-- **Worse:** a reinstall forgets that the app asked. That errs toward
-  "never_asked", whose spoken fix, "open the app once", is still right.
+  tool it held as refused or never_asked. A warning from an older read is
+  said as "last I heard".
+- **Worse:** an install from before the record, a reinstall, and a permission
+  given only in the settings all show "never_asked". So the value says less
+  than its name. The spoken fix is the same for both values, so the owner
+  still hears what works.
 - **Worse:** a use that rests on several permissions shows "refused" when only
   one of them is. Where a precise warning matters, a plugin names its uses so
   that each tool needs one.
@@ -102,10 +113,13 @@ permission missing still refuses with `permission_missing`.
   - the rule: all granted gives "granted"; one refused after asking gives
     "refused"; one not granted and never asked gives "never_asked";
   - `agent_info`: `access` has exactly the keys of `uses`, read on each call;
-  - no path that builds `access` calls `requestPermissions`;
+  - a source check: no file in the capability names `requestPermissions` or
+    a settings action, so no path that builds `access` can ask;
   - every place that asks writes the record first;
-  - on the emulator: turn contacts off, and the next `agent_info` says
-    "refused" for `contacts` under `sms_send`.
+  - an install from before the record: a permission not granted gives
+    "never_asked", and nothing is asked;
+  - on the emulator: turn contacts off in the settings, and the next
+    `agent_info` says "never_asked" for `contacts` under `sms_send`.
 
 ## Related
 

@@ -54,3 +54,22 @@ def test_access_never_widens_uses_and_is_read_fresh() -> None:
 def test_the_record_says_what_gets_worse() -> None:
     text = record()
     assert "A permission given back shows only at the hub's next read" in text
+
+
+def test_both_missing_values_are_fixed_in_the_settings_since_the_app_asks_for_none() -> None:
+    """Both missing values get the settings fix, since the app asks for no plugin's permission.
+
+    Review of #164: "open the app once" fixed nothing. An install from before the record lands on
+    never_asked too.
+    """
+    text = record()
+    for guard in (
+        "Today the app asks for no plugin's permission",
+        'Both "refused" and "never_asked" are fixed the same way',
+        "in the phone's settings",
+        "an install from before the record",
+        "refused or never_asked",
+        "no file in the capability names `requestPermissions`",
+    ):
+        assert guard in text, guard
+    assert "open the app once" not in text
