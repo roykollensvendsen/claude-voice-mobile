@@ -430,10 +430,16 @@ question. The same number twice counts once.
     permissions and needs the owner's yes in a pull request of its own.
   - "Not in your contacts" asks `capabilities/contacts` whether a number
     belongs to a contact, as a yes or no only. A number given as a number is
-    read back as the number, never with a contact's name. The check counts as
-    one of the 10 lookups an hour, since its answer tells the hub whether a
-    number is among the owner's contacts. Past the 10, the read-back says
-    "contacts not checked" for that number instead of a mark.
+    read back as the number, never with a contact's name.
+  - Both marks for one number are one check, and it counts as one of the 10
+    lookups an hour, since its answer tells the hub whether a number is among
+    the owner's contacts and in the owner's sent texts. A draft needs no yes,
+    so without the count a session could map both. Past the 10, the read-back
+    says "not checked" for that number, with neither mark. A contact found by
+    name has already used its lookup, so its "never texted before" costs no
+    second one.
+  - The marks are never logged, on the phone or the hub. They appear only in
+    the read-back's `say`.
   - A mark goes in brackets right after the number it is about, as in "Draft
     to +4700000001 (not in your contacts, never texted before); <name>,
     +4700000012: '...'". A contact found by name never gets "not in your
