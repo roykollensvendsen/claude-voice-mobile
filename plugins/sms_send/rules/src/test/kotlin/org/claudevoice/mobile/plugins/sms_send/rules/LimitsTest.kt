@@ -202,8 +202,38 @@ class LimitsTest {
         }
     }
 
+    @Test
+    fun `an emoji joined of several, or a flag of a part of a country, may go`() {
+        val family = "\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67"
+        val toned = "\uD83D\uDC69\uD83C\uDFFD\u200D\uD83D\uDCBB"
+        val rainbow = "\uD83C\uDFF3\uFE0F\u200D\uD83C\uDF08"
+        val england = "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F"
+        for (emoji in listOf(family, toned, rainbow, england)) {
+            assertNull(Limits.text("Hei $emoji ses"), emoji)
+        }
+    }
+
+    @Test
+    fun `a joiner or a tag anywhere else is still refused`() {
+        val man = "\uD83D\uDC68"
+        val tagG = "\uDB40\uDC67"
+        val cancel = "\uDB40\uDC7F"
+        for (text in listOf(
+            "exa\u200Dmple.ru", "1\u200D2", "$man\u200Dx", "a\u200D$man", "Hei\u200D",
+            "Hei$tagG", "Hei$tagG$cancel", "\uD83C\uDFF4$tagG", "$man$tagG$cancel",
+        )) {
+            assertEquals(INVISIBLE, Limits.text(text), text)
+        }
+    }
+
+    @Test
+    fun `five numbers with dots are no address, while an address with a port is one`() {
+        assertNull(Limits.text("1.2.3.4.5"))
+        assertEquals(LINKS, Limits.text("10.0.0.1:8080"))
+    }
+
     private companion object {
-        const val INVISIBLE = "Not drafted: texts can't contain invisible characters."
+        const val INVISIBLE = "Not drafted: the text has a hidden character. Leave out any emoji, or say it again."
 
         const val DIGITS =
             "Not drafted: texts can't contain more than 6 digits in a row, such as a phone or account number."
