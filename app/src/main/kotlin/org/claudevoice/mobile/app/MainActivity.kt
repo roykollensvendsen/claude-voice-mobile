@@ -57,7 +57,10 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setPadding(MARGIN, TOP_MARGIN, MARGIN, MARGIN)
             val app = application as App
-            addView(NameStep(this@MainActivity, app.machine, app.suggestedName) { listen() }.view)
+            val named = NameStep(this@MainActivity, app.machine, app.suggestedName) {
+                ListenerService.start(this@MainActivity)
+            }
+            addView(named.view)
             addView(message)
             addView(open)
             hidden = hiddenNoticeLine()
@@ -74,6 +77,7 @@ class MainActivity : Activity() {
             }
         }
         setContentView(root)
+        line.restore(savedInstanceState?.getIntArray(LINE_STATE))
         begin(firstStart = savedInstanceState == null)
         watcher = TailnetWatcher(this) { state ->
             runOnUiThread {
@@ -122,6 +126,12 @@ class MainActivity : Activity() {
         line.answered(granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED)
     }
 
+    // A turn rebuilds the screen while a request from the line may be open; its answer still counts.
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putIntArray(LINE_STATE, line.saved())
+    }
+
     override fun onStop() {
         ticks.removeCallbacks(tick)
         watcher.stop()
@@ -130,12 +140,10 @@ class MainActivity : Activity() {
 
     // Listens once the phone has a name, and asks for the notice's permission at a first start.
     private fun begin(firstStart: Boolean) {
-        if ((application as App).machine.name != null) listen()
+        // Started from here, in the foreground, as Android requires; it finds the agent itself.
+        if ((application as App).machine.name != null) ListenerService.start(this)
         if (firstStart) AskNotifications.once(this)
     }
-
-    // Started from here, in the foreground, as Android requires; it finds the agent itself.
-    private fun listen() = ListenerService.start(this)
 
     private companion object {
         const val TEXT_SIZE_SP = 18f
@@ -146,5 +154,7 @@ class MainActivity : Activity() {
 
         /** How often the pairing panel looks again: a code that was used or ran out leaves soon. */
         const val TICK_MS = 1000L
+
+        const val LINE_STATE = "notice_line"
     }
 }

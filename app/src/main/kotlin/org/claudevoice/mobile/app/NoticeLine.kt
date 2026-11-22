@@ -35,7 +35,20 @@ class NoticeLine(private val ask: () -> Unit, private val openSettings: () -> Un
         if (after == NoticeTap.After.OpenSettings) openSettings()
     }
 
+    /** The state to keep while Android rebuilds the screen, as turning it does. */
+    fun saved(): IntArray = intArrayOf(if (asking) 1 else 0, if (shown) 1 else 0, refusals)
+
+    /** Takes the state [saved] gave before the screen was rebuilt; null or a damaged one is ignored. */
+    fun restore(saved: IntArray?) {
+        if (saved?.size != SAVED_SIZE) return
+        asking = saved[0] == 1
+        shown = saved[1] == 1
+        refusals = saved[2]
+    }
+
     companion object {
+        private const val SAVED_SIZE = 3
+
         /** Whether the line shows: only while the listener runs with its notice hidden. */
         fun shows(listening: Boolean, noticesAllowed: Boolean) = NoticeTap.lineShows(listening, noticesAllowed)
     }
