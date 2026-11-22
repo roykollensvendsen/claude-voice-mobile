@@ -1,0 +1,50 @@
+AccessTest > a granted permission that was asked for is still granted() FAILED
+    kotlin.NotImplementedError at AccessTest.kt:47
+AccessTest > a plugin with no uses sends an empty access() FAILED
+    org.opentest4j.AssertionFailedError at AccessTest.kt:100
+AccessTest > a use is granted only when every permission behind it is() FAILED
+    kotlin.NotImplementedError at AccessTest.kt:29
+AccessTest > a plugin that names permissions for a use it does not know is refused at start() FAILED
+    org.opentest4j.AssertionFailedError at AccessTest.kt:106
+AccessTest > one permission not granted after the app asked for it makes the use refused() FAILED
+    kotlin.NotImplementedError at AccessTest.kt:36
+AccessTest > access is read again on every answer, and a refusal never changes uses() FAILED
+AccessTest > each plugin entry says access for exactly the names in uses() FAILED
+    org.opentest4j.AssertionFailedError at AccessTest.kt:77
+AccessTest > a refusal anywhere outweighs a permission never asked for() FAILED
+    kotlin.NotImplementedError at AccessTest.kt:53
+AccessTest > a use with no Android permission behind it is granted() FAILED
+    kotlin.NotImplementedError at AccessTest.kt:59
+AccessTest > a permission not granted and never asked for is never_asked, even when another was asked() FAILED
+    kotlin.NotImplementedError at AccessTest.kt:41
+PluginsTest > each plugin's entry for agent_info names its tools, what confirms a yes, what it uses and whether that is allowed() FAILED
+    org.opentest4j.AssertionFailedError at PluginsTest.kt:167
+293 tests completed, 11 failed
+
+capabilities/permissions, AskRecord, against bodies left unwritten:
+AskRecordTest > an install from before the record has asked for nothing FAILED
+    kotlin.NotImplementedError at AskRecordTest.kt:27
+AskRecordTest > a record that cannot be written leaves the ask unrecorded and does not throw FAILED
+    kotlin.NotImplementedError at AskRecordTest.kt:56
+AskRecordTest > a name with a line break is refused, so one ask can never write another FAILED
+    kotlin.NotImplementedError at AskRecordTest.kt:50
+AskRecordTest > a recorded ask is remembered, by a new reader too, and only for that permission FAILED
+    kotlin.NotImplementedError at AskRecordTest.kt:32
+AskRecordTest > recording twice keeps one line, and two permissions keep two FAILED
+    kotlin.NotImplementedError at AskRecordTest.kt:40
+5 tests completed, 5 failed
+
+plugins/sms_send, before it names its permissions:
+SmsSendPluginTest > sending rests on SEND_SMS, and a name on READ_CONTACTS, for the access the hub reads FAILED
+    java.lang.AssertionError at SmsSendPluginTest.kt:56
+5 tests completed, 1 failed
+
+tests/test_access_asks.py, against main's AskNotifications.kt, which asks without writing the record:
+E         Left contains 1 more item:
+E         {'app/src/main/kotlin/org/claudevoice/mobile/app/AskNotifications.kt': [28]}
+E         Use -v to get more diff
+
+tests/test_access_asks.py:60: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_access_asks.py::test_every_ask_in_the_app_and_its_plugins_writes_the_record_first
+1 failed, 3 passed in 0.24s

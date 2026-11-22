@@ -129,6 +129,7 @@ androidComponents {
 
 dependencies {
     implementation(project(":core"))
+    implementation(project(":capabilities:permissions"))
     pickedPlugins.forEach { implementation(project(":plugins:$it")) }
     testImplementation(libs.junit4)
 }

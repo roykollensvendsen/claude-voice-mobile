@@ -71,7 +71,7 @@ class PhoneAgentTest {
     private val stopped = mutableListOf<InetAddress>()
 
     private val describe = { place: AgentPlace ->
-        AgentInfo(Plugins(listOf(held)), "0.1.0", "phone-a", SettingsKeeper().settings, place)
+        AgentInfo(Plugins(listOf(held)), "0.1.0", "phone-a", SettingsKeeper().settings, place, GrantedAll)
     }
 
     private val agent = PhoneAgent(

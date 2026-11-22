@@ -31,7 +31,7 @@ class AgentInfoTest {
         override fun hub() = hub
     }
 
-    private val info = AgentInfo(Plugins(listOf(status)), "0.1.0", "phone-a", keeper.settings, place)
+    private val info = AgentInfo(Plugins(listOf(status)), "0.1.0", "phone-a", keeper.settings, place, GrantedAll)
 
     @Test
     fun `the answer holds every field protocol version 1 asks for, and no other`() {
@@ -49,7 +49,7 @@ class AgentInfoTest {
     @Test
     fun `the tools are every plugin's, without agent_info itself`() {
         assertEquals(listOf("status_battery", "status_ring"), info.report()["tools"]!!.jsonArray.map { it.jsonPrimitive.content })
-        assertEquals(Plugins(listOf(status)).entries(), info.report()["plugins"])
+        assertEquals(Plugins(listOf(status)).entries(GrantedAll), info.report()["plugins"])
     }
 
     @Test
@@ -71,11 +71,11 @@ class AgentInfoTest {
     fun `the phone's name follows the protocol's rule for a machine name`() {
         for (bad in listOf("Phone-a", "1phone", "phone_a", "", "p".repeat(33), "phone a")) {
             org.junit.jupiter.api.assertThrows<IllegalArgumentException>(bad) {
-                AgentInfo(Plugins(listOf(status)), "0.1.0", bad, keeper.settings, place)
+                AgentInfo(Plugins(listOf(status)), "0.1.0", bad, keeper.settings, place, GrantedAll)
             }
         }
-        AgentInfo(Plugins(listOf(status)), "0.1.0", "p".repeat(32), keeper.settings, place)
-        AgentInfo(Plugins(listOf(status)), "0.1.0", "phone-2", keeper.settings, place)
+        AgentInfo(Plugins(listOf(status)), "0.1.0", "p".repeat(32), keeper.settings, place, GrantedAll)
+        AgentInfo(Plugins(listOf(status)), "0.1.0", "phone-2", keeper.settings, place, GrantedAll)
     }
 }
 

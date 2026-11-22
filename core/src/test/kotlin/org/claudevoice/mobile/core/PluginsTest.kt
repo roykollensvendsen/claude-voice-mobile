@@ -153,11 +153,11 @@ class PluginsTest {
         }
         val plugins = Plugins(listOf(phone))
         reach.add("micropone")
-        assertThrows<IllegalStateException> { plugins.entries() }
+        assertThrows<IllegalStateException> { plugins.entries(GrantedAll) }
     }
 
     @Test
-    fun `each plugin's entry for agent_info names its tools, what confirms a yes, and what it uses`() {
+    fun `each plugin's entry for agent_info names its tools, what confirms a yes, what it uses and whether that is allowed`() {
         val plugins = Plugins(
             listOf(
                 plugin("status", "status_battery", "status_ring"),
@@ -165,9 +165,10 @@ class PluginsTest {
             ),
         )
         assertEquals(
-            """[{"name":"status","tools":["status_battery","status_ring"],"confirms":[],"uses":[]},""" +
-                """{"name":"phone","tools":["phone_call","phone_confirm"],"confirms":["phone_confirm"],"uses":["calls","contacts"]}]""",
-            plugins.entries().toString(),
+            """[{"name":"status","tools":["status_battery","status_ring"],"confirms":[],"uses":[],"access":{}},""" +
+                """{"name":"phone","tools":["phone_call","phone_confirm"],"confirms":["phone_confirm"],"uses":["calls","contacts"],""" +
+                """"access":{"calls":"granted","contacts":"granted"}}]""",
+            plugins.entries(GrantedAll).toString(),
         )
     }
 
@@ -184,6 +185,6 @@ class PluginsTest {
         }
         val plugins = Plugins(listOf(phone))
         reach.add("calls")
-        assertEquals("""["calls"]""", plugins.entries().single().jsonObject["uses"].toString())
+        assertEquals("""["calls"]""", plugins.entries(GrantedAll).single().jsonObject["uses"].toString())
     }
 }

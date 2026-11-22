@@ -26,6 +26,7 @@ class AgentInfo(
     val machine: String,
     private val settings: PhoneSettings,
     private val place: AgentPlace,
+    private val permissions: Permissions,
 ) {
     init {
         require(MACHINE.matches(machine)) { "the machine name '$machine' breaks the protocol's rule" }
@@ -45,7 +46,7 @@ class AgentInfo(
             "hub" to JsonPrimitive(place.hub()),
             "tools" to JsonArray(plugins.offered().map { JsonPrimitive(it) }),
             "version" to JsonPrimitive(version),
-            "plugins" to plugins.entries(uses),
+            "plugins" to plugins.entries(uses, permissions),
             "privacy" to privacyReport(settings),
         ),
     )

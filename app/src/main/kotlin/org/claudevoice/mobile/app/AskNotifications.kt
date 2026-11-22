@@ -25,6 +25,7 @@ object AskNotifications {
         } catch (_: IOException) {
             // Not remembered: then it may ask once more at a later start, which does no harm.
         }
+        (activity.application as App).asks.record(Manifest.permission.POST_NOTIFICATIONS)
         activity.requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQUEST)
     }
 
