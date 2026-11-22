@@ -1,0 +1,23 @@
+....F                                                                    [100%]
+=================================== FAILURES ===================================
+_____________ test_the_record_says_how_the_marks_are_read_and_said _____________
+
+    def test_the_record_says_how_the_marks_are_read_and_said() -> None:
+        text = record()
+        for guard in (
+            "`sms_send` does not declare `READ_SMS` for it",
+            "needs the owner's yes in a pull request of its own",
+            "A number given as a number is read back as the number, never with a contact's name",
+            "The check counts as one of the 10 lookups an hour",
+            '"contacts not checked"',
+            "A mark goes in brackets right after the number it is about",
+            'never gets "not in your contacts", but can get "never texted before"',
+        ):
+>           assert guard in text, guard
+E           AssertionError: `sms_send` does not declare `READ_SMS` for it
+E           assert '`sms_send` does not declare `READ_SMS` for it' in '# ADR-CVM-010: Reading and sending text messages ## Status Proposed 2026-11-18 by the architect session. It writes do...https://github.com/roykollensvendsen/claude-voice/blob/main/docs/agent-protocol/next-version.md): the `messages` name.'
+
+tests/test_sms_build_answers.py:77: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_sms_build_answers.py::test_the_record_says_how_the_marks_are_read_and_said
+1 failed, 4 passed in 0.16s

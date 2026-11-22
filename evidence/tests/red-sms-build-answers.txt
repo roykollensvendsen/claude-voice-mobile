@@ -62,3 +62,5 @@ FAILED tests/test_sms_build_answers.py::test_the_record_says_where_the_read_back
 FAILED tests/test_sms_build_answers.py::test_the_record_defines_one_letter_off_and_counts_a_request_once
 FAILED tests/test_sms_build_answers.py::test_the_record_says_a_bracket_glued_to_a_date_keeps_it_in
 4 failed in 0.09s
+
+Note, added later: this red run was taken at 54d0bf0, before review b1 on #189. The guard "one request counts as one try" then became the three guards on each name in a list, which pass at 7d4ed72 and after.
