@@ -69,8 +69,11 @@ def test_the_record_says_how_the_marks_are_read_and_said() -> None:
         "`sms_send` does not declare `READ_SMS` for it",
         "needs the owner's yes in a pull request of its own",
         "A number given as a number is read back as the number, never with a contact's name",
-        "The check counts as one of the 10 lookups an hour",
-        '"contacts not checked"',
+        "Both marks for one number are one check, and it counts as one of the 10 lookups an hour",
+        'says "not checked" for that number, with neither mark',
+        "A contact found by name has already used its lookup",
+        "The marks are never logged, on the phone or the hub",
+        "They appear only in the read-back's `say`",
         "A mark goes in brackets right after the number it is about",
         'never gets "not in your contacts", but can get "never texted before"',
     ):
