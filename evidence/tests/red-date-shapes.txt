@@ -1,0 +1,27 @@
+## Dates and times taken out before the digit run is counted (ADR-CVM-010, after #180), against the rule before this change, red
+LimitsTest > a date with a one-digit day passes() FAILED
+LimitsTest > numbers apart by brackets and spaces are one run() FAILED
+LimitsTest > numbers apart by slashes are one run() FAILED
+LimitsTest > a date written year first passes() FAILED
+LimitsTest > numbers apart by colons, commas, underscores, apostrophes or middle dots are one run() FAILED
+LimitsTest > a range of two times with an en dash passes() FAILED
+LimitsTest > a date and a time apart by a word pass() FAILED
+LimitsTest > a date at the end of a sentence passes, and one closing mark is allowed() FAILED
+LimitsTest > a date with its year passes() FAILED
+LimitsTest > a range of two times with a dash passes() FAILED
+48 tests completed, 10 failed
+The refused examples already were refused, and pass from the start: they hold that the new shapes
+take nothing more out than the record names. "22.33.44.55" is refused as an address (four numbers
+with dots) before the digit rule looks.
+
+## The same tests with the line that takes the shapes out switched off (the digit rule counting the text as it is), red
+Pitest does not change the text of a regular expression, so this run stands in for a mutation of
+the shapes as a whole (quality's f3 on #180).
+LimitsTest > a date with a one-digit day passes() FAILED
+LimitsTest > a date written year first passes() FAILED
+LimitsTest > a range of two times with an en dash passes() FAILED
+LimitsTest > a date and a time apart by a word pass() FAILED
+LimitsTest > a date at the end of a sentence passes, and one closing mark is allowed() FAILED
+LimitsTest > a date with its year passes() FAILED
+LimitsTest > a range of two times with a dash passes() FAILED
+48 tests completed, 7 failed
