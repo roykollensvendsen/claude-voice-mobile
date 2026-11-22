@@ -53,14 +53,17 @@ class Outbox(
     }
 
     private class Draft(val token: String, var to: List<String>, var text: String, var version: Int, var state: State) {
-        /** How the answers name the recipients: each number, or the contact's name and the number. */
-        var names: String = to.joinToString("; ")
+        /** How the read-back named each recipient: the number, or the contact's name and the number. */
+        var named: List<String> = to
+
+        val names get() = named.joinToString("; ")
 
         /** When the owner's yes armed it; each recipient counts toward the limits until it is stopped. */
         var confirmed: Instant? = null
 
-        /** How many of [to] the phone took, in read-back order. */
+        /** How many of [to] Android took, and how the read-back named each one it refused. */
         var handed = 0
+        val refused = mutableListOf<String>()
     }
 
     private val drafts = mutableMapOf<String, Draft>()
@@ -108,7 +111,7 @@ class Outbox(
             this.text = text
             version += 1
         } ?: Draft(tokens(), to, text, 1, State.Held).also { drafts[it.token] = it }
-        draft.names = named.joinToString("; ")
+        draft.named = named
         return answer(
             "token" to JsonPrimitive(draft.token),
             "version" to JsonPrimitive(draft.version),
@@ -155,32 +158,37 @@ class Outbox(
         draft.confirmed?.let { at -> draft.to.map { Counted(it, at) } }.orEmpty()
     }
 
+    // Under the one lock, so a cancel lands before the first text or after the last. One
+    // recipient Android refuses never stops the next.
+    @Synchronized
     private fun fire(draft: Draft) {
-        synchronized(this) {
-            if (draft.state != State.Armed) return
-            draft.state = State.Handed(clock.instant())
-        }
-        // Outside the lock: the state has decided, and the radio may be slow. One recipient the
-        // radio refuses never stops the next.
-        for (number in draft.to) {
+        if (draft.state != State.Armed) return
+        draft.state = State.Handed(clock.instant())
+        for ((number, named) in draft.to.zip(draft.named)) {
             @Suppress("TooGenericExceptionCaught") // whatever the radio throws, it is logged, never thrown on
             try {
                 send(number, draft.text)
-                synchronized(this) { draft.handed += 1 }
+                draft.handed += 1
             } catch (_: RuntimeException) {
+                draft.refused += named
                 failed(SEND_FAILED)
             }
         }
     }
 
-
     private fun answer(vararg pairs: Pair<String, JsonPrimitive>) = Reply.Answer(JsonObject(mapOf(*pairs)))
 
     companion object {
-        /** The answer to a stop after the timer: when, and for several recipients, how many the phone took. */
+        /**
+         * The answer to a stop after the timer: when, and for several recipients, how many Android
+         * took and each one it refused, named as the read-back named it.
+         */
         private fun tooLate(draft: Draft, at: ZonedDateTime): String {
-            val which = if (draft.to.size == 1) "it was" else "${draft.handed} of ${draft.to.size} were"
-            return "Too late to stop; $which handed to the phone at ${TIME.format(at)}. $NOT_CONFIRMED"
+            val time = TIME.format(at)
+            if (draft.to.size == 1) return "Too late to stop; it was handed to the phone at $time. $NOT_CONFIRMED"
+            val refused = draft.refused.takeIf { it.isNotEmpty() }?.joinToString(" and ", "; it refused the text to ")
+            val handed = "handed ${draft.handed} of ${draft.to.size} to Android at $time"
+            return "Too late to stop; $handed${refused.orEmpty()}. $NOT_CONFIRMED"
         }
 
         /** Why [text] cannot be drafted, or null when it can. */

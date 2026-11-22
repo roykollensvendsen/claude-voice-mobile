@@ -148,20 +148,82 @@ class SeveralRecipientsTest {
     }
 
     @Test
-    fun `a cancel after the delay names how many were handed to Android`() {
+    fun `a cancel after the delay names how many were handed to Android, and each it refused`() {
         val phone = Phone()
         phone.refusing += b
         val drafted = phone.request("Kommer", a, b, c)
         phone.outbox.confirm(token(drafted), 1)
         phone.fire()
         assertEquals(
-            "Too late to stop; 2 of 3 were handed to the phone at 08.30. I can't yet confirm delivery.",
+            "Too late to stop; handed 2 of 3 to Android at 08.30; it refused the text to +4700000002. " +
+                "I can't yet confirm delivery.",
             say(phone.outbox.cancel(token(drafted))),
         )
     }
 
     @Test
-    fun `a cancel after the delay for one recipient keeps its words`() {
+    fun `a cancel after the delay names refused recipients as the read-back named them, in its order`() {
+        val phone = Phone()
+        phone.refusing += per.number
+        phone.refusing += a
+        val picked = picks(phone.request("Hei", "Kari"))
+        val drafted = phone.request("Hei", "Per", a, picked[0])
+        phone.outbox.confirm(token(drafted), 1)
+        phone.fire()
+        assertEquals(
+            "Too late to stop; handed 1 of 3 to Android at 08.30; it refused the text to " +
+                "Per Hansen, +4700000090 and +4700000001. I can't yet confirm delivery.",
+            say(phone.outbox.cancel(token(drafted))),
+        )
+    }
+
+    @Test
+    fun `a cancel after the delay with every text handed names no refusal`() {
+        val phone = Phone()
+        val drafted = phone.request("Kommer", a, b)
+        phone.outbox.confirm(token(drafted), 1)
+        phone.fire()
+        assertEquals(
+            "Too late to stop; handed 2 of 2 to Android at 08.30. I can't yet confirm delivery.",
+            say(phone.outbox.cancel(token(drafted))),
+        )
+    }
+
+    @Test
+    fun `a cancel while the texts are being handed over waits, and hears the whole outcome`() {
+        val phone = Phone()
+        lateinit var outbox: Outbox
+        var drafted: Reply? = null
+        var heard: Reply? = null
+        val canceller = Thread { heard = outbox.cancel(token(drafted!!)) }
+        outbox = Outbox(
+            clock = Clock.fixed(phone.now, ZoneId.of("Europe/Oslo")),
+            later = { _, task -> phone.timers += task },
+            send = { number, _ ->
+                if (number == a) canceller.start()
+                // The cancel must still be waiting for the lock when the next text goes.
+                if (number == b) awaitBlockedOrDone(canceller)
+                phone.sent += number to "Kommer"
+            },
+            failed = {},
+            tokens = { "t1" },
+        )
+        drafted = outbox.request(listOf(a, b), "Kommer")
+        outbox.confirm(token(drafted!!), 1)
+        phone.fire()
+        canceller.join()
+        assertEquals(
+            "Too late to stop; handed 2 of 2 to Android at 08.30. I can't yet confirm delivery.",
+            say(heard!!),
+        )
+    }
+
+    private fun awaitBlockedOrDone(thread: Thread) {
+        while (thread.state != Thread.State.BLOCKED && thread.state != Thread.State.TERMINATED) Thread.onSpinWait()
+    }
+
+    @Test
+    fun `a cancel after the delay for one recipient keeps its words, as the first version does`() {
         val phone = Phone()
         val drafted = phone.request("Kommer", a)
         phone.outbox.confirm(token(drafted), 1)
