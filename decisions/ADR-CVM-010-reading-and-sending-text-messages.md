@@ -377,12 +377,20 @@ question. The same number twice counts once.
   behaves as the string. Changing the list makes a new version with a new
   read-back, as changing the text does, so a yes always covers the list that
   was read back. When two names need a choice, the answer asks about the first;
-  the next request, with its `pick`, asks about the second.
+  the next request, with its `pick`, asks about the second. No token is issued
+  while a choice is open, so nothing can be confirmed until every name is
+  settled.
+- For a group, the token is bound to the ordered list of E.164 numbers after
+  duplicates are dropped, a hash of the text and the version. Confirm sends to
+  exactly that stored list, never to the `to` of any request, and the limits
+  at confirm count over that stored list.
 - The owner's one yes and the one undo delay cover every recipient. One
   cancel stops them all, and a cancel after the delay answers "too late",
   naming how many were handed to Android.
 - Each recipient counts as one send against every limit, including 3 to one
-  number in 10 minutes. The text rules apply once, to the one text.
+  number in 10 minutes. The text rules apply once, to the one text. A
+  recipient Android refuses at once still counts against the limits, so a
+  refusal can never be used to send past them.
 - The phone hands every recipient's text to Android, in read-back order, under
   the one lock, so a cancel lands before the first or not at all. Android may
   refuse one at once, for example with no default subscription: one recipient
@@ -390,8 +398,10 @@ question. The same number twice counts once.
   position.
 - Until delivery outcomes are built, the answer after the undo says how many
   were handed to Android and "I can't yet confirm delivery", as the first
-  version does. With them, `sms_send_outcomes` gives one item per recipient,
-  by position. A group with some `failed` is reported as such, never as sent.
+  version does. It names each recipient Android refused, as the read-back
+  named it: "handed 3 of 4 to Android; it refused the text to Kari". With
+  them, `sms_send_outcomes` gives one item per recipient, by position. A group
+  with some `failed` is reported as such, never as sent.
 
 **Delivered.** The phone asks Android for a delivery report for each part,
 next to the sent report it already asks for. `sms_send_outcomes` and the
