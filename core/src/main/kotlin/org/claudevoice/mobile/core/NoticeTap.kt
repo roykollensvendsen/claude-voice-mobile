@@ -3,9 +3,10 @@ package org.claudevoice.mobile.core
 /**
  * The line on the main screen when the owner has refused notifications, and what a tap on it does
  * next (ADR-CVM-003). A tap always asks for the permission first; this rule decides from what the
- * app saw while it asked. The app only feeds it: whether the screen paused or lost the top place
- * between the ask and the answer (so Android showed a request), whether it was granted, and the
- * refusals in a row so far. No time is guessed.
+ * app read around the ask. The app only feeds it: whether this install had asked before, by its own
+ * ask record; Android's rationale flag just before the request and again after the answer; whether
+ * it was granted; and the refusals in a row so far. No time is guessed, and the screen pausing is
+ * not used, since Android 15 pauses it even when it refuses at once.
  */
 object NoticeTap {
     /** What follows an answer to a request from the line. */
@@ -13,18 +14,27 @@ object NoticeTap {
         /** Granted: the line goes. */
         Granted,
 
-        /** Refused after the request showed, for the first time in a row: the next tap asks again. */
+        /** Refused after Android showed the request, for the first time in a row: the next tap asks again. */
         AskAgain,
 
         /** Android did not ask, or this is a second refusal in a row: open the app's notification settings. */
         OpenSettings,
     }
 
-    fun after(granted: Boolean, shown: Boolean, refusalsInRow: Int): After = when {
-        granted -> After.Granted
-        shown && refusalsInRow == 0 -> After.AskAgain
-        else -> After.OpenSettings
-    }
+    fun after(granted: Boolean, askedBefore: Boolean, flagBefore: Boolean, flagAfter: Boolean, refusalsInRow: Int) =
+        when {
+            granted -> After.Granted
+            refusalsInRow == 0 && asked(askedBefore, flagBefore, flagAfter) -> After.AskAgain
+            else -> After.OpenSettings
+        }
+
+    /**
+     * Whether Android showed the request. It did not only when the install asked before and the flag
+     * was false both before and after: a request Android shows and the owner refuses turns the flag
+     * true, or found it true.
+     */
+    private fun asked(askedBefore: Boolean, flagBefore: Boolean, flagAfter: Boolean) =
+        !askedBefore || flagBefore || flagAfter
 
     /** The refusals in a row after [after]. */
     fun refusalsInRow(after: After, refusalsInRow: Int): Int =

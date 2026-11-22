@@ -25,6 +25,8 @@ class MainActivity : Activity() {
     private val line = NoticeLine(
         ask = { AskNotifications.fromLine(this) },
         openSettings = { AskNotifications.openSettings(this) },
+        flag = { AskNotifications.rationale(this) },
+        askedBefore = { AskNotifications.askedBefore(this) },
     )
     private val ticks = Handler(Looper.getMainLooper())
     private val tick = object : Runnable {
@@ -107,17 +109,6 @@ class MainActivity : Activity() {
         val allowed = getSystemService(NotificationManager::class.java).areNotificationsEnabled()
         val listening = (application as App).machine.name != null
         hidden.visibility = if (NoticeLine.shows(listening, allowed)) View.VISIBLE else View.GONE
-    }
-
-    // The request shows over the app: the screen pauses, or loses the top place when two apps share it.
-    override fun onPause() {
-        line.leftScreen()
-        super.onPause()
-    }
-
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (!hasFocus) line.leftScreen()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {

@@ -46,6 +46,14 @@ object AskNotifications {
         activity.startActivity(notices.putExtra(Settings.EXTRA_APP_PACKAGE, activity.packageName))
     }
 
+    /** Android's rationale flag: true after one refusal of a request it showed (ADR-CVM-003). */
+    fun rationale(activity: Activity) =
+        activity.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
+
+    /** Whether this install asked for the permission before, by its own ask record. */
+    fun askedBefore(activity: Activity) =
+        (activity.application as App).asks.asked(Manifest.permission.POST_NOTIFICATIONS)
+
     private fun granted(activity: Activity) =
         activity.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 }
