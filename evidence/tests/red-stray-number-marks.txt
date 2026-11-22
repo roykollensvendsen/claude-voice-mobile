@@ -53,3 +53,11 @@ The tool's words, before the sentence on the never-texted mark was added:
 
 StrayNumberTest > the tool's words tell the hub the never-texted mark needs the app to read texts() FAILED
 15 tests completed, 1 failed
+
+Follow-up, quality's f1: the marks were kept with the draft's names, so the
+confirm answer and the too-late answer repeated them, though "never texted
+before" goes stale once the text is sent:
+
+StrayNumberTest > a too-late answer names a refused number without its marks, which may be stale by then() FAILED
+StrayNumberTest > the marks are said in the read-back only, never again when the text is confirmed() FAILED
+17 tests completed, 2 failed
