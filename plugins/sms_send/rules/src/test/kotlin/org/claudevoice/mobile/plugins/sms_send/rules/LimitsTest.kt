@@ -248,6 +248,85 @@ class LimitsTest {
         assertEquals(LINKS, Limits.text("10.0.0.1:8080"))
     }
 
+    // ADR-CVM-010, "Dates and times in a text": each example the record names is a test of its own.
+    @Test
+    fun `a date with its year passes`() = assertNull(Limits.text("21.11.2026"))
+
+    @Test
+    fun `a date with a one-digit day passes`() = assertNull(Limits.text("1.12.2026"))
+
+    @Test
+    fun `a date written year first passes`() = assertNull(Limits.text("2026-11-21"))
+
+    @Test
+    fun `a range of two times with a dash passes`() = assertNull(Limits.text("14.30-16.00"))
+
+    @Test
+    fun `a range of two times with an en dash passes`() = assertNull(Limits.text("14.30\u201316.00"))
+
+    @Test
+    fun `a time after kl passes`() = assertNull(Limits.text("kl. 9:05"))
+
+    @Test
+    fun `a date and a time apart by a word pass`() = assertNull(Limits.text("21.11.2026 kl. 14.30"))
+
+    // Four numbers with dots read as an address first, so the link rule refuses it before the digits.
+    @Test
+    fun `four numbers in pairs with dots are no time`() = assertEquals(LINKS, Limits.text("22.33.44.55"))
+
+    @Test
+    fun `four numbers in pairs with dashes are no date`() = assertEquals(DIGITS, Limits.text("22-33-44-55"))
+
+    @Test
+    fun `numbers of other lengths with dots are no date`() = assertEquals(DIGITS, Limits.text("1234.56.78901"))
+
+    @Test
+    fun `a date with more digits after it is no date`() = assertEquals(DIGITS, Limits.text("21.11.2026.55"))
+
+    @Test
+    fun `a date next to a time with no word between stays in`() =
+        assertEquals(DIGITS, Limits.text("21.11.2026 14.30"))
+
+    @Test
+    fun `two dates side by side stay in`() = assertEquals(DIGITS, Limits.text("12.05.2034 13.08.1999"))
+
+    @Test
+    fun `four times side by side stay in`() = assertEquals(DIGITS, Limits.text("12.11 13.10 14.09 15.08"))
+
+    @Test
+    fun `a date between two numbers stays in`() = assertEquals(DIGITS, Limits.text("1234 21.11.2026 5678"))
+
+    @Test
+    fun `numbers apart by slashes are one run`() = assertEquals(DIGITS, Limits.text("41/23/45/67"))
+
+    @Test
+    fun `numbers apart by brackets and spaces are one run`() = assertEquals(DIGITS, Limits.text("(412) 34 567"))
+
+    @Test
+    fun `numbers apart by colons, commas, underscores, apostrophes or middle dots are one run`() {
+        for (text in listOf("12:34:56:78", "12,34,56,78", "12_34_56_78", "12'34'56'78", "12\u00B734\u00B756\u00B778")) {
+            assertEquals(DIGITS, Limits.text(text), text)
+        }
+    }
+
+    @Test
+    fun `a date at the end of a sentence passes, and one closing mark is allowed`() {
+        for (text in listOf("Vi ses 21.11.2026.", "Vi ses 21.11.2026, ok?", "(kl. 14.30)", "Ses 21.11!")) {
+            assertNull(Limits.text(text), text)
+        }
+    }
+
+    @Test
+    fun `only real days, months, hours and minutes are dates and times`() {
+        for (text in listOf("32.11.2026", "21.13.2026", "21.11.2100", "24.00-25.00", "19.60-20.00")) {
+            assertEquals(DIGITS, Limits.text("Se $text"), text)
+        }
+    }
+
+    @Test
+    fun `digits of another script are no date`() =
+        assertEquals(DIGITS, Limits.text("\u0662\u0661.\u0661\u0661.\u0662\u0660\u0662\u0666"))
+
     private companion object {
         const val INVISIBLE = "Not drafted: the text has a hidden character. Leave out any emoji, or say it again."
 

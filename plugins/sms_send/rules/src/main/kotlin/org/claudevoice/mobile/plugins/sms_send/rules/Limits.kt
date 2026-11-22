@@ -34,6 +34,12 @@ object Limits {
     private const val MAX_LENGTH = 1000
     private const val MAX_DIGITS = 6
 
+    private const val DAY = """(?:0?[1-9]|[12][0-9]|3[01])"""
+    private const val MONTH = """(?:0?[1-9]|1[0-2])"""
+    private const val YEAR = """(?:19|20)[0-9]{2}"""
+    private const val YEARS = """(?:(?:19|20)[0-9]{2}|[0-9]{2})"""
+    private const val TIME = """(?:[01]?[0-9]|2[0-3])[.:][0-5][0-9]"""
+
     // The only words with a dot that are no link: a whole word that is one of these
     // abbreviations, in any case, with or without one dot after. This list only ever exempts
     // abbreviations. Never add a web ending to it: the rule fails closed on any ending.
@@ -78,9 +84,23 @@ object Limits {
             bare.lowercase().removeSuffix(".") !in ABBREVIATIONS && LINK.containsMatchIn(bare)
     }
 
-    // More than MAX_DIGITS digits of any script, apart only by spaces, dots or dashes, so a
-    // number written "123 456 789" is one run of nine.
-    private val DIGITS = Regex("""\p{Nd}(?:[\s\p{Zs}.\-‐-―−]*\p{Nd}){$MAX_DIGITS,}""")
+    // More than MAX_DIGITS digits of any script, apart only by spaces, dots, dashes, slashes,
+    // colons, commas, brackets, underscores, apostrophes or middle dots, so a number written
+    // "123 456 789" or "(412) 34 567" is one run.
+    private val DIGITS = Regex("""\p{Nd}(?:[\s\p{Zs}.\-‐-―−/:,()\[\]_'’·]*\p{Nd}){$MAX_DIGITS,}""")
+
+    // The dates and times ADR-CVM-010 takes out before a run is counted, in ASCII digits only:
+    // two times joined by a dash, year-month-day, day.month.year or day/month/year, a time with
+    // a dot or a colon, and day.month. Just outside, a shape touches no digit, dot, slash or dash,
+    // but for one closing mark at its end.
+    private val DATE_OR_TIME = Regex(
+        """(?<![\p{Nd}./\-‐-―−])(?:$TIME[-–]$TIME|$YEAR-$MONTH-$DAY|$DAY\.$MONTH\.$YEARS|""" +
+            """$DAY/$MONTH/$YEARS|$TIME|$DAY\.$MONTH)(?=[.,!?)]?(?![\p{Nd}./\-‐-―−]))""",
+    )
+
+    // A word on each side of a shape, skipping spaces, holds a letter and no digit, or is the edge.
+    private val PLAIN_WORD = Regex("""[^\p{Nd}]*\p{L}[^\p{Nd}]*""")
+    private val CLOSING = Regex("""^[.,!?)]""")
 
     private const val PER_HOUR = 10
     private const val PER_DAY = 30
@@ -123,11 +143,26 @@ object Limits {
                 "Not drafted: the text has a hidden character. Leave out any emoji, or say it again."
             SPACE.toPattern().splitAsStream(text).anyMatch(::link) ->
                 "Not drafted: texts can't contain links or web addresses."
-            DIGITS.containsMatchIn(text) ->
+            DIGITS.containsMatchIn(withoutDates(text)) ->
                 "Not drafted: texts can't contain more than $MAX_DIGITS digits in a row, " +
                     "such as a phone or account number."
             else -> null
         }
+
+    /**
+     * [text] with each date and time that stands alone taken out, leaving a break, so the digits on
+     * its two sides are never counted as one run (ADR-CVM-010, "Dates and times in a text").
+     */
+    private fun withoutDates(text: String): String =
+        DATE_OR_TIME.replace(text) { if (alone(text, it.range)) " x " else it.value }
+
+    private fun alone(text: String, at: IntRange): Boolean {
+        val before = text.substring(0, at.first).trimEnd().split(SPACE).last()
+        val after = text.substring(at.last + 1).replaceFirst(CLOSING, "").trimStart().split(SPACE).first()
+        return plain(before) && plain(after)
+    }
+
+    private fun plain(word: String) = word.isEmpty() || PLAIN_WORD.matches(word)
 
     /**
      * The limit that keeps one more send to [to] from going [now], given the sends that still
