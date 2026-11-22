@@ -1,0 +1,40 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+___________ test_the_record_names_the_date_and_time_shapes_that_pass ___________
+
+    def test_the_record_names_the_date_and_time_shapes_that_pass() -> None:
+        text = record()
+        for guard in (
+            "**Dates and times in a text.**",
+            "day.month.year",
+            "year-month-day",
+            "hours and minutes",
+            "a day from 1 to 31, a month from 1 to 12",
+            "hours from 0 to 23 and minutes from 0 to 59",
+            "two times joined by a dash",
+            "taken out before the run is counted",
+        ):
+>           assert guard in text, guard
+E           AssertionError: **Dates and times in a text.**
+E           assert '**Dates and times in a text.**' in '# ADR-CVM-010: Reading and sending text messages ## Status Proposed 2026-11-18 by the architect session. It writes do...https://github.com/roykollensvendsen/claude-voice/blob/main/docs/agent-protocol/next-version.md): the `messages` name.'
+
+tests/test_sms_dates.py:33: AssertionError
+______ test_the_record_keeps_numbers_written_with_dots_or_dashes_refused _______
+
+    def test_the_record_keeps_numbers_written_with_dots_or_dashes_refused() -> None:
+        text = record()
+        for guard in (
+            '"21.11.2026", "2026-11-21", "14.30-16.00" and "kl. 9:05" pass',
+            '"22.33.44.55", "22-33-44-55", "1234.56.78901" and "21.11.2026.55" stay refused',
+            "touches another digit, dot, slash or dash",
+            "a dash never joins the parts of a date except in year-month-day",
+        ):
+>           assert guard in text, guard
+E           AssertionError: "21.11.2026", "2026-11-21", "14.30-16.00" and "kl. 9:05" pass
+E           assert '"21.11.2026", "2026-11-21", "14.30-16.00" and "kl. 9:05" pass' in '# ADR-CVM-010: Reading and sending text messages ## Status Proposed 2026-11-18 by the architect session. It writes do...https://github.com/roykollensvendsen/claude-voice/blob/main/docs/agent-protocol/next-version.md): the `messages` name.'
+
+tests/test_sms_dates.py:44: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_sms_dates.py::test_the_record_names_the_date_and_time_shapes_that_pass
+FAILED tests/test_sms_dates.py::test_the_record_keeps_numbers_written_with_dots_or_dashes_refused
+2 failed in 0.03s
