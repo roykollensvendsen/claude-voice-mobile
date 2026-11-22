@@ -103,10 +103,13 @@ class Outbox(
         }
     }
 
-    // A held draft that shares a recipient takes the new list and text as its next version.
+    // The oldest held draft that shares a recipient takes the new list and text as its next
+    // version. Every other held draft sharing one is stopped, so one recipient is in at most one
+    // held draft and two yeses never send one person two texts (ADR-CVM-010, "Several recipients").
     private fun drafted(to: List<String>, named: List<String>, text: String): Reply {
-        val held = drafts.values.firstOrNull { it.state == State.Held && it.to.intersect(to.toSet()).isNotEmpty() }
-        val draft = held?.apply {
+        val sharing = drafts.values.filter { it.state == State.Held && it.to.intersect(to.toSet()).isNotEmpty() }
+        sharing.drop(1).forEach { it.state = State.Stopped }
+        val draft = sharing.firstOrNull()?.apply {
             this.to = to
             this.text = text
             version += 1
@@ -115,7 +118,7 @@ class Outbox(
         return answer(
             "token" to JsonPrimitive(draft.token),
             "version" to JsonPrimitive(draft.version),
-            "say" to JsonPrimitive("Draft to ${draft.names}: '$text'"),
+            "say" to JsonPrimitive("Draft to ${draft.names}: '$text'${replaced(sharing.size - 1)}"),
         )
     }
 
@@ -189,6 +192,13 @@ class Outbox(
             val refused = draft.refused.takeIf { it.isNotEmpty() }?.joinToString(" and ", "; it refused the text to ")
             val handed = "handed ${draft.handed} of ${draft.to.size} to Android at $time"
             return "Too late to stop; $handed${refused.orEmpty()}. $NOT_CONFIRMED"
+        }
+
+        /** What the read-back adds when it stopped [count] other held drafts. */
+        private fun replaced(count: Int) = when {
+            count <= 0 -> ""
+            count == 1 -> " (replaces 1 other held draft)"
+            else -> " (replaces $count other held drafts)"
         }
 
         /** Why [text] cannot be drafted, or null when it can. */

@@ -56,6 +56,10 @@ class Recipients(
     fun resolve(to: List<String>): Group {
         val open = picks
         picks = emptyMap()
+        return tooMany(to.filter { it !in open && looksUp(it) }.size)?.let { Group.Answered(it) } ?: lookedUp(to, open)
+    }
+
+    private fun lookedUp(to: List<String>, open: Map<String, Contact>): Group {
         val all = mutableListOf<Resolved.To>()
         for (each in to) {
             val picked = open[each]
@@ -75,8 +79,26 @@ class Recipients(
             to.startsWith(PICK) -> refused(STALE, UNKNOWN_PICK)
             !LETTER.containsMatchIn(to) -> Resolved.To(to, null)
             Names.letters(to) < Names.FEWEST_LETTERS -> refused(TOO_SHORT, Outbox.INVALID_RECIPIENT)
-            blocked() -> refused(TOO_MANY, Limits.RATE_LIMITED)
+            recent() >= LOOKUPS -> refused(TOO_MANY, Limits.RATE_LIMITED)
             else -> looked(to) ?: refused(NO_CONTACTS, SmsSend.PERMISSION_MISSING)
+        }
+    }
+
+    /**
+     * The refusal for a list whose [needed] name lookups would pass the lookups left this hour,
+     * given before any lookup is made, or null when they fit (ADR-CVM-010, "By name"). A single
+     * name keeps its own refusal, made when it is looked up.
+     */
+    private fun tooMany(needed: Int): Reply.Refused? {
+        val left = LOOKUPS - recent()
+        return if (needed > 1 && needed > left) {
+            Reply.Refused(
+                "Not drafted: these names need $needed lookups; lookups left this hour: $left. " +
+                    "Say the numbers instead.",
+                Limits.RATE_LIMITED,
+            )
+        } else {
+            null
         }
     }
 
@@ -86,10 +108,11 @@ class Recipients(
         picks = emptyMap()
     }
 
-    private fun blocked(): Boolean {
+    /** The lookups made in the last hour. */
+    private fun recent(): Int {
         val since = clock.instant().minus(HOUR)
         lookups.removeAll { it <= since }
-        return lookups.size >= LOOKUPS
+        return lookups.size
     }
 
     private fun looked(name: String): Resolved? {
@@ -122,6 +145,10 @@ class Recipients(
         /** The recipients the phone uses: the phone's clock, and picks no one can guess. */
         fun onThePhone(find: (matches: (String) -> Boolean) -> List<Contact>?): Recipients =
             Recipients(Clock.systemDefaultZone(), { UUID.randomUUID().toString() }, find)
+
+        /** Whether [to] is a name that will be looked up, rather than a pick, a number or too short. */
+        private fun looksUp(to: String) =
+            !to.startsWith(PICK) && LETTER.containsMatchIn(to) && Names.letters(to) >= Names.FEWEST_LETTERS
 
         /** Each `to` as a number, with no lookup: the outbox's own reading when no contacts are wired. */
         fun numbers(to: List<String>): Group = Group.To(to.map { Resolved.To(it, null) })

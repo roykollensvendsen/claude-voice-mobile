@@ -40,3 +40,40 @@ SeveralRecipientsTest > a cancel while the texts are being handed over waits, an
     expected: <Too late to stop; handed 2 of 2 to Android at 08.30. I can't yet confirm delivery.>
     but was: <Too late to stop; 1 of 2 were handed to the phone at 08.30. I can't yet confirm delivery.>
 24 tests completed, 4 failed
+
+Third and fourth red runs, for review notes on #174. Each test below passed
+against the code as it is, so its rule was switched off for one run:
+
+With the held draft that takes a new list switched from the older to the newer:
+SeveralRecipientsTest > a list sharing recipients with two held drafts becomes the older one's next version() FAILED
+    expected: <t1> but was: <t2>
+26 tests completed, 1 failed
+
+With the limits counting only the texts Android took, not those it refused:
+SeveralRecipientsTest > a recipient Android refused at once still counts against the limits() FAILED
+    expected: <true> but was: <false>
+26 tests completed, 1 failed
+
+Fifth red run, for the decision in review of #174 that one recipient is in at
+most one held draft. Two new tests, against the code before the change:
+
+SeveralRecipientsTest > the read-back counts every held draft it replaced, and leaves alone one that shares no one() FAILED
+    expected: <Draft to +4700000001; +4700000002; +4700000003: 'Kommer' (replaces 2 other held drafts)>
+    but was: <Draft to +4700000001; +4700000002; +4700000003: 'Kommer'>
+SeveralRecipientsTest > every other held draft sharing a recipient is stopped, so two yeses never send one person two texts() FAILED
+    expected: <Draft to +4700000001; +4700000002: 'Kommer' (replaces 1 other held draft)>
+    but was: <Draft to +4700000001; +4700000002: 'Kommer'>
+28 tests completed, 2 failed
+
+Sixth red run, for ADR-CVM-010 as amended in #189: a list that would pass the
+10 lookups an hour is refused before any lookup. Against the code before the
+change, which looked names up one by one:
+
+SeveralRecipientsTest > a list that would pass the lookups an hour is refused before any lookup, saying how many are left() FAILED
+    expected: <Not drafted: these names need 3 lookups, and 2 are left this hour; say the numbers instead.>
+    but was: <Which one? 1: Ola Nordmann, mobile ending 56; 2: Ola Nordmann, work ending 78.>
+30 tests completed, 1 failed
+The refusal's words were changed afterwards, so they read right for one lookup
+left as well: "Not drafted: these names need 3 lookups; lookups left this hour: 2.
+Say the numbers instead." The test was seen red with the earlier words, against
+the same old code.
