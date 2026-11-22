@@ -316,6 +316,25 @@ class LimitsTest {
         }
     }
 
+    // The neighbour word is the whole token next to the shape, so a glued bracket counts and holds
+    // no letter: the safe side, as the mobile architect meant it.
+    @Test
+    fun `a date inside brackets stays in`() = assertEquals(DIGITS, Limits.text("Vi ses (21.11.2026)"))
+
+    // Pitest leaves the text of a regular expression alone, so the glued cases are pinned here.
+    @Test
+    fun `a date glued to a number by a comma or a colon stays in`() {
+        for (text in listOf("1234,21.11.2026", "21.11.2026,1234", "21.11.2026:1234", "x:1234:21.11")) {
+            assertEquals(DIGITS, Limits.text(text), text)
+        }
+    }
+
+    @Test
+    fun `a date between words between numbers adds no new split`() {
+        assertNull(Limits.text("1234 a 5678"))
+        assertNull(Limits.text("1234 a 21.11.2026 b 5678"))
+    }
+
     @Test
     fun `only real days, months, hours and minutes are dates and times`() {
         for (text in listOf("32.11.2026", "21.13.2026", "21.11.2100", "24.00-25.00", "19.60-20.00")) {
