@@ -349,6 +349,12 @@ crash marker, which waited in the first version, come with it.
   by design.
 - The voice polls for outcomes after the undo delay. A push through whats_new
   is a later step of its own.
+- Its shape is fixed in
+  [`docs/plugins/sms/sms-send-outcomes-input.json`](../docs/plugins/sms/sms-send-outcomes-input.json)
+  and
+  [`docs/plugins/sms/sms-send-outcomes-answer.json`](../docs/plugins/sms/sms-send-outcomes-answer.json).
+  It is the plugin's own tool, so no protocol version changes. A recipient
+  whose text is later delivered gets a second item after its `sent` one.
 
 **On the hub.** `sms_search`, `sms_send_request` and `sms_since` go in the
 "voice only" group in the hub's permissions, the one wall between the owner's
