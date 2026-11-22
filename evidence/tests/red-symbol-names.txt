@@ -1,0 +1,3 @@
+## A name with a symbol in it, such as a heart before ".ws", against the link rule before this change, red
+LimitsTest > a name with a symbol in it is a link too, while a symbol ending a sentence is none() FAILED
+26 tests completed, 1 failed

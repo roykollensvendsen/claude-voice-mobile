@@ -227,6 +227,15 @@ class LimitsTest {
     }
 
     @Test
+    fun `a name with a symbol in it is a link too, while a symbol ending a sentence is none`() {
+        for (text in listOf("i\u2764.ws", "x\u2603.com", "Se \u2603.net/x", "\u2764\uFE0F\u2764.ws", "x\u20DD.ru")) {
+            assertEquals(LINKS, Limits.text(text), text)
+        }
+        assertNull(Limits.text("Glad i deg \u2764. Ses"))
+        assertNull(Limits.text("Det koster 5 \u20AC. Ok?"))
+    }
+
+    @Test
     fun `five numbers with dots are no address, while an address with a port is one`() {
         assertNull(Limits.text("1.2.3.4.5"))
         assertEquals(LINKS, Limits.text("10.0.0.1:8080"))
