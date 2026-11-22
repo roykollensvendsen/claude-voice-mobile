@@ -149,13 +149,25 @@ flag is false both when Android will no longer ask and when the owner closed
 the first request without answering. In the second case asking still works,
 and opening the settings would be the wrong page.
 
-So the app watches whether a request was shown. When Android shows it, the
-app's screen pauses, or loses the top place when two apps share the screen. A
-refusal that comes back with neither counts as Android not asking. No time is
-guessed, so a slow phone cannot make the tap ask in vain. As a backstop, a
-second refusal in a row from the line opens the settings too. So the line never
-becomes a button that does nothing. The choice is a rule in the pure rules
-code, which the app only feeds with what it saw.
+So the app reads `shouldShowRequestPermissionRationale` just before the request
+and again after the refusal. A refusal counts as Android not asking only when
+the app has asked before, by its own ask record, and the flag was false both
+before and after. When Android shows the request and the owner refuses, the
+flag turns true after a first refusal, or was true before a second one, so
+neither reads as Android not asking. A first request closed without an answer
+leaves the flag false, but the next tap still asks first, and Android shows it.
+No time is guessed, so a slow phone cannot make the tap ask in vain.
+
+An earlier version told a shown request by the app's screen pausing. That
+does not hold: Android 15 starts its permission screen even when it refuses at
+once, so the screen pauses either way, and a turn of the phone pauses it too.
+The emulator run in `evidence/tests/notice-tap-emulator.md` shows it. Android
+13 and 14 were not run. The flag does not depend on the screen.
+
+As a backstop, a second refusal in a row from the line opens the settings too.
+So the line never becomes a button that does nothing. The choice is a rule in
+the pure rules code, which the app only feeds with the two readings of the
+flag and the ask record.
 
 The line goes once the permission is granted. The app never asks on its own
 more than once at first start.
@@ -262,7 +274,7 @@ plugins.
     locked-boot action. The system still delivers its own broadcasts to a
     receiver that is not exported, and no other app can reach it;
   - with notifications refused, the line is shown, and a tap asks for the
-    permission. A refusal with no pause opens the notification settings, and
+    permission. A refusal with the flag false before and after opens the notification settings, and
     a second refusal in a row opens them too. A first request closed without
     an answer asks again on the next tap, not the settings. The line goes
     once the permission is granted;
