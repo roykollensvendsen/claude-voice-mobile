@@ -1,0 +1,10 @@
+## The notice line told by Android's rationale flag before and after (ADR-CVM-003 after #184), against the pause-based code, red
+The new tests do not compile against the old rule and line: they pass the flag readings and the
+earlier ask, which the old code had no place for.
+src/test/kotlin/org/claudevoice/mobile/core/NoticeTapTest.kt:11:42 No parameter with name 'askedBefore' found.
+src/test/kotlin/org/claudevoice/mobile/core/NoticeTapTest.kt:11:63 No parameter with name 'flagBefore' found.
+src/test/kotlin/org/claudevoice/mobile/core/NoticeTapTest.kt:11:84 No parameter with name 'flagAfter' found.
+> Task :core:compileTestKotlin FAILED
+> Task :app:compileDebugUnitTestKotlin FAILED
+src/test/kotlin/org/claudevoice/mobile/app/NoticeLineTest.kt:16:9 No parameter with name 'flag' found.
+src/test/kotlin/org/claudevoice/mobile/app/NoticeLineTest.kt:17:9 No parameter with name 'askedBefore' found.
