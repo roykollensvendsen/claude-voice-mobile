@@ -1,0 +1,11 @@
+Tests added for code that already existed (#151), so each was proven by breaking the line it guards.
+One run with three lines commented out at once, then restored:
+- PairingPanel: the FLAG_SECURE added while a code shows
+- AskNotifications.fromLine: the ask record written before the request
+- ListenerService.onDestroy: the network watcher stopped
+
+AskNotificationsTest > the_line_asks_with_its_own_request_code_and_writes_the_ask_down_first FAILED
+ListenerServiceTest > when_it_ends_it_stops_watching_and_tells_the_agent_there_is_no_network FAILED
+PairingPanelTest > a_code_shows_with_the_address_and_keeps_the_window_out_of_screenshots FAILED
+PairingPanelTest > a_code_still_working_stays FAILED
+15 tests completed, 4 failed

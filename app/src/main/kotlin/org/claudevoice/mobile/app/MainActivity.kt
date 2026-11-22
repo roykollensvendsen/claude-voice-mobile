@@ -62,7 +62,7 @@ class MainActivity : Activity() {
             addView(open)
             hidden = hiddenNoticeLine()
             addView(hidden)
-            pairing = PairingPanel(this@MainActivity) { app.agent() }
+            pairing = PairingPanel(this@MainActivity, { app.agent()?.status }, { app.agent()?.pairing })
             pairing.views.forEach(::addView)
         }
         // From Android 15 the screen is drawn under the bars; keep the message clear of them.
