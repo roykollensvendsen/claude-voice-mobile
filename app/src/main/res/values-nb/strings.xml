@@ -8,15 +8,15 @@
     <string name="tailnet_ok">Telefonen er på tailnettet.</string>
     <string name="open_tailscale">Åpne Tailscale</string>
     <string name="no_browser">Ingen app på telefonen kan åpne nedlastingssiden. Installer Tailscale fra Google Play, eller åpne denne adressen i en nettleser: %1$s</string>
-    <string name="name_first">Bekreft telefonens navn først. Huben kjenner telefonen på det, og den kan ikke pares før det er satt. To telefoner av samme modell får samme forslag, så sjekk det.</string>
+    <string name="name_first">Bekreft telefonens navn først. Huben kjenner telefonen på det, og den kan ikke kobles til huben før det er satt. To telefoner av samme modell får samme forslag, så sjekk det.</string>
     <string name="name_confirm">Bekreft navnet</string>
     <string name="name_kept">Telefonen er nå kjent under dette navnet.</string>
     <string name="name_not_allowed">Et navn kan ha små bokstaver, sifre og bindestreker, må begynne med en bokstav, og være høyst 32 tegn.</string>
-    <string name="name_already_named">Telefonen har allerede et annet navn. Å endre det betyr å slette appens data og pare på nytt.</string>
+    <string name="name_already_named">Telefonen har allerede et annet navn. Å endre det betyr å slette appens data og koble til huben på nytt.</string>
     <string name="name_not_written">Telefonen fikk ikke lagret navnet. Frigjør litt plass, og prøv igjen.</string>
     <string name="listener_channel">Lytteren</string>
     <string name="listener_running">Lytter etter huben din.</string>
-    <string name="pairing_show">Vis en paringskode</string>
-    <string name="pairing_code">Paringskode: %1$s\nDen virker én gang, i 10 minutter. En ny kode avslutter den.\nTelefonens tailnet-adresse: %2$s</string>
+    <string name="pairing_show">Vis en koblingskode</string>
+    <string name="pairing_code">Koblingskode: %1$s\nDen virker én gang, i 10 minutter. En ny kode avslutter den.\nTelefonens tailnet-adresse: %2$s</string>
     <string name="notice_hidden">Lytteren kjører, men Android skjuler varselet. Trykk for å vise det.</string>
 </resources>
