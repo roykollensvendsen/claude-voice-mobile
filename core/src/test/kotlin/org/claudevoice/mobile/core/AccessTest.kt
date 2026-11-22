@@ -101,6 +101,38 @@ class AccessTest {
     }
 
     @Test
+    fun `a use with no key in needs is left out of access, so the hub reads it as unknown and never as granted`() {
+        val reach = mutableListOf("messages")
+        val growing = object : Plugin {
+            override val name = "texts"
+            override val tools = listOf(Tool("texts_read", "", JsonObject(mapOf())))
+            override val uses get() = reach.toList()
+            override val needs = mapOf("messages" to listOf(READ))
+            override val confirms = listOf<String>()
+
+            override suspend fun call(tool: String, arguments: JsonObject) = ToolResult.Answer(JsonObject(mapOf()))
+        }
+        val plugins = Plugins(listOf(growing))
+        reach.add("contacts")
+        val entry = plugins.entries(Phone(granted = setOf(READ))).single().jsonObject
+        assertEquals("""["messages","contacts"]""", entry["uses"].toString())
+        assertEquals("""{"messages":"granted"}""", entry["access"].toString())
+    }
+
+    @Test
+    fun `an explicit empty list means the use needs nothing Android grants`() {
+        val calm = plugin(listOf("contacts"), mapOf("contacts" to listOf()))
+        val entry = Plugins(listOf(calm)).entries(Phone()).single().jsonObject
+        assertEquals("""{"contacts":"granted"}""", entry["access"].toString())
+    }
+
+    @Test
+    fun `a plugin that reports a use with no key in needs is refused at start`() {
+        val forgetful = plugin(listOf("messages", "contacts"), mapOf("messages" to listOf(READ)))
+        assertThrows(IllegalArgumentException::class.java) { Plugins(listOf(forgetful)) }
+    }
+
+    @Test
     fun `a plugin that names permissions for a use it does not know is refused at start`() {
         val odd = plugin(listOf("messages"), mapOf("telepathy" to listOf(READ)))
         assertThrows(IllegalArgumentException::class.java) { Plugins(listOf(odd)) }
