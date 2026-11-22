@@ -1,6 +1,7 @@
 package org.claudevoice.mobile.plugins.sms_send.rules
 
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
@@ -25,6 +26,9 @@ object SmsSend {
     /** Protocol version 1's code for a refusal the owner can lift by granting a permission. */
     const val PERMISSION_MISSING = "permission_missing"
 
+    /** The most recipients one request may name. */
+    const val MOST_RECIPIENTS = 5
+
     const val NOT_PERMITTED =
         "The phone may not send text messages. Allow it in Settings, Apps, claude-voice, Permissions, SMS. " +
             "If the switch is greyed out, first choose Allow restricted settings on the app's info page."
@@ -32,12 +36,15 @@ object SmsSend {
     val TOOLS: List<ToolSpec> = listOf(
         ToolSpec(
             REQUEST,
-            "Keep a draft text to one recipient and send nothing. to is a number in full international form, " +
-                "a contact's name, or a pick. A name may answer choices instead of a draft: read them to the " +
-                "owner, then call again with their chosen pick in to. Read a draft's say back to the owner word " +
-                "for word, then confirm only after their spoken yes.",
+            "Keep a draft text and send nothing. to is a number in full international form, a contact's name, " +
+                "or a pick, or a list of up to five of these for one text to each. A name may answer choices " +
+                "instead of a draft: read them to the owner, then call again with the same to and their chosen " +
+                "pick in place of that name. Read a draft's say back to the owner word for word, then confirm " +
+                "only after their spoken yes; one yes, one undo delay and one cancel cover everyone in it.",
             schema(
-                """"to":{"type":"string","minLength":1},"text":{"type":"string","minLength":1}""",
+                """"to":{"oneOf":[{"type":"string","minLength":1},""" +
+                    """{"type":"array","items":{"type":"string","minLength":1},"minItems":1,""" +
+                    """"maxItems":$MOST_RECIPIENTS}]},"text":{"type":"string","minLength":1}""",
                 "to",
                 "text",
             ),
@@ -89,12 +96,21 @@ object SmsSend {
     ): Reply? {
         val token = text(arguments, "token")
         return when (tool) {
-            REQUEST -> text(arguments, "to")?.let { to ->
+            REQUEST -> addressed(arguments)?.let { to ->
                 text(arguments, "text")?.let { outbox.request(to, it, recipients) }
             }
             CONFIRM -> token?.let { number(arguments)?.let { version -> outbox.confirm(token, version) } }
             else -> token?.let(outbox::cancel)
         }
+    }
+
+    /** `to` as a list: one string, or a list of one to [MOST_RECIPIENTS] strings; null for anything else. */
+    private fun addressed(arguments: JsonObject): List<String>? = when (val to = arguments["to"]) {
+        is JsonArray -> to.takeIf { it.size in 1..MOST_RECIPIENTS }
+            ?.map { (it as? JsonPrimitive)?.takeIf { one -> one.isString }?.content }
+            ?.takeIf { null !in it }
+            ?.filterNotNull()
+        else -> text(arguments, "to")?.let(::listOf)
     }
 
     private fun text(arguments: JsonObject, key: String): String? =

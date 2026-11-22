@@ -133,7 +133,9 @@ class ByNameTest {
     @Test
     fun `the request tool takes a name, a number or a pick in to, and says how choices come back`() {
         val spec = SmsSend.TOOLS.single { it.name == SmsSend.REQUEST }
+        // to is a string or a list of them (ADR-CVM-010, "Several recipients"); the string is checked here.
         val to = spec.input.getValue("properties").jsonObject.getValue("to").jsonObject
+            .getValue("oneOf").jsonArray[0].jsonObject
         assertFalse(to.containsKey("pattern"))
         assertEquals("1", to.getValue("minLength").jsonPrimitive.content)
         for (words in listOf("name", "pick", "choices", "spoken yes")) {
