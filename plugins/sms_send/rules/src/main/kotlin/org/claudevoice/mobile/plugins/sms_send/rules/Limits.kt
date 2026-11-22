@@ -1,5 +1,6 @@
 package org.claudevoice.mobile.plugins.sms_send.rules
 
+import java.text.Normalizer
 import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
@@ -49,6 +50,15 @@ object Limits {
             """[\p{L}\p{N}-]+(?:\.[\p{L}\p{N}-]+)+/""",
     )
 
+    // An address written as four numbers, as "10.0.0.1"; three, as a date or a version, is none.
+    private val QUAD = Regex("""(?<![\p{N}.])\p{N}{1,3}(?:\.\p{N}{1,3}){3}(?!\p{N}|\.\p{N})""")
+
+    // The ideographic full stop NFKC leaves, which a browser takes as a dot between names.
+    private val IDEOGRAPHIC_DOT = Regex("""\u3002""")
+
+    // Format characters (category Cf), as a zero-width space or a direction mark.
+    private val INVISIBLE = Regex("""\p{Cf}""")
+
     private val SPACE = Regex("""[\s\p{Zs}]+""")
 
     // Brackets, quotes and marks a word may stand inside or end with, as "(f.eks." or "bl.a.,".
@@ -56,7 +66,8 @@ object Limits {
 
     private fun link(word: String): Boolean {
         val bare = WRAP.replace(word, "")
-        return bare.lowercase().removeSuffix(".") !in ABBREVIATIONS && LINK.containsMatchIn(bare)
+        return QUAD.containsMatchIn(bare) ||
+            bare.lowercase().removeSuffix(".") !in ABBREVIATIONS && LINK.containsMatchIn(bare)
     }
 
     // More than MAX_DIGITS digits of any script, apart only by spaces, dots or dashes, so a
@@ -85,9 +96,21 @@ object Limits {
     /** Why [text] may not be drafted, in words the owner hears, or null when it may. */
     fun text(text: String): String? {
         val length = text.codePointCount(0, text.length)
-        return when {
-            length > MAX_LENGTH ->
-                "Not drafted: a text can be at most $MAX_LENGTH characters, and this one has $length."
+        return if (length > MAX_LENGTH) {
+            "Not drafted: a text can be at most $MAX_LENGTH characters, and this one has $length."
+        } else {
+            held(Normalizer.normalize(text, Normalizer.Form.NFKC).replace(IDEOGRAPHIC_DOT, "."))
+        }
+    }
+
+    /**
+     * Why what [text] holds may not be drafted, read as a browser reads it: wide letters as plain
+     * ones and look-alike dots as dots (NFKC first). An invisible character could split a link
+     * the rule would otherwise see, so any one refuses the text.
+     */
+    private fun held(text: String): String? =
+        when {
+            INVISIBLE.containsMatchIn(text) -> "Not drafted: texts can't contain invisible characters."
             SPACE.toPattern().splitAsStream(text).anyMatch(::link) ->
                 "Not drafted: texts can't contain links or web addresses."
             DIGITS.containsMatchIn(text) ->
@@ -95,7 +118,6 @@ object Limits {
                     "such as a phone or account number."
             else -> null
         }
-    }
 
     /**
      * The limit that keeps one more send to [to] from going [now], given the sends that still

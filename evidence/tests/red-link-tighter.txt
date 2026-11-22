@@ -1,0 +1,7 @@
+## Look-alike dots, invisible characters and addresses as four numbers (#159), against the link rule before this change, red
+LimitsTest > look-alike dots and wide letters are read as the plain ones() FAILED
+LimitsTest > an address written as four numbers is a link, while a date is no link() FAILED
+LimitsTest > a text with an invisible character is refused, so none can hide a link() FAILED
+22 tests completed, 3 failed
+
+The punycode test ("evil.xn--p1ai") passed from the start: the rule already fails closed on any ending it does not know, so the test pins that.
