@@ -249,6 +249,48 @@ class SeveralRecipientsTest {
     }
 
     @Test
+    fun `a list sharing recipients with two held drafts becomes the oldest one's next version`() {
+        val phone = Phone()
+        val older = phone.request("Kommer", a)
+        phone.request("Hei", b)
+        val joined = phone.request("Kommer", a, b)
+        assertEquals(token(older), token(joined))
+        assertEquals(2, version(joined))
+    }
+
+    @Test
+    fun `every other held draft sharing a recipient is stopped, so two yeses never send one person two texts`() {
+        val phone = Phone()
+        phone.request("Kommer", a)
+        val newer = phone.request("Hei", b)
+        val joined = phone.request("Kommer", a, b)
+        assertEquals(
+            "Draft to +4700000001; +4700000002: 'Kommer' (replaces 1 other held draft)",
+            say(joined),
+        )
+        assertEquals(Outbox.NO_DRAFT, code(phone.outbox.confirm(token(newer), 1)))
+        phone.outbox.confirm(token(joined), 2)
+        phone.fire()
+        assertEquals(listOf(a to "Kommer", b to "Kommer"), phone.sent)
+    }
+
+    @Test
+    fun `the read-back counts every held draft it replaced, and leaves alone one that shares no one`() {
+        val phone = Phone()
+        phone.request("Kommer", a)
+        phone.request("Hei", b)
+        phone.request("Hallo", c)
+        val apart = phone.request("Snart", "+4700000009")
+        assertEquals(
+            "Draft to +4700000001; +4700000002; +4700000003: 'Kommer' (replaces 2 other held drafts)",
+            say(phone.request("Kommer", a, b, c)),
+        )
+        phone.outbox.confirm(token(apart), 1)
+        phone.fire()
+        assertEquals(listOf("+4700000009" to "Snart"), phone.sent)
+    }
+
+    @Test
     fun `a list with no recipient in common is a draft of its own`() {
         val phone = Phone()
         val first = phone.request("Kommer", a)
@@ -311,6 +353,73 @@ class SeveralRecipientsTest {
             phone.fire()
         }
         assertEquals("Draft to +4700000001; +4700000002: 'Hei'", say(phone.request("Hei", a, b, a)))
+    }
+
+    @Test
+    fun `a list that would pass the lookups an hour is refused before any lookup, saying how many are left`() {
+        val phone = Phone()
+        repeat(Recipients.LOOKUPS - 2) { phone.recipients.resolve("Per") }
+        val before = phone.lookups
+        val refused = phone.request("Hei", "Per", a, "Ola", "Kari")
+        assertEquals(
+            "Not drafted: these names need 3 lookups; lookups left this hour: 2. Say the numbers instead.",
+            say(refused),
+        )
+        assertEquals(Limits.RATE_LIMITED, code(refused))
+        assertEquals(before, phone.lookups)
+    }
+
+    @Test
+    fun `a list whose names fit the lookups left is looked up`() {
+        val phone = Phone()
+        repeat(Recipients.LOOKUPS - 2) { phone.recipients.resolve("Per") }
+        val picked = picks(phone.request("Hei", "Kari"))
+        assertEquals(
+            "Draft to Per Hansen, +4700000090; Kari Nordmann, +4700000012: 'Hei'",
+            say(phone.request("Hei", "Per", picked[0])),
+        )
+    }
+
+    @Test
+    fun `two names with exactly two lookups left are both looked up`() {
+        val phone = Phone()
+        repeat(Recipients.LOOKUPS - 2) { phone.recipients.resolve("Per") }
+        val asked = phone.request("Hei", "Per", "Kari")
+        assertEquals(Recipients.LOOKUPS, phone.lookups)
+        assertTrue(picks(asked).isNotEmpty())
+    }
+
+    @Test
+    fun `a list with one name and no lookups left keeps the single name's refusal`() {
+        val phone = Phone()
+        repeat(Recipients.LOOKUPS) { phone.recipients.resolve("Per") }
+        assertEquals(
+            "Not drafted: too many name lookups; say the number instead.",
+            say(phone.request("Hei", a, "Per")),
+        )
+    }
+
+    @Test
+    fun `a two-letter name counts as a lookup the list needs`() {
+        val phone = Phone()
+        repeat(Recipients.LOOKUPS - 1) { phone.recipients.resolve("Per") }
+        assertEquals(
+            "Not drafted: these names need 2 lookups; lookups left this hour: 1. Say the numbers instead.",
+            say(phone.request("Hei", "Per", "Bo")),
+        )
+    }
+
+    @Test
+    fun `a recipient Android refused at once still counts against the limits`() {
+        val phone = Phone()
+        phone.refusing += b
+        repeat(3) {
+            val drafted = phone.request("Hei", a, b)
+            phone.outbox.confirm(token(drafted), version(drafted))
+            phone.fire()
+        }
+        assertTrue(phone.sent.none { it.first == b })
+        assertTrue(phone.request("Hei", b) is Reply.Refused)
     }
 
     @Test
