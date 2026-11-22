@@ -297,6 +297,45 @@ spoken name.
 - The matching rule, the cap of 5, the floor and the counter live in a
   pure-JVM rules module and are mutated (ADR-CVM-007).
 
+**Near names, nicknames and relations.** The first test showed that a name
+spoken one letter off the saved name found nothing. The owner said yes on
+2026-11-22, relayed by the manager session, to looser matching. The same day
+the owner added relations from their own card, their own numbers and relations
+first. The rules above still hold, and a lookup tries these in order:
+
+- A whole first, last or full name, as before, or the contact's own nickname
+  field, matched the same way. There is no built-in table of nicknames.
+- A relation word. The rules module holds a closed table of Norwegian and
+  English relation words, each mapped to Android's relation types and to the
+  custom labels that use the same words. The phone reads the relations on the
+  owner's own profile card, the "Me" card. A relation there holds a name, and
+  that name is then matched as above. A relation on someone else's card is
+  about their family, not the owner's, so it is never used. A relation word not
+  in the table is never guessed.
+- The owner's own numbers: "my work phone", "jobbnummeret mitt". The table
+  maps these words to the number types on the owner's card. One number gives
+  a draft with the full read-back. Several give `choices`.
+- When none of these matches, names one letter off, after case and accents
+  are folded, such as "Ana" and "Anna", are offered. A query needs at least
+  3 letters for this. They come only ever as `choices`, never as a draft,
+  even when there is one, at most 3, with "Did you mean …?". Without even
+  that, the answer is `not_found`.
+
+People named on the owner's own card come first among the choices, ahead of
+other matches, in today's order within each group. This changes the order
+only. One match still gives a draft, and several still give choices to say
+out loud. The caps stay at 5 for matches and 3 for near names, so a relation
+is never cut off. Choices still show only the name and the last 2 digits.
+Every try counts against the 10 lookups an hour, a relation or near name
+included. Nothing read from the card is logged or leaves the phone, except
+the chosen draft's read-back. The tables, the one-letter rule and the order
+live in the rules module and are mutated.
+
+The owner's card is read with `READ_CONTACTS`, which the capability already
+holds. `READ_PROFILE` has not been enforced since Android 6, and the app
+starts at Android 8, so no permission is added. A manifest test pins
+`READ_CONTACTS` as the capability's only permission.
+
 **Older texts.** A new tool in `sms`, `sms_search(who, words, days)`, looks
 back at most 90 days, 30 by default. `who` is a name, resolved as above, or a
 number. At least one of `who` and `words` is needed. It answers with at most

@@ -105,3 +105,29 @@ def test_the_hub_keeps_these_tools_to_the_owners_voice_and_logs_no_names() -> No
         "never names, numbers or text",
     ):
         assert guard in part, guard
+
+
+def test_near_names_relations_and_own_numbers_keep_the_lookup_guards() -> None:
+    """D4, the owner's yes on 22.11: looser matching, never a silent draft from a guess."""
+    part = next_version()
+    for guard in (
+        "**Near names, nicknames and relations.**",
+        "the contact's own nickname field",
+        "the owner's own profile card",
+        "A relation word not in the table is never guessed",
+        "one letter off",
+        "only ever as `choices`, never as a draft",
+        "at most 3",
+        "People named on the owner's own card come first",
+        "changes the order only",
+        "Every try counts against the 10 lookups an hour",
+        "`READ_PROFILE`",
+    ):
+        assert guard in part, guard
+
+
+def test_the_contacts_capability_never_asks_for_the_profile_permission() -> None:
+    manifest = ROOT / "capabilities/contacts/src/main/AndroidManifest.xml"
+    root = ET.parse(manifest).getroot()  # noqa: S314 - our own manifest
+    held = {e.get(f"{ANDROID}name", "") for e in root.iter("uses-permission")}
+    assert held == {"android.permission.READ_CONTACTS"}
