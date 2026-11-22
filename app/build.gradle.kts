@@ -6,6 +6,8 @@ plugins {
 
 android {
     namespace = "org.claudevoice.mobile.app"
+    // Robolectric reads the app's own resources: its strings and its manifest.
+    testOptions.unitTests.isIncludeAndroidResources = true
     compileSdk = 35
     defaultConfig {
         applicationId = "org.claudevoice.mobile"
@@ -132,4 +134,5 @@ dependencies {
     implementation(project(":capabilities:permissions"))
     pickedPlugins.forEach { implementation(project(":plugins:$it")) }
     testImplementation(libs.junit4)
+    testImplementation(libs.robolectric)
 }

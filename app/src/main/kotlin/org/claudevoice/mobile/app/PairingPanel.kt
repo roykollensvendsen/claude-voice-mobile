@@ -5,16 +5,21 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
+import org.claudevoice.mobile.core.ListenStatus
+import org.claudevoice.mobile.core.Pairing
 import org.claudevoice.mobile.core.PairingOffer
-import org.claudevoice.mobile.core.PhoneAgent
 
 /**
  * The button that shows a pairing code, and the code with the address the hub adds. What it
  * offers and how long a code stays is the core's [PairingOffer]; this only draws it. A code is a
  * secret: while one shows, the window is kept out of screenshots and the recent-apps picture,
- * and it is never logged.
+ * and it is never logged. [status] and [pairing] are the agent's; both null while there is none.
  */
-class PairingPanel(private val activity: Activity, private val agent: () -> PhoneAgent?) {
+class PairingPanel(
+    private val activity: Activity,
+    private val status: () -> ListenStatus?,
+    private val pairing: () -> Pairing?,
+) {
     private val code = TextView(activity).apply {
         textSize = TEXT_SIZE_SP
         visibility = View.GONE
@@ -30,19 +35,21 @@ class PairingPanel(private val activity: Activity, private val agent: () -> Phon
 
     /** Brings the panel up to date with the agent: the button while it listens, the code while it works. */
     fun refresh() {
-        val now = agent()
-        show.visibility = if (now?.let { PairingOffer.address(it.status) } == null) View.GONE else View.VISIBLE
-        if (showing && (now == null || !PairingOffer.showsCode(now.pairing))) hideCode()
+        show.visibility = if (address() == null) View.GONE else View.VISIBLE
+        val now = pairing()
+        if (showing && (now == null || !PairingOffer.showsCode(now))) hideCode()
     }
 
     private fun showCode() {
-        val now = agent() ?: return
-        val address = PairingOffer.address(now.status) ?: return
+        val now = pairing() ?: return
+        val address = address() ?: return
         activity.window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-        code.text = activity.getString(R.string.pairing_code, now.pairing.newCode(), address)
+        code.text = activity.getString(R.string.pairing_code, now.newCode(), address)
         code.visibility = View.VISIBLE
         showing = true
     }
+
+    private fun address() = status()?.let(PairingOffer::address)
 
     private fun hideCode() {
         code.text = ""
