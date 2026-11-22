@@ -1,7 +1,9 @@
 package org.claudevoice.mobile.app
 
 import android.app.Activity
+import android.app.NotificationManager
 import android.content.ActivityNotFoundException
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -19,6 +21,11 @@ import android.widget.TextView
 class MainActivity : Activity() {
     private lateinit var watcher: TailnetWatcher
     private lateinit var pairing: PairingPanel
+    private lateinit var hidden: TextView
+    private val line = NoticeLine(
+        ask = { AskNotifications.fromLine(this) },
+        openSettings = { AskNotifications.openSettings(this) },
+    )
     private val ticks = Handler(Looper.getMainLooper())
     private val tick = object : Runnable {
         override fun run() {
@@ -53,6 +60,13 @@ class MainActivity : Activity() {
             addView(NameStep(this@MainActivity, app.machine, app.suggestedName) { listen() }.view)
             addView(message)
             addView(open)
+            hidden = TextView(this@MainActivity).apply {
+                textSize = TEXT_SIZE_SP
+                setText(R.string.notice_hidden)
+                visibility = View.GONE
+                setOnClickListener { line.tap(canAsk = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) }
+            }
+            addView(hidden)
             pairing = PairingPanel(this@MainActivity) { app.agent() }
             pairing.views.forEach(::addView)
         }
@@ -79,6 +93,30 @@ class MainActivity : Activity() {
         super.onStart()
         watcher.start()
         tick.run()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val allowed = getSystemService(NotificationManager::class.java).areNotificationsEnabled()
+        val listening = (application as App).machine.name != null
+        hidden.visibility = if (NoticeLine.shows(listening, allowed)) View.VISIBLE else View.GONE
+    }
+
+    // The request shows over the app: the screen pauses, or loses the top place when two apps share it.
+    override fun onPause() {
+        line.leftScreen()
+        super.onPause()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus) line.leftScreen()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != AskNotifications.LINE_REQUEST) return
+        line.answered(granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED)
     }
 
     override fun onStop() {

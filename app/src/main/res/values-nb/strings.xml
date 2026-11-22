@@ -18,4 +18,5 @@
     <string name="listener_running">Lytter etter huben din.</string>
     <string name="pairing_show">Vis en paringskode</string>
     <string name="pairing_code">Paringskode: %1$s\nDen virker én gang, i 10 minutter. En ny kode avslutter den.\nTelefonens tailnet-adresse: %2$s</string>
+    <string name="notice_hidden">Lytteren kjører, men Android skjuler varselet. Trykk for å vise det.</string>
 </resources>
