@@ -24,3 +24,32 @@ StrayNumberTest > past the lookups an hour a number is read back as not checked,
 The four that passed guard what must not change: no readings, no mark; a
 number in the contacts and texted before, no mark; a refused text costs no
 check; an outbox built as before marks nothing.
+
+The contacts capability's yes-or-no question, with `has` answering null:
+
+ContactsTest > says whether a number belongs to a contact, as a yes or no FAILED
+    java.lang.AssertionError at ContactsTest.kt:34
+13 tests completed, 1 failed
+
+Its partner, that nothing is read without leave, passed with the stub and
+guards the null case.
+
+The new smsstore capability's one question, with `sentBefore` answering null:
+
+SmsStoreTest > an empty sent box, or addresses that are no number, say never texted FAILED
+    java.lang.AssertionError at SmsStoreTest.kt:41
+SmsStoreTest > says a number was never texted when no sent message went to it FAILED
+    java.lang.AssertionError at SmsStoreTest.kt:30
+SmsStoreTest > says a number was texted before when a sent message went to it FAILED
+    java.lang.AssertionError at SmsStoreTest.kt:25
+SmsStoreTest > a sent address written without its code, or with gaps, still matches FAILED
+    java.lang.AssertionError at SmsStoreTest.kt:35
+6 tests completed, 4 failed
+
+The two that passed guard that nothing is read without leave, and how an
+address is read in full international form.
+
+The tool's words, before the sentence on the never-texted mark was added:
+
+StrayNumberTest > the tool's words tell the hub the never-texted mark needs the app to read texts() FAILED
+15 tests completed, 1 failed

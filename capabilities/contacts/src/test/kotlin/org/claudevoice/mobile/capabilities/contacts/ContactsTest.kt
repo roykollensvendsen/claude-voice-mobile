@@ -30,6 +30,18 @@ class ContactsTest {
     }
 
     @Test
+    fun `says whether a number belongs to a contact, as a yes or no`() {
+        assertEquals(true, contacts(true, kari, ola).has("+4700000056"))
+        assertEquals(false, contacts(true, kari, ola).has("+4700000099"))
+    }
+
+    @Test
+    fun `says nothing, and reads nothing, about a number when the phone may not read contacts`() {
+        assertNull(contacts(false, kari).has("+4700000012"))
+        assertEquals(0, reads)
+    }
+
+    @Test
     fun `answers nothing, and reads nothing, when the phone may not read contacts`() {
         assertNull(contacts(false, kari).numbers { true })
         assertEquals(0, reads)

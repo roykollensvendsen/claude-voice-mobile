@@ -40,7 +40,9 @@ object SmsSend {
                 "or a pick, or a list of up to five of these for one text to each. A name may answer choices " +
                 "instead of a draft: read them to the owner, then call again with the same to and their chosen " +
                 "pick in place of that name. Read a draft's say back to the owner word for word, then confirm " +
-                "only after their spoken yes; one yes, one undo delay and one cancel cover everyone in it.",
+                "only after their spoken yes; one yes, one undo delay and one cancel cover everyone in it. A number " +
+                "may be marked not in the contacts or never texted before. The never-texted mark needs the app to " +
+                "read texts; without that it is left out.",
             schema(
                 """"to":{"oneOf":[{"type":"string","minLength":1},""" +
                     """{"type":"array","items":{"type":"string","minLength":1},"minItems":1,""" +
