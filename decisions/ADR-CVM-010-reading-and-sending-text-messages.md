@@ -428,6 +428,10 @@ question. The same number twice counts once.
     plugin and the owner's grant gives. Otherwise there is no mark and no
     claim. Declaring `READ_SMS` in `sms_send` is a change to the phone's
     permissions and needs the owner's yes in a pull request of its own.
+    The hub learns that the mark needs the app to read texts from the words of
+    `sms_send_request`, not from `access`: a new use or a new value there
+    would change the protocol. `access` for `messages` in `sms_send` stays
+    `SEND_SMS` alone.
   - "Not in your contacts" asks `capabilities/contacts` whether a number
     belongs to a contact, as a yes or no only. A number given as a number is
     read back as the number, never with a contact's name.
