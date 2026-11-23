@@ -32,7 +32,6 @@ data class Kept(
 /** One answer of `sms_since`, before it is put into the answer's JSON. */
 class Batch(val messages: List<Kept>, val cursor: String, val more: Boolean, val dropped: Int, val reset: Boolean)
 
-
 /**
  * ADR-CVM-010's queue: new text messages, oldest first, until the hub has acknowledged them.
  *
