@@ -41,7 +41,8 @@ enum class Reason(val outcome: Outcome, val phrase: String) {
         }
 
         /**
-         * The reason for a delivery report with the network's [status] (3GPP TS 23.040, TP-Status):
+         * The reason for a delivery report with a GSM network's [status] (3GPP TS 23.040, TP-Status;
+         * a 3GPP2 network encodes it otherwise, so the plugin passes only a GSM report here):
          * done is delivered; still trying is no outcome yet; anything else failed.
          */
         fun delivered(status: Int): Reason? = when (status) {

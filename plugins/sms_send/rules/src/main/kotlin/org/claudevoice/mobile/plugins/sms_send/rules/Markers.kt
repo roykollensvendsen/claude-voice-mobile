@@ -86,20 +86,39 @@ class Markers private constructor(private val marks: LinkedHashMap<String, Mark>
 
         /**
          * Markers read back from [toBytes]; an [IOException] when the bytes are not markers,
-         * whatever is wrong with them.
+         * whatever is wrong with them, so a damaged file is refused here and never crashes a
+         * later start. Each marker is held to what [held] allows, and nothing may follow the last.
          */
         @Throws(IOException::class)
         fun fromBytes(bytes: ByteArray): Markers {
             val input = DataInputStream(ByteArrayInputStream(bytes))
-            if (input.readInt() != FORMAT) throw IOException("not markers of this format")
+            sound(input.readInt() == FORMAT, "not markers of this format")
+            val count = input.readInt()
+            sound(count >= 0, "a negative count of markers")
             val marks = LinkedHashMap<String, Mark>()
-            repeat(input.readInt()) {
+            repeat(count) {
                 val token = input.readUTF()
-                val stage = stage(input.readUTF())
-                val open = MutableList(input.readByte().toInt()) { input.readByte().toInt() }
-                marks[token] = Mark(stage, open, OutcomeLog.readTime(input))
+                marks[token] = mark(token, input)
             }
+            sound(input.read() == -1, "bytes after the last marker")
             return Markers(marks)
+        }
+
+        private fun mark(token: String, input: DataInputStream): Mark {
+            val stage = stage(input.readUTF())
+            val count = input.readByte().toInt()
+            sound(token.length in 1..LONGEST_TOKEN && count >= 1, "a marker no hold could have left")
+            // Distinct positions from 1 to 5, so never more than 5 of them.
+            val open = MutableList(count) { input.readByte().toInt() }
+            sound(POSITIONS.containsAll(open) && open.toSet().size == count, "positions no hold could have left")
+            return Mark(stage, open, OutcomeLog.readTime(input))
+        }
+
+        private val POSITIONS = (1..MOST_RECIPIENTS).toSet()
+
+        /** Bytes that break what a hold could have written are no markers. */
+        private fun sound(holds: Boolean, what: String) {
+            if (!holds) throw IOException(what)
         }
 
         private fun stage(name: String): Stage =

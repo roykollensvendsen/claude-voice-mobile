@@ -31,3 +31,19 @@ existing tests of the sending rules passed alongside them:
 Pitest then found three survivors: a token of 1 character, a marker for
 5 recipients, and a marker that is not empty once held. Each got its own
 assertion, and Pitest then killed every mutant of the sending rules.
+
+A damaged marker file (quality-claude-voice's b1 on #199). Markers'
+fromBytes did not check its fields. A negative count threw
+IllegalArgumentException, and a bad token or position was read in and
+crashed leftAtRestart at the next start. The crafted-bytes test was
+written first and run against that code:
+
+    MarkersTest > a damaged marker file is refused as unreadable, never left to crash the next start() FAILED
+        Caused by: java.lang.IllegalArgumentException at MarkersTest.kt:145
+    10 tests completed, 1 failed
+
+Each field is now checked against what a hold allows, and anything wrong
+is an IOException. A second test reads sound files at each edge (a token
+of 1 and of 64 characters, 1 and 5 open positions, and no markers). No
+upper limit on the open count is checked, since distinct positions from
+1 to 5 can't be more than 5.

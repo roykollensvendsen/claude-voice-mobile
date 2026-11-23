@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.io.ByteArrayOutputStream
+import java.io.DataOutputStream
 import java.io.IOException
 import java.time.OffsetDateTime
 
@@ -101,5 +103,51 @@ class MarkersTest {
         assertThrows<IOException> { Markers.fromBytes(good.copyOf().also { it[3] = 9 }) }
         val stage = String(good, Charsets.ISO_8859_1).replace("HELD", "HOLD").toByteArray(Charsets.ISO_8859_1)
         assertThrows<IOException> { Markers.fromBytes(stage) }
+    }
+
+    /** A marker file as bytes, field by field, so a damaged one can be made on purpose. */
+    private fun crafted(count: Int, token: String, open: List<Int>, openCount: Int = open.size, stage: String = "HELD"): ByteArray {
+        val bytes = ByteArrayOutputStream()
+        val out = DataOutputStream(bytes)
+        out.writeInt(Markers.FORMAT)
+        out.writeInt(count)
+        out.writeUTF(token)
+        out.writeUTF(stage)
+        out.writeByte(openCount)
+        for (position in open) out.writeByte(position)
+        out.writeLong(at.toEpochSecond())
+        out.writeInt(0)
+        out.writeInt(at.offset.totalSeconds)
+        return bytes.toByteArray()
+    }
+
+    @Test
+    fun `a crafted marker file is read when it is sound, at each edge of what a hold allows`() {
+        val read = Markers.fromBytes(crafted(1, "t-1", listOf(1, 5)))
+        assertEquals(listOf(1, 5).map { SendOutcome("t-1", it, Reason.RESTARTED, later) }, read.leftAtRestart(later))
+        assertEquals(1, Markers.fromBytes(crafted(1, "t", listOf(3))).leftAtRestart(later).size)
+        assertEquals(1, Markers.fromBytes(crafted(1, "t".repeat(64), listOf(3))).leftAtRestart(later).size)
+        assertEquals(5, Markers.fromBytes(crafted(1, "t-1", listOf(5, 4, 3, 2, 1))).leftAtRestart(later).size)
+        assertTrue(Markers.fromBytes(Markers.none().toBytes()).isEmpty(), "no markers at all")
+    }
+
+    @Test
+    fun `a damaged marker file is refused as unreadable, never left to crash the next start`() {
+        val damaged = mapOf(
+            "a negative count of open recipients" to crafted(1, "t-1", listOf(), openCount = -1),
+            "no open recipient" to crafted(1, "t-1", listOf()),
+            "more than 5 open recipients" to crafted(1, "t-1", listOf(1, 2, 3, 4, 5, 1)),
+            "an empty token" to crafted(1, "", listOf(1)),
+            "a token of 65 characters" to crafted(1, "t".repeat(65), listOf(1)),
+            "a position of 0" to crafted(1, "t-1", listOf(0)),
+            "a position of 6" to crafted(1, "t-1", listOf(6)),
+            "a position given twice" to crafted(1, "t-1", listOf(2, 2)),
+            "a negative count of markers" to crafted(-1, "t-1", listOf(1)),
+            "a negative count of markers and nothing after" to crafted(-1, "t-1", listOf(1)).copyOf(8),
+            "bytes after the last marker" to crafted(1, "t-1", listOf(1)) + byteArrayOf(0),
+        )
+        for ((what, bytes) in damaged) {
+            assertThrows<IOException>(what) { Markers.fromBytes(bytes) }
+        }
     }
 }
