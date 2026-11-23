@@ -79,7 +79,9 @@ brings that capability along, as it brings the rules.
 
 Pure logic means no Android API, no permission, and no file, network or
 process access: no `java.io` file classes, no `java.nio.file` or
-`java.nio.channels`, no `java.net`, no `ProcessBuilder` or `Runtime.exec`.
+`java.nio.channels`, no `java.net`, no `ProcessBuilder` or `Runtime.exec`,
+and no reaching any of these by name or by native code: no
+`java.lang.reflect`, `Class.forName`, `System.loadLibrary` or `System.load`.
 Writing to a stream the caller hands in is fine. Each part has its check:
 
 - The Android half: the layer check lets rules depend only on a capability

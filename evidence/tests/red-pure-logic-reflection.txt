@@ -1,0 +1,19 @@
+.F.                                                                      [100%]
+=================================== FAILURES ===================================
+_ test_a_plugins_rules_may_use_a_pure_capability_and_nothing_that_reaches_android _
+
+    def test_a_plugins_rules_may_use_a_pure_capability_and_nothing_that_reaches_android():
+        text = flat(MODULES)
+        assert "A plugin's rules may depend on a capability that holds only pure logic" in text
+        assert "never on one that reaches Android" in text
+        assert "Picking the plugin brings that capability along" in text
+        assert "Pure logic means no Android API, no permission, and no file, network or process access" in text
+        assert "`tests/test_cursorqueue_pure.py` scans every such capability" in text
+        assert "checked in review until that test is merged" in text
+>       assert "and no reaching any of these by name or by native code" in text
+E       AssertionError: assert 'and no reaching any of these by name or by native code' in '# ADR-CVM-007: Modules each install picks, and capabilities below the plugins ## Status Proposed 2026-11-15 by the ar...ecord amends. - [ADR-CVM-008](ADR-CVM-008-a-microphone-mute-that-holds.md): the microphone mute, the first capability.'
+
+tests/test_shared_queue_record.py:35: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shared_queue_record.py::test_a_plugins_rules_may_use_a_pure_capability_and_nothing_that_reaches_android
+1 failed, 2 passed in 0.06s
