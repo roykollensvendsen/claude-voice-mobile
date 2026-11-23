@@ -31,3 +31,31 @@ the missing plain Kotlin plugin and an Android API.
 The move itself changes no behaviour, so it has no red run of its own: the
 existing tests of the sms queue (SmsQueueTest, QueueFileTest, InboxTest,
 SmsSinceTest) pass untouched before and after.
+
+Files and the network (quality-claude-voice's f1 on #197). The test that a
+pure capability importing java.io.File, a File stream, RandomAccessFile,
+java.nio.file, java.nio.channels or java.net is refused was written first
+and run against the check as it was:
+
+    E       assert [] == ['java.io.Fil...a.net.Socket']
+    E         Right contains 6 more items, first extra item: 'java.io.File'
+    FAILED tests/test_cursorqueue_pure.py::test_the_check_notices_a_capability_that_reaches_files_or_the_network
+    1 failed, 5 passed
+
+A second test shows that the streams a caller hands over (java.io's Data
+and Byte streams, IOException) are still allowed. The shared queue uses
+those streams and nothing else.
+
+Exactly what a build takes (quality-claude-voice's f2 on #197). The new
+ModulePicksTest case pins behaviour that is already in place: the picked
+plugins, their rules, and the capabilities that both build files name,
+with nothing else. It passed from its first run, since there was no
+behaviour to add.
+
+Processes (the record #197, ADR-CVM-007's meaning of pure logic). The
+test that a pure capability starting a process is refused was written
+first and run against the check as it was:
+
+    E       AssertionError: assert [] == ['Run.kt star...ntime().exec']
+    FAILED tests/test_cursorqueue_pure.py::test_the_check_notices_a_capability_that_starts_a_process
+    1 failed, 6 passed

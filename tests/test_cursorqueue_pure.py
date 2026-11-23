@@ -4,7 +4,8 @@ A plugin's rules may use a capability whose build file applies no Android plugin
 capability must be plain Kotlin with no manifest, no Android API, no permission, and no library
 of its own beyond its tests. The set is the one `scripts/levels.py` mutates, by the rule the layer
 check uses. quality-claude-voice asked for this pin in its review of #195, and quality-2 asked for
-it to cover every pure capability and its dependencies in its review of #196.
+it to cover every pure capability and its dependencies in its review of #196, and to refuse files
+and the network in its review of #197; the record (#197) adds processes and names this file.
 """
 
 import pathlib
@@ -18,6 +19,14 @@ import levels  # noqa: E402
 
 # The only dependencies a pure capability may declare: those of its tests.
 TEST_ONLY = re.compile(r"^\s*(testImplementation|testRuntimeOnly)\(")
+# What reaches a file, a disk or the network. A stream the caller hands over (java.io's Data and
+# Byte streams, IOException) touches none, so java.io is not refused as a whole.
+REACHES_OUT = re.compile(
+    r"^import (java\.io\.(?:File\w*|RandomAccessFile)|java\.nio\.(?:file|channels)\.\S+|java\.net\.\S+)",
+    re.MULTILINE,
+)
+# What starts a process. Both live in java.lang, which needs no import, so the code is scanned.
+STARTS_PROCESS = re.compile(r"\bProcessBuilder\b|\bRuntime\.getRuntime\(\)\.exec\b")
 DEPENDENCIES = re.compile(r"^dependencies \{\n(.*?)^\}", re.DOTALL | re.MULTILINE)
 
 
@@ -31,7 +40,8 @@ def dependencies(build: str) -> list[str]:
 def reaches_android(module: pathlib.Path) -> list[str]:
     """Each way `module` could reach beyond pure logic.
 
-    That is an Android plugin, a manifest, an Android API, a permission, or a library.
+    That is an Android plugin, a manifest, an Android API, a permission, a library, a file,
+    the network, or a process (ADR-CVM-007's meaning of pure logic).
     """
     found = []
     build = (module / "build.gradle.kts").read_text()
@@ -51,6 +61,13 @@ def reaches_android(module: pathlib.Path) -> list[str]:
             found.append(f"{source.relative_to(module)} uses an Android API")
         if "android.permission" in text:
             found.append(f"{source.relative_to(module)} names a permission")
+        found.extend(
+            f"{source.relative_to(module)} reaches files or the network: {name}"
+            for name in REACHES_OUT.findall(text)
+        )
+        found.extend(
+            f"{source.relative_to(module)} starts a process: {name}" for name in STARTS_PROCESS.findall(text)
+        )
     return found
 
 
@@ -77,3 +94,50 @@ def test_the_check_notices_a_library_beyond_the_tests(tmp_path):
     )
     expected = "its build file depends on more than its tests: implementation(libs.okhttp)"
     assert reaches_android(tmp_path) == [expected]
+
+
+def test_the_check_notices_a_capability_that_reaches_files_or_the_network(tmp_path):
+    (tmp_path / "build.gradle.kts").write_text("plugins {\n    alias(libs.plugins.kotlin.jvm)\n}\n")
+    source = tmp_path / "src/main/kotlin/Leak.kt"
+    source.parent.mkdir(parents=True)
+    source.write_text(
+        "import java.io.DataOutputStream\n"
+        "import java.io.File\n"
+        "import java.io.FileOutputStream\n"
+        "import java.io.RandomAccessFile\n"
+        "import java.nio.file.Files\n"
+        "import java.nio.channels.FileChannel\n"
+        "import java.net.Socket\n"
+    )
+    found = reaches_android(tmp_path)
+    reached = [f.split(": ", 1)[1] for f in found]
+    assert reached == [
+        "java.io.File",
+        "java.io.FileOutputStream",
+        "java.io.RandomAccessFile",
+        "java.nio.file.Files",
+        "java.nio.channels.FileChannel",
+        "java.net.Socket",
+    ], found
+    assert all(f.startswith("src/main/kotlin/Leak.kt reaches files or the network: ") for f in found), found
+
+
+def test_a_stream_the_caller_hands_over_is_no_file(tmp_path):
+    (tmp_path / "build.gradle.kts").write_text("plugins {\n    alias(libs.plugins.kotlin.jvm)\n}\n")
+    source = tmp_path / "Queue.kt"
+    source.write_text(
+        "import java.io.DataInputStream\nimport java.io.DataOutputStream\n"
+        "import java.io.IOException\nimport java.io.ByteArrayOutputStream\n"
+    )
+    assert reaches_android(tmp_path) == []
+
+
+def test_the_check_notices_a_capability_that_starts_a_process(tmp_path):
+    (tmp_path / "build.gradle.kts").write_text("plugins {\n    alias(libs.plugins.kotlin.jvm)\n}\n")
+    (tmp_path / "Run.kt").write_text(
+        'fun a() = ProcessBuilder("ls").start()\nfun b() = Runtime.getRuntime().exec("ls")\n'
+    )
+    assert reaches_android(tmp_path) == [
+        "Run.kt starts a process: ProcessBuilder",
+        "Run.kt starts a process: Runtime.getRuntime().exec",
+    ]
