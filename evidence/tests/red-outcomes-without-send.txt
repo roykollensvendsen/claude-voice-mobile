@@ -1,0 +1,13 @@
+..........F                                                              [100%]
+=================================== FAILURES ===================================
+____________ test_outcomes_still_answer_after_sending_is_taken_back ____________
+
+    def test_outcomes_still_answer_after_sending_is_taken_back() -> None:
+        text = " ".join(record().split())
+>       assert "With `SEND_SMS` taken back, `sms_send_outcomes` still answers" in text
+E       AssertionError: assert 'With `SEND_SMS` taken back, `sms_send_outcomes` still answers' in '# ADR-CVM-010: Reading and sending text messages ## Status Proposed 2026-11-18 by the architect session. It writes do...https://github.com/roykollensvendsen/claude-voice/blob/main/docs/agent-protocol/next-version.md): the `messages` name.'
+
+tests/test_sms_outcomes_shape.py:154: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_sms_outcomes_shape.py::test_outcomes_still_answer_after_sending_is_taken_back
+1 failed, 10 passed in 0.09s
