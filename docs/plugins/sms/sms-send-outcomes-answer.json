@@ -33,7 +33,7 @@
     "dropped": {
       "type": "integer",
       "minimum": 0,
-      "description": "Outcomes the phone dropped before they were acknowledged: over 500 kept, or older than 7 days. The count can be a little high, never low, and is cleared only when a call passes the cursor of an answer that carried it. 0 when none."
+      "description": "Outcomes the phone dropped before they were acknowledged: over 500 kept, or older than 7 days; a marker or outcome file that could not be read counts at least one, and the voice then says a text may have been sent. The count can be a little high, never low, and is cleared only when a call passes the cursor of an answer that carried it. 0 when none."
     },
     "reset": {
       "type": "boolean",
