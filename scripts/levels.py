@@ -43,8 +43,9 @@ BLOCK = 6  # lines in a row that count as a copied block, as in claude-voice
 # Lines that say nothing on their own, left out of the copied-code measure.
 NOISE = re.compile(r"^(?:import |package )|^[{}()\[\];,.]+$")
 COMPLEXITY_RULE = "detekt.CyclomaticComplexMethod"
-# A capability whose build file applies the plain Kotlin plugin holds only pure logic.
-PURE = re.compile(r"alias\(libs\.plugins\.kotlin\.jvm\)")
+# A capability whose build file applies no Android plugin holds only pure logic: the same rule
+# the layer check (build-logic's LayersPlugin) uses to let a plugin's rules depend on it.
+ANDROID_PLUGIN = re.compile(r"libs\.plugins\.android\.")
 COMPLEXITY = re.compile(r"\(complexity: (\d+)\)")
 
 
@@ -62,14 +63,21 @@ class Parts:
         return tuple(":" + module.replace("/", ":") + ":" + task for module, task in self.results)
 
 
+def pure_capabilities(root: Path) -> list[str]:
+    """The capabilities that hold only pure logic: their build file applies no Android plugin."""
+    shelf = root / "capabilities"
+    builds = sorted(shelf.glob("*/build.gradle.kts")) if shelf.is_dir() else []
+    return [f"capabilities/{b.parent.name}" for b in builds if not ANDROID_PLUGIN.search(b.read_text())]
+
+
 def parts(root: Path) -> Parts:
     """The parts, found by walking `plugins/` and `capabilities/`, so a new module is never left out.
 
     A plugin is a folder there with a build file, and an Android library. Its rules module,
     `plugins/<name>/rules`, is plain Kotlin, so Pitest mutates it as it does the core. A
     capability, `capabilities/<name>`, is an Android library too, so it is tested and measured
-    but not mutated, unless it holds only pure logic (ADR-CVM-007): its build file applies the
-    plain Kotlin plugin, so it is tested off the phone and mutated like a rules module.
+    but not mutated, unless it holds only pure logic (ADR-CVM-007): its build file applies no
+    Android plugin, so it is tested off the phone and mutated like a rules module.
     """
     folder = root / "plugins"
     plugins = sorted(
@@ -82,7 +90,7 @@ def parts(root: Path) -> Parts:
         for d in (shelf.iterdir() if shelf.is_dir() else ())
         if d.is_dir() and (d / "build.gradle.kts").is_file()
     )
-    pure = [c for c in capabilities if PURE.search((root / c / "build.gradle.kts").read_text())]
+    pure = pure_capabilities(root)
     return Parts(
         modules=("core", "plugin-api", "app", *plugins, *rules, *capabilities),
         mutated=("core", "plugin-api", *rules, *pure),  # Pitest cannot run Android unit tests

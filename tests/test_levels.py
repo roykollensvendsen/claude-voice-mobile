@@ -260,6 +260,7 @@ def test_every_measure_builds_with_every_plugin_picked(monkeypatch):
 def test_a_capability_is_measured_and_tested_too_but_not_mutated(tmp_path):
     for path in ("plugins/sms_send", "capabilities/contacts"):
         _module(tmp_path, path)
+    (tmp_path / "capabilities/contacts/build.gradle.kts").write_text("plugins { alias(libs.plugins.android.library) }")
     (tmp_path / "capabilities" / "empty").mkdir()  # a folder with no build file is no capability
     parts = levels.parts(tmp_path)
     assert parts.modules == ("core", "plugin-api", "app", "plugins/sms_send", "capabilities/contacts")
@@ -271,6 +272,9 @@ def test_a_capability_is_measured_and_tested_too_but_not_mutated(tmp_path):
 def test_a_capability_of_pure_logic_is_tested_off_the_phone_and_mutated(tmp_path):
     _module(tmp_path, "plugins/sms")
     _module(tmp_path, "capabilities/contacts")
+    (tmp_path / "capabilities/contacts/build.gradle.kts").write_text(
+        "plugins {\n    alias(libs.plugins.android.library)\n}\n"
+    )
     _module(tmp_path, "capabilities/cursorqueue")
     (tmp_path / "capabilities/cursorqueue/build.gradle.kts").write_text(
         "plugins {\n    alias(libs.plugins.kotlin.jvm)\n}\n"
