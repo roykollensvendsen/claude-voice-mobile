@@ -65,6 +65,13 @@ stays a module in this repository until a second project wants it. Moving it to
 a repository of its own, and publishing it, is the owner's decision, and is a
 row in [`deferred.md`](deferred.md).
 
+**A capability may also hold pure logic that more than one plugin uses**, when
+copying it into each plugin's rules would be the only other way. It is pure
+JVM, follows every rule above, and is mutated like the core. The first is
+`capabilities/cursorqueue`: the ids, cursors, acknowledgement, resend, drops
+and reset that `sms` and `sms_send` both give their polls. Such logic lives as
+a capability, never in `core`, which no plugin may depend on.
+
 **Modules are picked when the app is built.** One Gradle property lists the
 plugins, for example `-PcvPlugins=status,micmute,mobiledata`. Gradle includes
 only those modules and the capabilities they use. The app's list of plugins is

@@ -1,0 +1,16 @@
+.F                                                                       [100%]
+=================================== FAILURES ===================================
+_______ test_outcomes_and_the_marker_are_plain_files_kept_out_of_backups _______
+
+    def test_outcomes_and_the_marker_are_plain_files_kept_out_of_backups():
+        text = flat(SMS)
+        assert "The outcomes and the crash marker are plain files" in text
+        assert "written atomically, in the no-backup folder, and not sealed" in text
+        assert "a lost key would drop the marker" in text
+>       assert "only tokens, positions, times, outcomes and the fixed reasons" in text
+E       AssertionError: assert 'only tokens, positions, times, outcomes and the fixed reasons' in '# ADR-CVM-010: Reading and sending text messages ## Status Proposed 2026-11-18 by the architect session. It writes do...https://github.com/roykollensvendsen/claude-voice/blob/main/docs/agent-protocol/next-version.md): the `messages` name.'
+
+tests/test_shared_queue_record.py:32: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_shared_queue_record.py::test_outcomes_and_the_marker_are_plain_files_kept_out_of_backups
+1 failed, 1 passed in 0.05s
