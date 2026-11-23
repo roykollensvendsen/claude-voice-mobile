@@ -261,9 +261,10 @@ class Outbox(
 
         /**
          * The outbox the phone uses: the phone's clock and zone, a timer thread of its own, and
-         * tokens no one can guess. [send] and [failed] are the phone's radio and log.
+         * tokens no one can guess. [send] and [failed] are the phone's radio and log, and [tracking]
+         * keeps how each confirmed text ends.
          */
-        fun onThePhone(send: (Handover) -> Unit, failed: (String) -> Unit): Outbox {
+        fun onThePhone(send: (Handover) -> Unit, failed: (String) -> Unit, tracking: Tracking? = null): Outbox {
             val timer = Executors.newSingleThreadScheduledExecutor()
             return Outbox(
                 clock = Clock.systemDefaultZone(),
@@ -271,6 +272,7 @@ class Outbox(
                 send = send,
                 failed = failed,
                 tokens = { UUID.randomUUID().toString() },
+                tracking = tracking,
             )
         }
 
