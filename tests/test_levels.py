@@ -268,6 +268,20 @@ def test_a_capability_is_measured_and_tested_too_but_not_mutated(tmp_path):
     assert parts.test_tasks[-1] == ":capabilities:contacts:testDebugUnitTest"
 
 
+def test_a_capability_of_pure_logic_is_tested_off_the_phone_and_mutated(tmp_path):
+    _module(tmp_path, "plugins/sms")
+    _module(tmp_path, "capabilities/contacts")
+    _module(tmp_path, "capabilities/cursorqueue")
+    (tmp_path / "capabilities/cursorqueue/build.gradle.kts").write_text(
+        "plugins {\n    alias(libs.plugins.kotlin.jvm)\n}\n"
+    )
+    parts = levels.parts(tmp_path)
+    assert parts.mutated == ("core", "plugin-api", "capabilities/cursorqueue")
+    assert ("capabilities/cursorqueue", "test") in parts.results
+    assert ("capabilities/contacts", "testDebugUnitTest") in parts.results
+    assert ":capabilities:cursorqueue:test" in parts.test_tasks
+
+
 def test_a_tree_with_no_capabilities_folder_has_no_capability(tmp_path):
     _module(tmp_path, "plugins/status")
     assert levels.parts(tmp_path).modules == ("core", "plugin-api", "app", "plugins/status")
