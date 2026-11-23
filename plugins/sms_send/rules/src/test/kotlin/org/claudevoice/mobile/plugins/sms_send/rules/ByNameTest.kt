@@ -33,7 +33,7 @@ class ByNameTest {
 
         override fun withZone(zone: ZoneId) = this
     }
-    private val outbox = Outbox(clock, { _, task -> timers += task }, { to, text -> sent += to to text }, {}, { "t${++next}" })
+    private val outbox = Outbox(clock, { _, task -> timers += task }, { (to, text) -> sent += to to text }, {}, { "t${++next}" })
     private val recipients = Recipients(clock, { "p${++next}" }) { matches ->
         lookups += 1
         book.filter { matches(it.name) }

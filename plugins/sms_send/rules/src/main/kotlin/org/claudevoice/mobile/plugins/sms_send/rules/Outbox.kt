@@ -18,6 +18,12 @@ sealed interface Reply {
     data class Refused(val say: String, val code: String? = null) : Reply
 }
 
+/**
+ * One recipient's text, handed to Android: [number] and [text], and the [token] of the draft
+ * with the recipient's [position] in it, counted from 1, so Android's reports find their outcome.
+ */
+data class Handover(val number: String, val text: String, val token: String, val position: Int)
+
 /** Runs a task once, after a wait. */
 fun interface Later {
     fun run(wait: Duration, task: Runnable)
@@ -31,15 +37,23 @@ fun interface Later {
  *
  * [clock] gives the time and the zone the too-late answer names. [later] runs a task after a
  * wait. [send] hands a text to the phone's default SIM and throws when the radio refuses, and
- * [failed] logs that on the phone, since the hub hears no outcome yet.
+ * [failed] logs that on the phone.
+ *
+ * With [tracking] (ADR-CVM-010), a confirmed text is marked on disk before its undo delay starts
+ * and again before Android sees it, and each way it ends before Android's own reports is stored as
+ * its outcome: stopped by the owner, no default subscription, or refused by Android. A draft never
+ * confirmed leaves nothing.
  */
+// Each is a separate stand-in the tests replace; grouping them would only hide which one a test sets.
+@Suppress("LongParameterList")
 class Outbox(
     private val clock: Clock,
     private val later: Later,
-    private val send: (String, String) -> Unit,
+    private val send: (Handover) -> Unit,
     private val failed: (String) -> Unit,
     private val tokens: () -> String,
     private val delay: Duration = DEFAULT_DELAY,
+    private val tracking: Tracking? = null,
 ) {
     init {
         require(delay >= FLOOR) { "the undo delay may not be under ${FLOOR.seconds} seconds" }
@@ -49,6 +63,9 @@ class Outbox(
         data object Held : State
         data object Armed : State
         data class Handed(val at: Instant) : State
+
+        /** Not handed to Android, since the phone had no default subscription; it still counts. */
+        data object Unsent : State
         data object Stopped : State
     }
 
@@ -138,6 +155,7 @@ class Outbox(
     }
 
     private fun armed(draft: Draft): Reply {
+        if (tracking?.held(draft.token, draft.to.size) == false) return Reply.Refused(NOT_HELD)
         draft.state = State.Armed
         draft.confirmed = clock.instant()
         later.run(delay) { fire(draft) }
@@ -150,10 +168,13 @@ class Outbox(
         val draft = drafts[token] ?: return Reply.Refused(NO_SUCH, NO_DRAFT)
         return when (val state = draft.state) {
             State.Held, State.Armed -> {
+                // Only a confirmed text has a marker, and so an outcome.
+                if (state == State.Armed) tracking?.stopped(draft.token)
                 draft.state = State.Stopped
                 answer("say" to JsonPrimitive(STOPPED))
             }
             is State.Handed -> answer("say" to JsonPrimitive(tooLate(draft, state.at.atZone(clock.zone))))
+            State.Unsent -> answer("say" to JsonPrimitive(UNSENT))
             State.Stopped -> Reply.Refused(NO_SUCH, NO_DRAFT)
         }
     }
@@ -168,15 +189,23 @@ class Outbox(
     @Synchronized
     private fun fire(draft: Draft) {
         if (draft.state != State.Armed) return
-        draft.state = State.Handed(clock.instant())
-        for ((number, named) in draft.to.zip(draft.named)) {
+        val go = tracking?.going(draft.token) ?: Tracking.Go.SEND
+        draft.state = when (go) {
+            Tracking.Go.SEND -> State.Handed(clock.instant())
+            Tracking.Go.UNSENT -> State.Unsent
+            Tracking.Go.STOPPED -> State.Stopped
+        }
+        if (go != Tracking.Go.SEND) return
+        for ((index, pair) in draft.to.zip(draft.named).withIndex()) {
+            val (number, named) = pair
             @Suppress("TooGenericExceptionCaught") // whatever the radio throws, it is logged, never thrown on
             try {
-                send(number, draft.text)
+                send(Handover(number, draft.text, draft.token, index + 1))
                 draft.handed += 1
             } catch (_: RuntimeException) {
                 draft.refused += named
                 failed(SEND_FAILED)
+                tracking?.refused(draft.token, index + 1)
             }
         }
     }
@@ -224,7 +253,7 @@ class Outbox(
          * The outbox the phone uses: the phone's clock and zone, a timer thread of its own, and
          * tokens no one can guess. [send] and [failed] are the phone's radio and log.
          */
-        fun onThePhone(send: (String, String) -> Unit, failed: (String) -> Unit): Outbox {
+        fun onThePhone(send: (Handover) -> Unit, failed: (String) -> Unit): Outbox {
             val timer = Executors.newSingleThreadScheduledExecutor()
             return Outbox(
                 clock = Clock.systemDefaultZone(),
@@ -247,6 +276,8 @@ class Outbox(
         private const val NOT_CONFIRMED = "I can't yet confirm delivery."
         private const val STOP_HINT = "Say stop to cancel. $NOT_CONFIRMED"
         private const val STOPPED = "Stopped, not sent."
+        private const val UNSENT = "It was not sent: the phone has no default SIM for texts."
+        private const val NOT_HELD = "The phone could not save the send, so nothing is waiting to go. Confirm again."
         private const val CHANGED = "It changed; read it back first."
         private const val NO_SUCH = "There is no draft by that token waiting; make a new request."
         private const val NOT_A_NUMBER = "A text goes to one number in full international form, such as +4700000001."

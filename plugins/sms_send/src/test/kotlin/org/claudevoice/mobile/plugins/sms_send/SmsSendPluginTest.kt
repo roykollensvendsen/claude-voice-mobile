@@ -21,7 +21,7 @@ class SmsSendPluginTest {
     private val outbox = Outbox(
         clock = Clock.fixed(Instant.EPOCH, ZoneId.of("UTC")),
         later = { _, _ -> },
-        send = { _, _ -> },
+        send = { _ -> },
         failed = {},
         tokens = { "t1" },
     )

@@ -43,7 +43,7 @@ class SeveralRecipientsTest {
         val outbox = Outbox(
             clock = clock,
             later = { _, task -> timers += task },
-            send = { number, text ->
+            send = { (number, text) ->
                 if (number in refusing) throw IllegalStateException("no default subscription")
                 sent += number to text
             },
@@ -199,7 +199,7 @@ class SeveralRecipientsTest {
         outbox = Outbox(
             clock = Clock.fixed(phone.now, ZoneId.of("Europe/Oslo")),
             later = { _, task -> phone.timers += task },
-            send = { number, _ ->
+            send = { (number) ->
                 if (number == a) canceller.start()
                 // The cancel must still be waiting for the lock when the next text goes.
                 if (number == b) awaitBlockedOrDone(canceller)

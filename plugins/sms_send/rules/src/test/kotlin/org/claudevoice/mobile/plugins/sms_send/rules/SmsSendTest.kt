@@ -18,7 +18,7 @@ class SmsSendTest {
     private val outbox = Outbox(
         clock = Clock.fixed(Instant.EPOCH, ZoneId.of("UTC")),
         later = { _, task -> timers += task },
-        send = { to, text -> sent += to to text },
+        send = { (to, text) -> sent += to to text },
         failed = {},
         tokens = { "t1" },
     )

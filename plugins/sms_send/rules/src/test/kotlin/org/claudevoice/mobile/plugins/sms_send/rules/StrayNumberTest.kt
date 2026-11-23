@@ -31,7 +31,7 @@ class StrayNumberTest {
             contact = { number -> contacts?.let { checks += 1; number in it } },
             texted = { number -> texted?.let { checks += 1; number in it } },
         ) { matches -> contacts?.let { listOf(per).filter { matches(it.name) } } }
-        val outbox = Outbox(clock = clock, later = { _, _ -> }, send = { _, _ -> }, failed = {}, tokens = { "t1" })
+        val outbox = Outbox(clock = clock, later = { _, _ -> }, send = { _ -> }, failed = {}, tokens = { "t1" })
 
         fun request(vararg to: String) = say(outbox.request(to.toList(), "Hei", recipients))
     }
@@ -153,7 +153,7 @@ class StrayNumberTest {
     fun `a too-late answer names a refused number without its marks, which may be stale by then`() {
         val phone = Phone(contacts = emptySet(), texted = emptySet())
         var fire = Runnable {}
-        val outbox = Outbox(clock, { _, task -> fire = task }, { to, _ -> check(to != a) { "refused" } }, {}, { "t1" })
+        val outbox = Outbox(clock, { _, task -> fire = task }, { (to) -> check(to != a) { "refused" } }, {}, { "t1" })
         outbox.request(listOf(a, b), "Hei", phone.recipients)
         outbox.confirm("t1", 1)
         fire.run()
@@ -175,7 +175,7 @@ class StrayNumberTest {
 
     @Test
     fun `an outbox with no readings, as before, marks nothing`() {
-        val box = Outbox(clock, { _, _ -> }, { _, _ -> }, {}, { "t1" })
+        val box = Outbox(clock, { _, _ -> }, { _ -> }, {}, { "t1" })
         assertEquals("Draft to +4700000001: 'Hei'", say(box.request(a, "Hei")))
     }
 }
