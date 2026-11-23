@@ -158,3 +158,9 @@ def test_outcomes_still_answer_after_sending_is_taken_back() -> None:
         'each recipient fails with "refused by Android"'
     ) in text
     assert "The phone checks the permission before it writes the `sending` mark" in text
+
+
+def test_confirm_is_refused_when_the_held_mark_cannot_be_saved() -> None:
+    text = " ".join(record().split())
+    assert "If the `held` mark can't be saved at confirm, confirm is refused" in text
+    assert "That includes a phone whose outcome files can't be opened at all" in text

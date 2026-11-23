@@ -1,0 +1,13 @@
+...........F                                                             [100%]
+=================================== FAILURES ===================================
+__________ test_confirm_is_refused_when_the_held_mark_cannot_be_saved __________
+
+    def test_confirm_is_refused_when_the_held_mark_cannot_be_saved() -> None:
+        text = " ".join(record().split())
+>       assert "If the `held` mark can't be saved at confirm, confirm is refused" in text
+E       assert "If the `held` mark can't be saved at confirm, confirm is refused" in '# ADR-CVM-010: Reading and sending text messages ## Status Proposed 2026-11-18 by the architect session. It writes do...https://github.com/roykollensvendsen/claude-voice/blob/main/docs/agent-protocol/next-version.md): the `messages` name.'
+
+tests/test_sms_outcomes_shape.py:165: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_sms_outcomes_shape.py::test_confirm_is_refused_when_the_held_mark_cannot_be_saved
+1 failed, 11 passed in 0.08s
