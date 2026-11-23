@@ -68,6 +68,17 @@ class CursorQueue<T> private constructor(
         return was
     }
 
+    /**
+     * Count [count] items lost outside the queue, such as in a damaged file beside it, as
+     * dropped: the hub hears of them as of any drop, and may hear of too many, never too few.
+     */
+    fun lost(count: Int) {
+        require(count >= 0) { "a loss is never negative" }
+        if (count == 0) return
+        drops.ever += count
+        changed = true
+    }
+
     /** Keep [value] last, and drop what is now too old or too many. */
     fun add(value: T, now: Instant) {
         entries.addLast(Entry(numbers.next, value))
