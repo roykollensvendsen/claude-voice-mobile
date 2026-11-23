@@ -71,6 +71,7 @@ class Outbox(
 
     private class Draft(val token: String, var to: List<String>, var text: String, var version: Int, var state: State) {
         /** How the read-back named each recipient: the number, or the contact's name and the number. */
+        @JvmField // read only inside the draft, so it needs no getter
         var named: List<String> = to
 
         val names get() = named.joinToString("; ")
@@ -87,6 +88,29 @@ class Outbox(
             refused += named[index]
             failed(SEND_FAILED)
             tracking?.refused(token, index + 1)
+        }
+
+        /** The owner stopped it; only a confirmed text has a marker, and so an outcome. */
+        fun stop(tracking: Tracking?) {
+            if (state == State.Armed) tracking?.stopped(token)
+            state = State.Stopped
+        }
+
+        /** Hand each recipient's text to [send]; one Android refuses never stops the next. */
+        fun handOver(send: (Handover) -> Unit, failed: (String) -> Unit, tracking: Tracking?) {
+            for ((index, number) in to.withIndex()) {
+                @Suppress("TooGenericExceptionCaught") // whatever the radio throws, it is logged, never thrown on
+                try {
+                    send(Handover(number, text, token, index + 1))
+                    handed += 1
+                } catch (_: SecurityException) {
+                    // Sending was taken back: Android sends nothing more, so this one and every one after are refused.
+                    for (each in index until to.size) refuse(each, failed, tracking)
+                    break
+                } catch (_: RuntimeException) {
+                    refuse(index, failed, tracking)
+                }
+            }
         }
     }
 
@@ -156,14 +180,18 @@ class Outbox(
         return when {
             draft == null -> Reply.Refused(NO_SUCH, NO_DRAFT)
             version != draft.version -> Reply.Refused(CHANGED, STALE_VERSION)
-            tracking?.subscribed() == false -> Reply.Refused(NO_DEFAULT_SIM)
             blocked != null -> blocked
             else -> armed(draft)
         }
     }
 
     private fun armed(draft: Draft): Reply {
-        if (tracking?.held(draft.token, draft.to.size) == false) return Reply.Refused(NOT_HELD)
+        val refusal = when {
+            tracking?.subscribed() == false -> NO_DEFAULT_SIM
+            tracking?.held(draft.token, draft.to.size) == false -> NOT_HELD
+            else -> null
+        }
+        if (refusal != null) return Reply.Refused(refusal)
         draft.state = State.Armed
         draft.confirmed = clock.instant()
         later.run(delay) { fire(draft) }
@@ -176,9 +204,7 @@ class Outbox(
         val draft = drafts[token] ?: return Reply.Refused(NO_SUCH, NO_DRAFT)
         return when (val state = draft.state) {
             State.Held, State.Armed -> {
-                // Only a confirmed text has a marker, and so an outcome.
-                if (state == State.Armed) tracking?.stopped(draft.token)
-                draft.state = State.Stopped
+                draft.stop(tracking)
                 answer("say" to JsonPrimitive(STOPPED))
             }
             is State.Handed -> answer("say" to JsonPrimitive(tooLate(draft, state.at.atZone(clock.zone))))
@@ -198,31 +224,21 @@ class Outbox(
     private fun fire(draft: Draft) {
         if (draft.state != State.Armed) return
         val go = tracking?.going(draft.token) ?: Tracking.Go.SEND
-        draft.state = when (go) {
-            Tracking.Go.SEND -> State.Handed(clock.instant())
-            Tracking.Go.NO_SUBSCRIPTION -> State.Unsent(UNSENT)
-            Tracking.Go.REFUSED -> State.Unsent(WITHHELD)
-            Tracking.Go.STOPPED -> State.Stopped
-        }
-        if (go != Tracking.Go.SEND) return
-        for ((index, number) in draft.to.withIndex()) {
-            @Suppress("TooGenericExceptionCaught") // whatever the radio throws, it is logged, never thrown on
-            try {
-                send(Handover(number, draft.text, draft.token, index + 1))
-                draft.handed += 1
-            } catch (_: SecurityException) {
-                // Sending was taken back: Android sends nothing more, so this one and every one after are refused.
-                for (each in index until draft.to.size) draft.refuse(each, failed, tracking)
-                break
-            } catch (_: RuntimeException) {
-                draft.refuse(index, failed, tracking)
-            }
-        }
+        draft.state = after(go, clock.instant())
+        if (go == Tracking.Go.SEND) draft.handOver(send, failed, tracking)
     }
 
     private fun answer(vararg pairs: Pair<String, JsonPrimitive>) = Reply.Answer(JsonObject(mapOf(*pairs)))
 
     companion object {
+        /** What an armed text became when its delay ended, at [at]. */
+        private fun after(go: Tracking.Go, at: Instant): State = when (go) {
+            Tracking.Go.SEND -> State.Handed(at)
+            Tracking.Go.NO_SUBSCRIPTION -> State.Unsent(UNSENT)
+            Tracking.Go.REFUSED -> State.Unsent(WITHHELD)
+            Tracking.Go.STOPPED -> State.Stopped
+        }
+
         /**
          * The answer to a stop after the timer: when, and for several recipients, how many Android
          * took and each one it refused, named as the read-back named it.

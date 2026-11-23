@@ -124,7 +124,7 @@ object SmsSend {
         val cursor = arguments[CURSOR]
         val text = text(arguments, CURSOR)
         val given = cursor == null || cursor is JsonNull || !text.isNullOrEmpty()
-        val fits = arguments.keys.all { it == CURSOR } && given
+        val fits = (arguments.keys - CURSOR).isEmpty() && given
         return when {
             journal == null -> Reply.Refused(NO_OUTCOMES)
             !fits -> Reply.Refused(WRONG_CURSOR)

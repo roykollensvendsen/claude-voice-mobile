@@ -34,10 +34,10 @@ class Tracking(
     }
 
     /** The owner stopped the text with [token] during its undo delay. */
-    fun stopped(token: String) = stored { journal?.endedAll(token, Reason.BY_OWNER) }
+    fun stopped(token: String) = store(token, null, Reason.BY_OWNER)
 
     /** Android refused, or would refuse, the text with [token] to the recipient at [position]. */
-    fun refused(token: String, position: Int) = stored { journal?.ended(token, position, Reason.REFUSED) }
+    fun refused(token: String, position: Int) = store(token, position, Reason.REFUSED)
 
     /**
      * Whether the text with [token] may go now its delay is over. It fails with no default
@@ -57,22 +57,26 @@ class Tracking(
             Go.REFUSED -> Reason.REFUSED
             Go.STOPPED -> Reason.UNSAVED
         }
-        if (reason != null) stored { journal?.endedAll(token, reason) }
+        if (reason != null) store(token, null, reason)
         return go
     }
 
-    private fun marked(token: String): Go =
-        try {
-            journal?.sending(token)
+    private fun marked(token: String): Go {
+        val journal = journal ?: return Go.STOPPED
+        return try {
+            journal.sending(token)
             Go.SEND
         } catch (_: IOException) {
             failed(NOT_MARKED)
             Go.STOPPED
         }
+    }
 
-    private fun stored(write: () -> Unit) {
+    /** Keep [reason] for the recipient at [position], or for every one left when it is null. */
+    private fun store(token: String, position: Int?, reason: Reason) {
+        val journal = journal ?: return
         try {
-            write()
+            if (position == null) journal.endedAll(token, reason) else journal.ended(token, position, reason)
         } catch (_: IOException) {
             failed(NOT_STORED)
         }

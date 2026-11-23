@@ -11,14 +11,13 @@ import java.io.IOException
  * could not save is logged with [failed]; its marker stays, and the next start reports it.
  */
 class Reports(private val journal: Journal, private val failed: (String) -> Unit) {
-    private val texts = object : LinkedHashMap<Pair<String, Int>, Parts>() {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Pair<String, Int>, Parts>) = size > FOLLOWED
-    }
+    private val texts = LinkedHashMap<Pair<String, Int>, Parts>()
 
     /** The text with [token] to the recipient at [position] goes as [parts] parts; follow their reports. */
     @Synchronized
     fun expect(token: String, position: Int, parts: Int) {
         texts[token to position] = Parts(parts)
+        if (texts.size > FOLLOWED) texts.remove(texts.keys.first())
     }
 
     /** Android's sent report, with result [code], for [part] of that recipient's text. */
