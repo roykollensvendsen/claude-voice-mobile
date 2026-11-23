@@ -6,7 +6,9 @@ of its own beyond its tests. The set is the one `scripts/levels.py` mutates, by 
 check uses. quality-claude-voice asked for this pin in its review of #195, and quality-2 asked for
 it to cover every pure capability and its dependencies in its review of #196, and to refuse files
 and the network in its review of #197; the record (#197) adds processes and names this file, and
-quality-claude-voice's re-stamp of it adds reflection and native code.
+quality-claude-voice's re-stamp of it adds reflection and native code. voice-architect's review
+of #198 adds reflection called by name, and the architect's n1 on #196 adds wildcard imports
+and names written out in full.
 """
 
 import pathlib
@@ -20,16 +22,28 @@ import levels  # noqa: E402
 
 # The only dependencies a pure capability may declare: those of its tests.
 TEST_ONLY = re.compile(r"^\s*(testImplementation|testRuntimeOnly)\(")
-# What reaches a file, a disk or the network. A stream the caller hands over (java.io's Data and
-# Byte streams, IOException) touches none, so java.io is not refused as a whole.
+# What reaches a file, a disk or the network, by import or written out in full in the code. A
+# stream the caller hands over (java.io's Data and Byte streams, IOException) touches none, so
+# java.io is not refused as a whole.
 REACHES_OUT = re.compile(
-    r"^import (java\.io\.(?:File\w*|RandomAccessFile)|java\.nio\.(?:file|channels)\.\S+|java\.net\.\S+)",
+    r"\b(java\.io\.(?:File\w*|RandomAccessFile)|java\.nio\.(?:file|channels)\.\w+|java\.net\.\w+"
+    r"|kotlin\.io\.path\.\w+)"
+)
+# A whole package imported at once, from those that can reach beyond pure logic.
+WILDCARD = re.compile(
+    r"^import ((?:java\.(?:io|nio(?:\.\w+)?|net|lang\.reflect)|kotlin\.(?:io(?:\.path)?|reflect))\.\*)",
     re.MULTILINE,
 )
 # What reaches out by name, with no import: java.lang needs none, so the code itself is scanned.
 BY_NAME = (
     ("starts a process", re.compile(r"\bProcessBuilder\b|\bRuntime\.getRuntime\(\)\.exec\b")),
-    ("reaches by reflection", re.compile(r"\bjava\.lang\.reflect\b|\bClass\.forName\b")),
+    (
+        "reaches by reflection",
+        re.compile(
+            r"\bjava\.lang\.reflect\b|\bClass\.forName\b|\bkotlin\.reflect\b|\bgetMethod\b"
+            r"|\bgetDeclaredMethod\b|\bgetDeclaredField\b|\.invoke\(|\bClassLoader\b|\bloadClass\b"
+        ),
+    ),
     ("loads native code", re.compile(r"\bSystem\.load(?:Library)?\b")),
 )
 DEPENDENCIES = re.compile(r"^dependencies \{\n(.*?)^\}", re.DOTALL | re.MULTILINE)
@@ -66,6 +80,10 @@ def reaches_android(module: pathlib.Path) -> list[str]:
             found.append(f"{source.relative_to(module)} uses an Android API")
         if "android.permission" in text:
             found.append(f"{source.relative_to(module)} names a permission")
+        found.extend(
+            f"{source.relative_to(module)} imports a whole package that reaches out: {name}"
+            for name in WILDCARD.findall(text)
+        )
         found.extend(
             f"{source.relative_to(module)} reaches files or the network: {name}"
             for name in REACHES_OUT.findall(text)
@@ -164,3 +182,47 @@ def test_the_check_notices_a_capability_that_reaches_out_by_name(tmp_path):
         "Name.kt loads native code: System.loadLibrary",
         "Name.kt loads native code: System.load",
     ]
+
+
+def test_the_check_notices_reflection_called_by_name(tmp_path):
+    (tmp_path / "build.gradle.kts").write_text("plugins {\n    alias(libs.plugins.kotlin.jvm)\n}\n")
+    (tmp_path / "Call.kt").write_text(
+        "import kotlin.reflect.KClass\n"
+        'fun a(c: Class<*>) = c.getMethod("x").invoke(null)\n'
+        'fun b(c: Class<*>) = c.getDeclaredMethod("x")\n'
+        'fun c(c: Class<*>) = c.getDeclaredField("x")\n'
+        'fun d(l: ClassLoader) = l.loadClass("x")\n'
+    )
+    reached = [f.split(": ", 1)[1] for f in reaches_android(tmp_path)]
+    assert sorted(reached) == sorted(
+        [
+            "kotlin.reflect",
+            "getMethod",
+            ".invoke(",
+            "getDeclaredMethod",
+            "getDeclaredField",
+            "ClassLoader",
+            "loadClass",
+        ]
+    ), reached
+
+
+def test_the_check_notices_a_wildcard_import_or_a_full_name_in_the_code(tmp_path):
+    (tmp_path / "build.gradle.kts").write_text("plugins {\n    alias(libs.plugins.kotlin.jvm)\n}\n")
+    (tmp_path / "Wide.kt").write_text(
+        "import java.io.*\n"
+        "import java.net.*\n"
+        'fun a() = java.io.File("x")\n'
+        'fun b() = java.nio.file.Paths.get("x")\n'
+        'fun c() = java.net.URL("x")\n'
+        'fun d() = kotlin.io.path.Path("x")\n'
+    )
+    reached = [f.split(": ", 1)[1] for f in reaches_android(tmp_path)]
+    assert reached == [
+        "java.io.*",
+        "java.net.*",
+        "java.io.File",
+        "java.nio.file.Paths",
+        "java.net.URL",
+        "kotlin.io.path.Path",
+    ], reached

@@ -67,3 +67,18 @@ against the check as it was:
 
     E       AssertionError: assert [] == ['Name.kt rea... System.load']
     E         Right contains 4 more items, first extra item: 'Name.kt reaches by reflection: java.lang.reflect'
+
+Reflection called by name, wildcard imports, and names written out in
+full (voice-architect's review of #198, and the architect's n1 on #196).
+Both tests were written first and run against the check as it was:
+
+    E       assert [] == ['.invoke(', ...reflect', ...]
+    E         Right contains 7 more items, first extra item: '.invoke('
+    E       assert ['java.net.*'] == ['java.io.*',...io.path.Path']
+    E         Right contains 5 more items, first extra item: 'java.net.*'
+    FAILED tests/test_cursorqueue_pure.py::test_the_check_notices_reflection_called_by_name
+    FAILED tests/test_cursorqueue_pure.py::test_the_check_notices_a_wildcard_import_or_a_full_name_in_the_code
+    2 failed, 8 passed
+
+The scan reads names, not meaning. It is a pin that review backs up, not
+a sandbox.
