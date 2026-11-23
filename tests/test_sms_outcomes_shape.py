@@ -153,3 +153,8 @@ def test_outcomes_still_answer_after_sending_is_taken_back() -> None:
     text = " ".join(record().split())
     assert "With `SEND_SMS` taken back, `sms_send_outcomes` still answers" in text
     assert "The other three sending tools refuse with `permission_missing`" in text
+    assert (
+        "A text whose undo delay ends after `SEND_SMS` was taken back is not handed over: "
+        'each recipient fails with "refused by Android"'
+    ) in text
+    assert "The phone checks the permission before it writes the `sending` mark" in text
