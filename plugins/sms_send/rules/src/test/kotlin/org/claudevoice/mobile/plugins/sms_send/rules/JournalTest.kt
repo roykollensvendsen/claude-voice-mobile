@@ -147,6 +147,22 @@ class JournalTest {
     }
 
     @Test
+    fun `a crash after a damaged outcome file is set aside, before the new log is saved, still counts the loss`() {
+        open().apply {
+            held("t-1", 1)
+            sending("t-1")
+            ended("t-1", 1, Reason.HANDED)
+        }
+        outcomes.writeBytes(byteArrayOf(0, 0, 0, 9, 1))
+        // The new log cannot be written, as if the phone died between setting the file aside and saving.
+        val blocker = File(folder, "send-outcomes.new").apply { mkdir() }
+        assertThrows<IOException> { open() }
+        blocker.delete()
+        assertTrue(open().since(null).dropped() >= 1, "the restart still finds the loss")
+        assertTrue(folder.list()!!.any { it.startsWith("send-outcomes.damaged-") })
+    }
+
+    @Test
     fun `a damaged marker file is set aside and counts a drop, and the outcomes kept stay`() {
         open().apply {
             held("t-1", 1)

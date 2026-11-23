@@ -110,3 +110,21 @@ decisions it feeds are all in Reports:
     ReportsTest > a one-part text is sent on its report, and its recipient leaves the marker() FAILED
     256 tests completed, 8 failed
     BUILD FAILED in 27s
+
+The review's two blockers on #203, and its follow-ups. The tests came
+first. They ran against a Tracking that accepted a missing journal but
+still took a text as held, and against the old move-aside, so they
+failed on behaviour. Three of them pass both before and after: that a
+text failed for no default SIM, or refused once sending was taken
+back, still counts against the limits, and that one stopped since its
+mark could not be saved does not. They pin counting that was already
+right. One existing test changed its expectation on purpose: the
+damaged file now stays where it was until the new log is written over
+it, so a folder listing has it too.
+
+    JournalTest > a crash after a damaged outcome file is set aside, before the new log is saved, still counts the loss() FAILED
+    OutboxJournalTest > a yes refused since its mark could not be saved leaves the limits untouched() FAILED
+    OutboxJournalTest > with no journal, a yes is refused and nothing is armed, so no text goes without its marker() FAILED
+    PlainFileTest > a damaged file is copied aside under a timed name, never overwritten, and the folder synced() FAILED
+    262 tests completed, 4 failed
+    BUILD FAILED in 25s
