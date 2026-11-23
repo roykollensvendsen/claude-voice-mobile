@@ -113,6 +113,14 @@ def test_a_file_that_cannot_be_read_counts_a_drop_and_is_never_silent() -> None:
     text = " ".join(record().split())
     assert "A marker file or an outcome file that can't be read counts at least one dropped outcome" in text
     assert "A missing one counts none" in text
-    assert "a text may have been sent; check the text app" in text
+    assert "The hub hands the voice only a tool's description" in text
+    assert "`sms_send_outcomes`' description carries this sentence word for word" in text
+    assert TOOL_WORDS in text
     dropped = schema(ANSWER)["properties"]["dropped"]["description"]
     assert "a marker or outcome file that could not be read counts at least one" in dropped
+
+
+TOOL_WORDS = (
+    "When dropped is above 0, say that some outcomes were lost and that a text may have been "
+    "sent; check the text app."
+)
