@@ -1,0 +1,11 @@
+Red run for #154, part 1: each outcome of a sent text says only its own
+phrases (ADR-CVM-010, "Delivered"; quality's note on #181). ReasonTest, run
+with "no service" paired with `sent` instead of `failed`, to show the walk
+over every outcome and phrase pair catches a wrong pairing:
+
+ReasonTest > every reason belongs to the outcome ADR-CVM-010 lists it under, and to no other() FAILED
+4 tests completed, 1 failed
+
+The other three passed, as they should with that one swap: every outcome
+still has a reason, the words and phrases are still the schema's, and no two
+reasons share a phrase. With the pairing restored, all four pass.
