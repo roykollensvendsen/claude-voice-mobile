@@ -24,6 +24,13 @@ def test_a_capability_may_hold_pure_logic_shared_by_plugins():
     assert "never in `core`, which no plugin may depend on" in text
 
 
+def test_a_plugins_rules_may_use_a_pure_capability_and_nothing_that_reaches_android():
+    text = flat(MODULES)
+    assert "A plugin's rules may depend on a capability that holds only pure logic" in text
+    assert "never on one that reaches Android" in text
+    assert "Picking the plugin brings that capability along" in text
+
+
 def test_outcomes_and_the_marker_are_plain_files_kept_out_of_backups():
     text = flat(SMS)
     assert "The outcomes and the crash marker are plain files" in text
