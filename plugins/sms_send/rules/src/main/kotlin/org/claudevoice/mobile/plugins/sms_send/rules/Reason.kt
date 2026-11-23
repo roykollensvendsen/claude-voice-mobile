@@ -25,4 +25,36 @@ enum class Reason(val outcome: Outcome, val phrase: String) {
     REFUSED(Outcome.FAILED, "refused by Android"),
     REPORTED_FAILED(Outcome.FAILED, "the network reported it failed"),
     MAYBE_SENT(Outcome.UNKNOWN, "it may have been sent; check the text app"),
+    ;
+
+    companion object {
+        /**
+         * The reason for Android's sent report with result [code]: handed over on
+         * `Activity.RESULT_OK`, a named radio state on SmsManager's own codes, and "refused by
+         * Android" for every other code, so no code of Android's ever reaches the hub.
+         */
+        fun sent(code: Int): Reason = when (code) {
+            RESULT_OK -> HANDED
+            RESULT_ERROR_RADIO_OFF -> RADIO_OFF
+            RESULT_ERROR_NO_SERVICE -> NO_SERVICE
+            else -> REFUSED
+        }
+
+        /**
+         * The reason for a delivery report with the network's [status] (3GPP TS 23.040, TP-Status):
+         * done is delivered; still trying is no outcome yet; anything else failed.
+         */
+        fun delivered(status: Int): Reason? = when (status) {
+            in DONE -> REPORTED_DELIVERED
+            in TRYING -> null
+            else -> REPORTED_FAILED
+        }
+
+        // Android's own values, so the rules need no Android: Activity.RESULT_OK and SmsManager's.
+        private const val RESULT_OK = -1
+        private const val RESULT_ERROR_RADIO_OFF = 2
+        private const val RESULT_ERROR_NO_SERVICE = 4
+        private val DONE = 0x00..0x1F
+        private val TRYING = 0x20..0x3F
+    }
 }

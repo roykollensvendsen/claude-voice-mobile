@@ -1,5 +1,6 @@
 // The sending plugin's decisions, in plain Kotlin, tested off the phone and mutated like the core
-// (ADR-CVM-007). It depends on no module of ours; only :plugins:sms_send depends on it.
+// (ADR-CVM-007). It depends on no module of ours but the shared cursor queue, a capability
+// that holds only pure logic; only :plugins:sms_send depends on it.
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.pitest)
@@ -9,6 +10,9 @@ kotlin { jvmToolchain(17) }
 
 dependencies {
     implementation(libs.serialization.json)
+    // The ids, cursors, acknowledgement, resend, drops and reset of sms_send_outcomes' poll;
+    // `api`, since the queue's Chance is part of what the plugin hands its rules.
+    api(project(":capabilities:cursorqueue"))
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
