@@ -280,8 +280,13 @@ marker still there tells which side of the send the app stopped on:
   cannot tell. It never sends it again.
 
 So a crash is reported, not silent, and never reported as stopped when it may
-have gone. The outcome is `sent` only when Android reports every part sent,
-and `failed` when it reports any part failed.
+have gone. The outcomes and the crash marker are plain files, written
+atomically, in the no-backup folder, and not sealed. They hold no number, name
+or text, only tokens, positions, times, outcomes and the fixed reasons. If they
+ever must hold more, they are sealed, and that needs the owner's yes. Sealing
+them would add a risk: a lost key would drop the marker, and a send under way
+would end with no outcome. The outcome is `sent` only when Android reports
+every part sent, and `failed` when it reports any part failed.
 
 **`sms_send_outcomes(cursor)`** tells the laptop how each held message ended,
 so its whats_new can say "sent at 14.02" or "stopped, not sent". It is
