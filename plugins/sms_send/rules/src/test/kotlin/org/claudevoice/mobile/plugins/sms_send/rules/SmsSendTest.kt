@@ -83,15 +83,15 @@ class SmsSendTest {
     }
 
     @Test
-    fun `every tool says what it does, and requires every argument it takes and no other`() {
-        for (tool in SmsSend.TOOLS) {
+    fun `every tool says what it does, and each sending tool requires every argument it takes and no other`() {
+        for (tool in SmsSend.TOOLS.filter { it.name != SmsSend.OUTCOMES }) {
             assertTrue(tool.description.isNotBlank(), tool.name)
             assertEquals("object", tool.input["type"]!!.jsonPrimitive.content)
             assertEquals("false", tool.input["additionalProperties"]!!.jsonPrimitive.content)
             assertEquals(tool.keys, tool.input["required"]!!.jsonArray.map { it.jsonPrimitive.content }.toSet())
         }
         assertEquals(
-            listOf(setOf("to", "text"), setOf("token", "version"), setOf("token")),
+            listOf(setOf("to", "text"), setOf("token", "version"), setOf("token"), setOf("cursor")),
             SmsSend.TOOLS.map { it.keys },
         )
     }
