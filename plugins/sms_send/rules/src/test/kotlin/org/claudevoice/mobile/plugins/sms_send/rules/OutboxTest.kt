@@ -39,7 +39,7 @@ class OutboxTest {
                 override fun withZone(zone: ZoneId) = this
             },
             later = { wait, task -> timers += wait to task },
-            send = { number, text ->
+            send = { (number, text) ->
                 if (failing) throw IllegalStateException("radio off")
                 sent += number to text
             },
@@ -157,7 +157,7 @@ class OutboxTest {
             val outbox = Outbox(
                 clock = Clock.fixed(Instant.EPOCH, ZoneId.of("UTC")),
                 later = { _, task -> timer = task },
-                send = { _, _ -> sent.incrementAndGet() },
+                send = { _ -> sent.incrementAndGet() },
                 failed = {},
                 tokens = { "t" },
             )
@@ -237,7 +237,7 @@ class OutboxTest {
     @Test
     fun `the phone's outbox gives each draft a token no one can guess, and arms a real timer stop still beats`() {
         val sent = mutableListOf<String>()
-        val outbox = Outbox.onThePhone(send = { number, _ -> sent += number }, failed = {})
+        val outbox = Outbox.onThePhone(send = { (number) -> sent += number }, failed = {})
         val first = outbox.request(to, "Hei")
         val second = outbox.request(other, "Hei")
         assertTrue(token(first) != token(second))

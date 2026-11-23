@@ -27,7 +27,7 @@ import java.util.Locale
 object Entry {
     fun plugin(context: Context): Plugin {
         val app = context.applicationContext
-        val outbox = Outbox.onThePhone(send = { to, text -> send(app, to, text) }, failed = { Log.w(TAG, it) })
+        val outbox = Outbox.onThePhone(send = { (to, text) -> send(app, to, text) }, failed = { Log.w(TAG, it) })
         val telephony = app.getSystemService(TelephonyManager::class.java)
         // The SIM's country, else the phone's region; never the network's, which roams (Countries).
         val country = { Countries.chosen(telephony?.simCountryIso, Locale.getDefault().country) }

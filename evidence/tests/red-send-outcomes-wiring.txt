@@ -49,3 +49,19 @@ write kept as a change to save next time). A local mutation run showed
 the first three killed. The last case makes the write itself fail rather
 than the folder sync; the mutation job in CI shows whether it kills its
 mutant.
+
+The outbox with its journal. OutboxJournalTest was written first. The
+outbox then took the new handover shape and a journal it did not yet
+use, so the tests compiled and failed on behaviour. Seven of the eight
+failed. The eighth, that a draft never confirmed leaves nothing, passes
+both before and after, since it checks that nothing happens:
+
+    OutboxJournalTest > a sending marker that cannot be saved never reaches Android() FAILED
+    OutboxJournalTest > a yes whose marker cannot be saved arms nothing, and the draft can be confirmed again() FAILED
+    OutboxJournalTest > a stop during the undo delay stores stopped by the owner for each recipient, and nothing is sent() FAILED
+    OutboxJournalTest > with no default subscription at the end of the delay, each recipient fails and nothing is sent() FAILED
+    OutboxJournalTest > a recipient Android refuses gets its outcome, and the others stay marked for Android's reports() FAILED
+    OutboxJournalTest > the marker says sending on disk before Android sees the text, and each recipient is handed its own position() FAILED
+    OutboxJournalTest > the marker is on disk once the owner's yes starts the undo delay() FAILED
+    237 tests completed, 7 failed
+    BUILD FAILED in 44s
