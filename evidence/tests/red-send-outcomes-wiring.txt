@@ -78,3 +78,18 @@ not use it:
     OutboxJournalTest > sending taken back during the delay hands nothing over, refuses each recipient, and leaves no sending mark() FAILED
     240 tests completed, 4 failed
     BUILD FAILED in 32s
+
+The poll of how each text ended. OutcomesToolTest was written first,
+against a fourth tool that was listed but refused every call. Six of its
+eight tests failed. The other two, that the three sending tools still
+refuse without the permission, and that the poll without a journal is
+refused, pass against that stub too, since both expect a refusal:
+
+    OutcomesToolTest > the tool's input is the input schema's own shape, and nothing in it is required() FAILED
+    OutcomesToolTest > it answers while sending is taken back, and the answer fits the schema() FAILED
+    OutcomesToolTest > its description carries the record's sentence about lost outcomes word for word() FAILED
+    OutcomesToolTest > arguments that do not fit the input are refused, and nothing is handed out() FAILED
+    OutcomesToolTest > an answer that cannot be saved is refused, so asking again is safe() FAILED
+    OutcomesToolTest > passing back the cursor acknowledges the answer, and null is the same as none() FAILED
+    248 tests completed, 6 failed
+    BUILD FAILED in 43s

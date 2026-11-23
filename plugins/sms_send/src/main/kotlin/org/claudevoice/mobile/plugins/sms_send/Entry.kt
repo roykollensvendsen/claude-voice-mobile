@@ -37,9 +37,9 @@ object Entry {
         val recipients = Recipients.onThePhone(contacts::has, store::sentBefore) { matches ->
             contacts.numbers(matches)?.map { Contact(it.name, it.number, it.label, it.guessed) }
         }
-        return SmsSendPlugin(outbox, recipients) {
+        return SmsSendPlugin(outbox, recipients, permitted = {
             app.checkSelfPermission(Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
-        }
+        })
     }
 
     private fun send(app: Context, to: String, text: String) {

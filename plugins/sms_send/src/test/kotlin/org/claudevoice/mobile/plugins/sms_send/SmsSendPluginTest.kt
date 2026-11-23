@@ -10,11 +10,16 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.claudevoice.mobile.pluginapi.ToolResult
+import org.claudevoice.mobile.capabilities.cursorqueue.Chance
 import org.claudevoice.mobile.plugins.sms_send.rules.Contact
+import org.claudevoice.mobile.plugins.sms_send.rules.Journal
+import org.claudevoice.mobile.plugins.sms_send.rules.PlainFile
 import org.claudevoice.mobile.plugins.sms_send.rules.Outbox
 import org.claudevoice.mobile.plugins.sms_send.rules.Recipients
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 
 class SmsSendPluginTest {
     private var permitted = true
@@ -29,7 +34,22 @@ class SmsSendPluginTest {
     private val recipients = Recipients(Clock.fixed(Instant.EPOCH, ZoneId.of("UTC")), { "p1" }) { matches ->
         listOf(Contact("Ola Nordmann", "+4700000056", "mobile")).filter { matches(it.name) }
     }
-    private val plugin = SmsSendPlugin(outbox, recipients) { permitted }
+    @get:Rule
+    val folder = TemporaryFolder()
+
+    private val journal by lazy {
+        Journal.open(
+            PlainFile(folder.newFile("send-outcomes").apply { delete() }) {},
+            PlainFile(folder.newFile("send-markers").apply { delete() }) {},
+            object : Chance {
+                override fun installPart() = "p4w8c1z6"
+
+                override fun cursor() = "Qm7Tz2pL0001"
+            },
+            Clock.fixed(Instant.EPOCH, ZoneId.of("UTC")),
+        )
+    }
+    private val plugin by lazy { SmsSendPlugin(outbox, recipients, permitted = { permitted }, journal = journal) }
 
     /** Runs a call to its end; the plugin never suspends, so it ends at once. */
     private fun call(tool: String, arguments: String): ToolResult {
@@ -40,10 +60,10 @@ class SmsSendPluginTest {
     }
 
     @Test
-    fun `it offers the three sending tools under its own name, and only confirm needs a yes`() {
+    fun `it offers the three sending tools and the outcomes poll under its own name, and only confirm needs a yes`() {
         assertEquals("sms_send", plugin.name)
         assertEquals(
-            listOf("sms_send_request", "sms_send_confirm", "sms_send_cancel"),
+            listOf("sms_send_request", "sms_send_confirm", "sms_send_cancel", "sms_send_outcomes"),
             plugin.tools.map { it.name },
         )
         assertEquals(listOf("messages", "contacts"), plugin.uses)
@@ -60,6 +80,15 @@ class SmsSendPluginTest {
             ),
             plugin.needs,
         )
+    }
+
+    @Test
+    fun `how each text ended is still answered once sending is taken back`() {
+        permitted = false
+        val answer = call("sms_send_outcomes", "{}") as ToolResult.Answer
+        assertEquals("[]", answer.content["outcomes"].toString())
+        val refused = call("sms_send_request", """{"to":"+4700000001","text":"Hei"}""") as ToolResult.Refused
+        assertEquals("permission_missing", refused.code)
     }
 
     @Test

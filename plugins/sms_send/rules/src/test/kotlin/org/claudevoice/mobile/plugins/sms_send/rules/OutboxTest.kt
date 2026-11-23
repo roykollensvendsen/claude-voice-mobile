@@ -216,9 +216,9 @@ class OutboxTest {
     }
 
     @Test
-    fun `without the permission to send, every tool is refused with the way to grant it`() {
+    fun `without the permission to send, every sending tool is refused with the way to grant it`() {
         val phone = Phone()
-        for (tool in SmsSend.TOOLS.map { it.name }) {
+        for (tool in listOf(SmsSend.REQUEST, SmsSend.CONFIRM, SmsSend.CANCEL)) {
             val reply = SmsSend.call(phone.outbox, tool, JsonObject(emptyMap()), permitted = false)
             assertEquals(SmsSend.PERMISSION_MISSING, code(reply))
             assertTrue(say(reply).contains("Settings, Apps, claude-voice, Permissions, SMS"))
@@ -228,7 +228,7 @@ class OutboxTest {
     @Test
     fun `the tools are offered by exactly the names the hub's deny rule expects`() {
         assertEquals(
-            listOf("sms_send_request", "sms_send_confirm", "sms_send_cancel"),
+            listOf("sms_send_request", "sms_send_confirm", "sms_send_cancel", "sms_send_outcomes"),
             SmsSend.TOOLS.map { it.name },
         )
         assertEquals(listOf("sms_send_confirm"), SmsSend.CONFIRMS)
