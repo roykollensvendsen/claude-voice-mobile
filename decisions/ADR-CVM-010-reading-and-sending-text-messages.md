@@ -276,9 +276,11 @@ drafts" under several recipients are drafts not yet confirmed. A draft that was
 never confirmed gets no outcome: dropping, cancelling or replacing it stores
 nothing. A cancel during the undo delay stores "stopped by the owner".
 
-If the `held` mark can't be saved at confirm, confirm is refused with words
-that say so: nothing is held, nothing counts against the limits, and the
-draft stays, so the owner can say yes again. That includes a phone whose
+If the `held` mark can't be saved at confirm, confirm is refused with these
+words: "The phone could not save the send, so nothing was sent. Free some
+storage or restart the app, then say yes again." Nothing is held, nothing
+counts against the limits, and the draft stays, so the owner can say yes
+again. That includes a phone whose
 outcome files can't be opened at all, since no mark can be saved there: it
 never sends a text it could not report.
 
