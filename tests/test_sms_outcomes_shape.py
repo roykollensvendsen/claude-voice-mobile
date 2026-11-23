@@ -147,3 +147,9 @@ def test_confirm_is_refused_with_no_default_subscription() -> None:
     assert "With none set at confirm, confirm is refused with where to set one" in text
     assert "nothing is held, nothing counts against the limits, and the draft stays" in text
     assert 'With none set when the delay ends, each recipient fails with "no default subscription"' in text
+
+
+def test_outcomes_still_answer_after_sending_is_taken_back() -> None:
+    text = " ".join(record().split())
+    assert "With `SEND_SMS` taken back, `sms_send_outcomes` still answers" in text
+    assert "The other three sending tools refuse with `permission_missing`" in text

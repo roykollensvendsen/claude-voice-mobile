@@ -316,6 +316,10 @@ field is needed.
 so its whats_new can say "sent at 14.02" or "stopped, not sent". It is
 `sms_send`'s own poll, with the same cursor, acknowledgement and resend as
 `sms_since`. A phone with sending on and reading off still reports outcomes.
+With `SEND_SMS` taken back, `sms_send_outcomes` still answers: the permission
+guards sending, and an outcome holds no number, name or text. Right after a
+revoke is when the voice most needs to hear how the last texts ended. The
+other three sending tools refuse with `permission_missing`.
 Each item holds the token, the outcome (`sent`, `stopped`, `failed` or
 `unknown`), the time and a reason in words. It never holds a number or a text.
 The laptop marks it as a poll, so an empty answer is counted, not logged.
