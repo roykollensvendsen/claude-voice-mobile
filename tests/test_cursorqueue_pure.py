@@ -5,7 +5,8 @@ capability must be plain Kotlin with no manifest, no Android API, no permission,
 of its own beyond its tests. The set is the one `scripts/levels.py` mutates, by the rule the layer
 check uses. quality-claude-voice asked for this pin in its review of #195, and quality-2 asked for
 it to cover every pure capability and its dependencies in its review of #196, and to refuse files
-and the network in its review of #197; the record (#197) adds processes and names this file.
+and the network in its review of #197; the record (#197) adds processes and names this file, and
+quality-claude-voice's re-stamp of it adds reflection and native code.
 """
 
 import pathlib
@@ -25,8 +26,12 @@ REACHES_OUT = re.compile(
     r"^import (java\.io\.(?:File\w*|RandomAccessFile)|java\.nio\.(?:file|channels)\.\S+|java\.net\.\S+)",
     re.MULTILINE,
 )
-# What starts a process. Both live in java.lang, which needs no import, so the code is scanned.
-STARTS_PROCESS = re.compile(r"\bProcessBuilder\b|\bRuntime\.getRuntime\(\)\.exec\b")
+# What reaches out by name, with no import: java.lang needs none, so the code itself is scanned.
+BY_NAME = (
+    ("starts a process", re.compile(r"\bProcessBuilder\b|\bRuntime\.getRuntime\(\)\.exec\b")),
+    ("reaches by reflection", re.compile(r"\bjava\.lang\.reflect\b|\bClass\.forName\b")),
+    ("loads native code", re.compile(r"\bSystem\.load(?:Library)?\b")),
+)
 DEPENDENCIES = re.compile(r"^dependencies \{\n(.*?)^\}", re.DOTALL | re.MULTILINE)
 
 
@@ -41,7 +46,7 @@ def reaches_android(module: pathlib.Path) -> list[str]:
     """Each way `module` could reach beyond pure logic.
 
     That is an Android plugin, a manifest, an Android API, a permission, a library, a file,
-    the network, or a process (ADR-CVM-007's meaning of pure logic).
+    the network, a process, reflection or native code (ADR-CVM-007's meaning of pure logic).
     """
     found = []
     build = (module / "build.gradle.kts").read_text()
@@ -66,7 +71,9 @@ def reaches_android(module: pathlib.Path) -> list[str]:
             for name in REACHES_OUT.findall(text)
         )
         found.extend(
-            f"{source.relative_to(module)} starts a process: {name}" for name in STARTS_PROCESS.findall(text)
+            f"{source.relative_to(module)} {what}: {name}"
+            for what, pattern in BY_NAME
+            for name in pattern.findall(text)
         )
     return found
 
@@ -140,4 +147,20 @@ def test_the_check_notices_a_capability_that_starts_a_process(tmp_path):
     assert reaches_android(tmp_path) == [
         "Run.kt starts a process: ProcessBuilder",
         "Run.kt starts a process: Runtime.getRuntime().exec",
+    ]
+
+
+def test_the_check_notices_a_capability_that_reaches_out_by_name(tmp_path):
+    (tmp_path / "build.gradle.kts").write_text("plugins {\n    alias(libs.plugins.kotlin.jvm)\n}\n")
+    (tmp_path / "Name.kt").write_text(
+        "import java.lang.reflect.Method\n"
+        'fun a() = Class.forName("x")\n'
+        'fun b() = System.loadLibrary("x")\n'
+        'fun c() = System.load("/x.so")\n'
+    )
+    assert reaches_android(tmp_path) == [
+        "Name.kt reaches by reflection: java.lang.reflect",
+        "Name.kt reaches by reflection: Class.forName",
+        "Name.kt loads native code: System.loadLibrary",
+        "Name.kt loads native code: System.load",
     ]
