@@ -2,7 +2,6 @@ package org.claudevoice.mobile.plugins.sms_send.rules
 
 import java.io.File
 import java.io.IOException
-import java.nio.channels.FileChannel
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
@@ -53,10 +52,14 @@ class PlainFile(private val file: File, private val folderSync: FolderSync) {
         var millis = at.toEpochMilli()
         // Two set aside in the same millisecond each keep their own name.
         while (File(folder, "$aside$millis").exists()) millis += 1
-        val copy = File(folder, "$aside$millis").toPath()
-        Files.copy(file.toPath(), copy)
-        // The copy is on disk before anything is written over the file it came from.
-        FileChannel.open(copy, StandardOpenOption.WRITE).use { it.force(true) }
+        // Synced, so the copy is on disk before anything is written over the file it came from.
+        Files.write(
+            File(folder, "$aside$millis").toPath(),
+            Files.readAllBytes(file.toPath()),
+            StandardOpenOption.CREATE_NEW,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.SYNC,
+        )
         val older = folder.listFiles().orEmpty().filter { it.name.startsWith(aside) }
             .sortedByDescending { it.name.removePrefix(aside).toLongOrNull() ?: Long.MIN_VALUE }
         older.drop(KEPT).forEach { Files.deleteIfExists(it.toPath()) }

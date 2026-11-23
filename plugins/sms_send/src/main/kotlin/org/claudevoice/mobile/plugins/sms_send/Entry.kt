@@ -36,7 +36,11 @@ object Entry {
 
     /** The plugin, built once per process, so one journal holds the files and one receiver hears the reports. */
     @Synchronized
-    fun plugin(context: Context): Plugin = built ?: build(context.applicationContext).also { built = it }
+    fun plugin(context: Context): Plugin {
+        val plugin = built ?: build(context.applicationContext)
+        built = plugin
+        return plugin
+    }
 
     private fun build(app: Context): Plugin {
         val permitted = {

@@ -128,3 +128,18 @@ it, so a folder listing has it too.
     PlainFileTest > a damaged file is copied aside under a timed name, never overwritten, and the folder synced() FAILED
     262 tests completed, 4 failed
     BUILD FAILED in 25s
+
+CI's first mutation run on #203 left mutants in the new rules. Four tests
+came first. Only one failed against the old code: with no journal, a text
+at the end of its delay must be stopped, never sent unmarked. The other
+three pin behaviour that was already right, but that no test reached, so
+mutants survived: what the radio reads of each handover, a stop after a
+text failed before Android had it, and that the refusal for a yes that
+cannot be saved is the record's own words. The remaining mutants were in
+code shapes no test can tell apart, so the code was reshaped instead:
+the reports' map, the cursor check, the synced copy and the tracking's
+writes.
+
+    OutboxJournalTest > with no journal, a text that somehow reached the end of its delay is stopped, never sent unmarked() FAILED
+    265 tests completed, 1 failed
+    BUILD FAILED in 26s

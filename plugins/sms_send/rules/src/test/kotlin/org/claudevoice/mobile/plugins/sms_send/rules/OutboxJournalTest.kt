@@ -128,6 +128,13 @@ class OutboxJournalTest {
     private val NOT_HELD = "The phone could not save the send, so nothing was sent. Free some storage or restart the app, " +
         "then say yes again."
 
+    private fun record(): String {
+        var dir: File? = File("").absoluteFile
+        while (dir != null && !File(dir, "decisions").isDirectory) dir = dir.parentFile
+        val file = File(checkNotNull(dir), "decisions").listFiles()!!.single { it.name.startsWith("ADR-CVM-010") }
+        return file.readText().split(Regex("\\s+")).joinToString(" ")
+    }
+
     private fun limited(reply: Reply) = (reply as? Reply.Refused)?.code == Limits.RATE_LIMITED
 
     @Test
@@ -216,6 +223,32 @@ class OutboxJournalTest {
             listOf(Handover(kari, "Kommer om ti", "t-1", 1), Handover(ola, "Kommer om ti", "t-1", 2)),
             phone.handed,
         )
+        // What the radio reads of each one to send it and address its reports.
+        assertEquals(
+            listOf("$kari Kommer om ti t-1 1", "$ola Kommer om ti t-1 2"),
+            phone.handed.map { "${it.number} ${it.text} ${it.token} ${it.position}" },
+        )
+    }
+
+    @Test
+    fun `a stop after a text failed before Android had it says how it failed`() {
+        val phone = Phone()
+        phone.confirmed(kari)
+        phone.subscribed = false
+        phone.fire()
+        val said = (phone.outbox.cancel("t-1") as Reply.Answer).content.getValue("say").jsonPrimitive.content
+        assertTrue(said.contains("default SIM"), said)
+    }
+
+    @Test
+    fun `the refusal for a yes that cannot be saved is the record's own words`() {
+        assertTrue(record().contains(NOT_HELD), "ADR-CVM-010 still says it word for word")
+    }
+
+    @Test
+    fun `with no journal, a text that somehow reached the end of its delay is stopped, never sent unmarked`() {
+        val tracking = Tracking(null, { true }, { true }, {})
+        assertEquals(Tracking.Go.STOPPED, tracking.going("t-1"))
     }
 
     @Test
