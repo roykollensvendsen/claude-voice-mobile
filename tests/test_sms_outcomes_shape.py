@@ -163,4 +163,8 @@ def test_outcomes_still_answer_after_sending_is_taken_back() -> None:
 def test_confirm_is_refused_when_the_held_mark_cannot_be_saved() -> None:
     text = " ".join(record().split())
     assert "If the `held` mark can't be saved at confirm, confirm is refused" in text
+    assert (
+        '"The phone could not save the send, so nothing was sent. '
+        'Free some storage or restart the app, then say yes again."'
+    ) in text
     assert "That includes a phone whose outcome files can't be opened at all" in text
