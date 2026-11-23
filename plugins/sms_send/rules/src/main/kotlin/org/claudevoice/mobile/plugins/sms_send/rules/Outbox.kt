@@ -69,7 +69,13 @@ class Outbox(
         data object Stopped : State
     }
 
-    private class Draft(val token: String, var to: List<String>, var text: String, var version: Int, var state: State) {
+    private class Draft(
+        val token: String,
+        var to: List<String>,
+        @JvmField var text: String, // read only inside the draft, so it needs no getter
+        var version: Int,
+        var state: State,
+    ) {
         /** How the read-back named each recipient: the number, or the contact's name and the number. */
         @JvmField // read only inside the draft, so it needs no getter
         var named: List<String> = to
