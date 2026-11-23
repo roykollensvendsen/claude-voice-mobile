@@ -93,3 +93,20 @@ refused, pass against that stub too, since both expect a refusal:
     OutcomesToolTest > passing back the cursor acknowledges the answer, and null is the same as none() FAILED
     248 tests completed, 6 failed
     BUILD FAILED in 43s
+
+Android's reports. ReportsTest was written first, against a Reports
+whose bodies were TODO(), so all eight failed on behaviour. The Android
+side that hands each part to Android and hears its reports (Radio) has
+no unit test of its own; it is kept to calls into Android, and the
+decisions it feeds are all in Reports:
+
+    ReportsTest > delivered is kept once every part has arrived, and still trying keeps nothing() FAILED
+    ReportsTest > a failed delivery fails the text, and nothing is kept after() FAILED
+    ReportsTest > a long text is sent once every part is, and a failed part fails it once() FAILED
+    ReportsTest > an outcome that cannot be saved is logged, never thrown, and the marker stays for the next start() FAILED
+    ReportsTest > only the latest hundred texts are followed, so reports that never come cannot fill the phone() FAILED
+    ReportsTest > a delivery report the phone cannot read keeps nothing() FAILED
+    ReportsTest > a report for a text the phone no longer follows, such as one from before a restart, changes nothing() FAILED
+    ReportsTest > a one-part text is sent on its report, and its recipient leaves the marker() FAILED
+    256 tests completed, 8 failed
+    BUILD FAILED in 27s
