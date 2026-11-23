@@ -72,6 +72,13 @@ JVM, follows every rule above, and is mutated like the core. The first is
 and reset that `sms` and `sms_send` both give their polls. Such logic lives as
 a capability, never in `core`, which no plugin may depend on.
 
+A plugin's rules may depend on a capability that holds only pure logic, such
+as `capabilities/cursorqueue`, and never on one that reaches Android. That is
+the one exception to "depends on no module of ours" above. Picking the plugin
+brings that capability along, as it brings the rules. The layer check allows
+rules to depend on a capability, and Gradle already refuses a pure-JVM module
+that depends on an Android one.
+
 **Modules are picked when the app is built.** One Gradle property lists the
 plugins, for example `-PcvPlugins=status,micmute,mobiledata`. Gradle includes
 only those modules and the capabilities they use. The app's list of plugins is
