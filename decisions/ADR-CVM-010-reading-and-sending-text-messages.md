@@ -319,7 +319,12 @@ so its whats_new can say "sent at 14.02" or "stopped, not sent". It is
 With `SEND_SMS` taken back, `sms_send_outcomes` still answers: the permission
 guards sending, and an outcome holds no number, name or text. Right after a
 revoke is when the voice most needs to hear how the last texts ended. The
-other three sending tools refuse with `permission_missing`.
+other three sending tools refuse with `permission_missing`. A text whose undo
+delay ends after `SEND_SMS` was taken back is not handed over: each recipient
+fails with "refused by Android", since Android withholds the send, and it
+counts against the limits as any failed text does. The phone checks the
+permission before it writes the `sending` mark, so a send Android would refuse
+never leaves that mark behind.
 Each item holds the token, the outcome (`sent`, `stopped`, `failed` or
 `unknown`), the time and a reason in words. It never holds a number or a text.
 The laptop marks it as a poll, so an empty answer is counted, not logged.
