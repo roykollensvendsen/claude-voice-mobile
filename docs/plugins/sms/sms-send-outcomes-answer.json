@@ -84,7 +84,7 @@
             "failed",
             "unknown"
           ],
-          "description": "sent: Android reported every part sent. delivered: every part also has a delivery report saying so; some networks send none, so a text may stay sent. stopped: cancelled, or held when the app stopped, and never handed to Android. failed: Android reported a part failed, or refused the text at once. unknown: the app stopped after handing it to Android and cannot tell; it is never sent again. After sent, a later item may say delivered or failed: the latest item is the outcome."
+          "description": "sent: Android reported every part sent. delivered: every part also has a delivery report saying so; some networks send none, so a text may stay sent. stopped: cancelled, held when the app stopped, or not sent because the phone could not save its state; never handed to Android. failed: Android reported a part failed, or refused the text at once. unknown: the app stopped after handing it to Android and cannot tell; it is never sent again. After sent, a later item may say delivered or failed: the latest item is the outcome."
         },
         "at": {
           "type": "string",
@@ -99,6 +99,7 @@
             "the network reported it delivered",
             "stopped by the owner",
             "the app restarted while it was held",
+            "the phone could not save its state, so it did not send",
             "no service",
             "radio off",
             "no default subscription",

@@ -270,8 +270,18 @@ the app stops, restarts or crashes during the hold, the message is stopped
 and never sent later. When a hold starts, the phone writes a marker with the
 token, the time and the state `held`, and nothing else. Just before it asks
 Android to send, it changes the state to `sending`, and waits until that is on
-disk. The marker goes when the outcome is stored. So on the next start, a
-marker still there tells which side of the send the app stopped on:
+disk. The marker goes when the outcome is stored. The hold is the undo delay:
+it starts when confirm matches, not when a draft is read back. The "held
+drafts" under several recipients are drafts not yet confirmed. A draft that was
+never confirmed gets no outcome: dropping, cancelling or replacing it stores
+nothing. A cancel during the undo delay stores "stopped by the owner".
+
+If the `sending` mark can't be saved, the phone does not hand the text to
+Android. Each recipient is stopped with "the phone could not save its state, so
+it did not send", and the marker goes. If even that can't be saved, the marker
+still says `held`, and the next start reports the restart, which is just as
+true. So on the next start, a marker still there tells which side of the send
+the app stopped on:
 
 - `held` becomes a "stopped: the app restarted" outcome. The message was
   never handed to Android.
@@ -309,8 +319,12 @@ The laptop marks it as a poll, so an empty answer is counted, not logged.
 **The undo delay** is a phone-only setting (ADR-CVM-003). It defaults to 10
 seconds and has a floor of 5 seconds in the code. No tool reads or changes it.
 
-**How it sends.** It uses Android's default text subscription. With none set,
-it refuses and says where to set one. It never picks a SIM itself. A long text
+**How it sends.** It uses Android's default text subscription. It never picks
+a SIM itself. With none set at confirm, confirm is refused with where to set
+one: nothing is held, nothing counts against the limits, and the draft stays,
+so the owner can set one and say yes again. The default can change during the
+undo delay. With none set when the delay ends, each recipient fails with "no
+default subscription", and nothing is handed to Android. A long text
 goes as the parts `divideMessage` gives. Android's own warning for premium
 numbers stays on. The notification for a send is private: the lock screen
 says only "sent a text message".
@@ -536,7 +550,8 @@ crash marker, which waited in the first version, come with it.
   own phrases:
   - `sent`: "handed to the network".
   - `delivered`: "the network reported it delivered".
-  - `stopped`: "stopped by the owner", "the app restarted while it was held".
+  - `stopped`: "stopped by the owner", "the app restarted while it was held",
+    "the phone could not save its state, so it did not send".
   - `failed`: "no service", "radio off", "no default subscription", "refused
     by Android", "the network reported it failed".
   - `unknown`: "it may have been sent; check the text app".
