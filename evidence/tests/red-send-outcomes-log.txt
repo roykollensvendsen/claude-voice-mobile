@@ -1,0 +1,33 @@
+The outcome log and the crash markers (#154, slice A; ADR-CVM-010).
+
+The tests (OutcomeLogTest, MarkersTest, OutcomeFieldsTest) were written
+first. They ran against stubs with the right shape, whose bodies were
+TODO(), so every new test failed on behaviour, not on compiling. The
+existing tests of the sending rules passed alongside them:
+
+    MarkersTest > several held texts each keep their own marker, in the order they were held() FAILED
+    MarkersTest > a stopped draft's marker goes at once() FAILED
+    MarkersTest > a text to more than 5, or a bad token, is never marked() FAILED
+    MarkersTest > a recipient whose outcome is stored leaves the marker, and the marker goes with the last one() FAILED
+    MarkersTest > a marker left while held becomes stopped for each recipient, since nothing was handed to Android() FAILED
+    MarkersTest > a marker left while sending becomes unknown, and is never told as stopped() FAILED
+    MarkersTest > bytes that are no markers are refused, so a damaged file is never misread() FAILED
+    MarkersTest > a marker for an unknown token changes nothing() FAILED
+    OutcomeFieldsTest > the outcome file holds the queue's own fields and, for each outcome, a token, a position, a reason and a time() FAILED
+    OutcomeFieldsTest > every result code Android can give a sent report becomes one of the fixed reasons() FAILED
+    OutcomeFieldsTest > the marker file holds, for each held text, a token, its stage, how many recipients and which are open, and a time() FAILED
+    OutcomeFieldsTest > a delivery report's status becomes delivered, failed, or nothing yet while the network still tries() FAILED
+    OutcomeLogTest > an empty answer still fits the schema and has a cursor() FAILED
+    OutcomeLogTest > an outcome goes only once an answer that gave it is acknowledged() FAILED
+    OutcomeLogTest > a token over 64 characters, or a position outside 1 to 5, is never kept() FAILED
+    OutcomeLogTest > bytes of another format, a reason the log does not know, or bytes cut short are not a log() FAILED
+    OutcomeLogTest > past 500 kept, or after 7 days, an outcome goes and is counted as dropped() FAILED
+    OutcomeLogTest > a change is reported once, so the plugin knows when to save() FAILED
+    OutcomeLogTest > a cursor this phone never gave says reset and removes nothing() FAILED
+    OutcomeLogTest > each outcome is given with its id, token, position, word, time and phrase, as the schema says() FAILED
+    OutcomeLogTest > a log read back from its bytes goes on where it was() FAILED
+    201 tests completed, 21 failed
+
+Pitest then found three survivors: a token of 1 character, a marker for
+5 recipients, and a marker that is not empty once held. Each got its own
+assertion, and Pitest then killed every mutant of the sending rules.
