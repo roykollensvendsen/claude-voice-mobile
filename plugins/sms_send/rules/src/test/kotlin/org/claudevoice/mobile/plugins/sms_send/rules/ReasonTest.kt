@@ -18,7 +18,11 @@ class ReasonTest {
     private val adr = mapOf(
         "sent" to listOf("handed to the network"),
         "delivered" to listOf("the network reported it delivered"),
-        "stopped" to listOf("stopped by the owner", "the app restarted while it was held"),
+        "stopped" to listOf(
+            "stopped by the owner",
+            "the app restarted while it was held",
+            "the phone could not save the send, so it did not send it",
+        ),
         "failed" to listOf(
             "no service",
             "radio off",

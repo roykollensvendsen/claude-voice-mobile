@@ -19,6 +19,7 @@ enum class Reason(val outcome: Outcome, val phrase: String) {
     REPORTED_DELIVERED(Outcome.DELIVERED, "the network reported it delivered"),
     BY_OWNER(Outcome.STOPPED, "stopped by the owner"),
     RESTARTED(Outcome.STOPPED, "the app restarted while it was held"),
+    UNSAVED(Outcome.STOPPED, "the phone could not save the send, so it did not send it"),
     NO_SERVICE(Outcome.FAILED, "no service"),
     RADIO_OFF(Outcome.FAILED, "radio off"),
     NO_SUBSCRIPTION(Outcome.FAILED, "no default subscription"),
