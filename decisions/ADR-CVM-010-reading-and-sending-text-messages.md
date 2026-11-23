@@ -288,6 +288,14 @@ them would add a risk: a lost key would drop the marker, and a send under way
 would end with no outcome. The outcome is `sent` only when Android reports
 every part sent, and `failed` when it reports any part failed.
 
+A file can still be damaged, and then nobody knows which token it held. A
+marker file or an outcome file that can't be read counts at least one dropped
+outcome in the next answer, as the queue of received texts does. A missing one
+counts none. The phone then starts a new, empty file. Seeing a drop, the voice
+says outcomes were lost and adds the `unknown` phrase: "a text may have been
+sent; check the text app". So a damaged file is never silent, and no new field
+is needed.
+
 **`sms_send_outcomes(cursor)`** tells the laptop how each held message ended,
 so its whats_new can say "sent at 14.02" or "stopped, not sent". It is
 `sms_send`'s own poll, with the same cursor, acknowledgement and resend as
