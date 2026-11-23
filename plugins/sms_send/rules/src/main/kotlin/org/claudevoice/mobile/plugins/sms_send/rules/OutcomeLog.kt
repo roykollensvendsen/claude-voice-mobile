@@ -66,6 +66,9 @@ class OutcomeLog private constructor(private val queue: CursorQueue<SendOutcome>
         )
     }
 
+    /** Count [count] outcomes lost in a damaged file as dropped, so the hub hears of them. */
+    fun lost(count: Int) = queue.lost(count)
+
     /** Mark the log as changed again, when what [takeChanged] reported could not be saved. */
     fun markChanged() = queue.markChanged()
 

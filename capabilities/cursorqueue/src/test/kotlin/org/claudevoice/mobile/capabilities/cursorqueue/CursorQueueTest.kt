@@ -410,4 +410,21 @@ class CursorQueueTest {
         assertTrue(Regex("[a-z0-9]{8}").matches(real.installPart()))
         assertTrue(Regex("[A-Za-z0-9]{12}").matches(real.cursor()))
     }
+
+    @Test
+    fun `a loss counted after the queue was made is told as dropped, kept in its bytes, and marks a change`() {
+        val queue = queue()
+        queue.note("a")
+        queue.takeChanged()
+        queue.lost(2)
+        assertTrue(queue.takeChanged())
+        assertEquals(2, back(queue.bytes()).since(null, now).dropped)
+        val answer = queue.since(null, now)
+        assertEquals(2, answer.dropped)
+        queue.takeChanged()
+        queue.lost(0)
+        assertFalse(queue.takeChanged(), "no loss, no change")
+        assertEquals(0, queue.since(answer.cursor, now).dropped, "acknowledged like any drop")
+        assertThrows<IllegalArgumentException> { queue.lost(-1) }
+    }
 }

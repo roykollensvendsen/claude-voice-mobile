@@ -52,6 +52,9 @@ class Markers private constructor(private val marks: LinkedHashMap<String, Mark>
         marks.remove(token)
     }
 
+    /** The positions the marker of [token] still holds open, in order; none when there is no marker. */
+    fun open(token: String): List<Int> = marks[token]?.open?.toList().orEmpty()
+
     /** Whether no marker is left. */
     fun isEmpty(): Boolean = marks.isEmpty()
 

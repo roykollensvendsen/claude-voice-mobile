@@ -1,0 +1,51 @@
+How each text ended, wired into sending (#154, slice B; ADR-CVM-010).
+
+Per-part rules. PartsTest was written first. It ran against a stub with
+the right shape whose bodies were TODO(), so every test failed on
+behaviour, not on compiling:
+
+    PartsTest > a text delivered before its last sent report is never told as merely sent after() FAILED
+    PartsTest > a text is sent only once every part is, and is told so once() FAILED
+    PartsTest > one part failing fails the text at once, and nothing is told after() FAILED
+    PartsTest > a text has at least one part() FAILED
+    PartsTest > a report for a part the text does not have changes nothing() FAILED
+    PartsTest > a text is delivered only when every part has a delivered report() FAILED
+    PartsTest > a text of one part is the common case() FAILED
+    PartsTest > a part the network reports failed fails the text, even after it was sent() FAILED
+    8 tests completed, 8 failed
+
+The journal on disk. The tests of the shared queue's later loss
+(CursorQueueTest), of the plain file (PlainFileTest) and of the journal
+(JournalTest) were written next, against stubs of the same kind. The
+existing tests passed alongside them:
+
+    CursorQueueTest > a loss counted after the queue was made is told as dropped, kept in its bytes, and marks a change() FAILED
+    30 tests completed, 1 failed
+    JournalTest > the marker is on disk when the hold starts, and says sending before the send goes on() FAILED
+    JournalTest > an outcome is on disk before its recipient leaves the marker, and the empty marker file is removed() FAILED
+    JournalTest > an answer is on disk before it is given, and one that cannot be is refused() FAILED
+    JournalTest > markers left at a start become outcomes at the phone's time, held as stopped and sending as unknown() FAILED
+    JournalTest > the last recipient's outcome removes the marker file() FAILED
+    JournalTest > a stop during the undo stores stopped by the owner for each recipient, then drops the marker() FAILED
+    JournalTest > a damaged outcome file is set aside, and the drop is on disk in the new file before anything else() FAILED
+    JournalTest > a missing outcome or marker file counts none() FAILED
+    JournalTest > a new install has no outcomes, drops nothing, and writes no marker file() FAILED
+    JournalTest > a damaged marker file is set aside and counts a drop, and the outcomes kept stay() FAILED
+    JournalTest > a marker that cannot be saved is not taken as held, so the caller does not go on() FAILED
+    PlainFileTest > a file not yet written reads as none() FAILED
+    PlainFileTest > setting aside a file that is not there changes nothing() FAILED
+    PlainFileTest > a removed file reads as none, and removing it again is no fault() FAILED
+    PlainFileTest > a write replaces the file whole, leaves nothing beside it, and syncs the folder() FAILED
+    PlainFileTest > only the last three set aside are kept, and another file's are never touched() FAILED
+    PlainFileTest > a damaged file is moved aside under a timed name, never overwritten, and the folder synced() FAILED
+    228 tests completed, 17 failed
+
+The mutation run then left four mutants alive. A case was added to a
+test above for each, written after the code it checks: PlainFileTest's
+"two set aside in the same millisecond each keep their own name", and
+three tightened JournalTest cases (a stop's outcomes on disk before any
+later save, a marker that never reached disk is not kept, and a failed
+write kept as a change to save next time). A local mutation run showed
+the first three killed. The last case makes the write itself fail rather
+than the folder sync; the mutation job in CI shows whether it kills its
+mutant.
