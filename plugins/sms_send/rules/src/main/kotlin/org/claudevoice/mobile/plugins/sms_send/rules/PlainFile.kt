@@ -60,9 +60,10 @@ class PlainFile(private val file: File, private val folderSync: FolderSync) {
             StandardOpenOption.WRITE,
             StandardOpenOption.SYNC,
         )
-        val older = folder.listFiles().orEmpty().filter { it.name.startsWith(aside) }
-            .sortedByDescending { it.name.removePrefix(aside).toLongOrNull() ?: Long.MIN_VALUE }
-        older.drop(KEPT).forEach { Files.deleteIfExists(it.toPath()) }
+        // Newest first by name: the millis have 13 digits from 2001 to 2286, so name order is time order,
+        // and the same on every file system, whatever order it lists the folder in.
+        val older = folder.list().orEmpty().filter { it.startsWith(aside) }.sortedDescending()
+        older.drop(KEPT).forEach { Files.deleteIfExists(File(folder, it).toPath()) }
         folderSync.sync(folder)
     }
 
