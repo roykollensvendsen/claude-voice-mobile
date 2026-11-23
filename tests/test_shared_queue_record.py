@@ -32,6 +32,8 @@ def test_a_plugins_rules_may_use_a_pure_capability_and_nothing_that_reaches_andr
     assert "Pure logic means no Android API, no permission, and no file, network or process access" in text
     assert "`tests/test_cursorqueue_pure.py` scans every such capability" in text
     assert "checked in review until that test is merged" in text
+    assert "and no reaching any of these by name or by native code" in text
+    assert "`java.lang.reflect`, `Class.forName`, `System.loadLibrary` or `System.load`" in text
 
 
 def test_outcomes_and_the_marker_are_plain_files_kept_out_of_backups():
