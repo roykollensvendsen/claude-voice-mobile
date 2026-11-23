@@ -103,4 +103,34 @@ class ModulePicksTest {
         assertEquals(listOf("contacts", "cursorqueue"), ModulePicks.uses(plugin, rules))
         assertEquals(listOf("contacts"), ModulePicks.uses(plugin, null))
     }
+
+    @Test
+    fun `a build takes exactly the picked plugins, their rules, and the capabilities both build files name`() {
+        val plugins = mapOf(
+            "sms" to """implementation(project(":capabilities:smsstore"))""",
+            "sms_send" to """implementation(project(":capabilities:contacts"))""",
+            "call" to """implementation(project(":capabilities:mute"))""",
+        )
+        val rules = mapOf(
+            "sms" to """api(project(":capabilities:cursorqueue"))""",
+            "sms_send" to """api(project(":capabilities:cursorqueue"))""",
+            "call" to """api(project(":capabilities:dialer"))""",
+        )
+        assertEquals(
+            listOf(
+                ":plugins:sms",
+                ":plugins:sms:rules",
+                ":plugins:sms_send",
+                ":plugins:sms_send:rules",
+                ":capabilities:smsstore",
+                ":capabilities:cursorqueue",
+                ":capabilities:contacts",
+            ),
+            ModulePicks.included(
+                listOf("sms", "sms_send"),
+                hasRules = { it in rules },
+                uses = { ModulePicks.uses(plugins.getValue(it), rules[it]) },
+            ),
+        )
+    }
 }
