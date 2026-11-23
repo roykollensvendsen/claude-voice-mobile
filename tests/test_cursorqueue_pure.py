@@ -29,16 +29,21 @@ def dependencies(build: str) -> list[str]:
 
 
 def reaches_android(module: pathlib.Path) -> list[str]:
-    """Each way `module` could reach beyond pure logic: a plugin, a manifest, an API, a permission, a library."""
+    """Each way `module` could reach beyond pure logic.
+
+    That is an Android plugin, a manifest, an Android API, a permission, or a library.
+    """
     found = []
     build = (module / "build.gradle.kts").read_text()
     if "alias(libs.plugins.kotlin.jvm)" not in build:
         found.append("its build file does not apply the plain Kotlin plugin")
     if "libs.plugins.android" in build:
         found.append("its build file applies an Android plugin")
-    for line in dependencies(build):
-        if not TEST_ONLY.match(line):
-            found.append(f"its build file depends on more than its tests: {line}")
+    found.extend(
+        f"its build file depends on more than its tests: {line}"
+        for line in dependencies(build)
+        if not TEST_ONLY.match(line)
+    )
     found += [f"{p.relative_to(module)} is a manifest" for p in module.rglob("AndroidManifest.xml")]
     for source in sorted(module.rglob("*.kt")):
         text = source.read_text()
@@ -70,4 +75,5 @@ def test_the_check_notices_a_library_beyond_the_tests(tmp_path):
         "plugins {\n    alias(libs.plugins.kotlin.jvm)\n}\n"
         "dependencies {\n    implementation(libs.okhttp)\n    testImplementation(libs.junit.jupiter)\n}\n"
     )
-    assert reaches_android(tmp_path) == ["its build file depends on more than its tests: implementation(libs.okhttp)"]
+    expected = "its build file depends on more than its tests: implementation(libs.okhttp)"
+    assert reaches_android(tmp_path) == [expected]
