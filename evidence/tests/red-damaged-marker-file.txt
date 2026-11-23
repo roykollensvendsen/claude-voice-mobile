@@ -4,10 +4,12 @@ ______ test_a_file_that_cannot_be_read_counts_a_drop_and_is_never_silent _______
 
     def test_a_file_that_cannot_be_read_counts_a_drop_and_is_never_silent() -> None:
         text = " ".join(record().split())
->       assert "A marker file or an outcome file that can't be read counts at least one dropped outcome" in text
-E       assert "A marker file or an outcome file that can't be read counts at least one dropped outcome" in '# ADR-CVM-010: Reading and sending text messages ## Status Proposed 2026-11-18 by the architect session. It writes do...https://github.com/roykollensvendsen/claude-voice/blob/main/docs/agent-protocol/next-version.md): the `messages` name.'
+        assert "A marker file or an outcome file that can't be read counts at least one dropped outcome" in text
+        assert "A missing one counts none" in text
+>       assert "The hub hands the voice only a tool's description" in text
+E       assert "The hub hands the voice only a tool's description" in '# ADR-CVM-010: Reading and sending text messages ## Status Proposed 2026-11-18 by the architect session. It writes do...https://github.com/roykollensvendsen/claude-voice/blob/main/docs/agent-protocol/next-version.md): the `messages` name.'
 
-tests/test_sms_outcomes_shape.py:114: AssertionError
+tests/test_sms_outcomes_shape.py:116: AssertionError
 =========================== short test summary info ============================
 FAILED tests/test_sms_outcomes_shape.py::test_a_file_that_cannot_be_read_counts_a_drop_and_is_never_silent
-1 failed, 7 passed in 0.09s
+1 failed, 7 passed in 0.06s

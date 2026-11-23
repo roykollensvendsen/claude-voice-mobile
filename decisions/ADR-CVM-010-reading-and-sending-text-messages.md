@@ -291,10 +291,12 @@ every part sent, and `failed` when it reports any part failed.
 A file can still be damaged, and then nobody knows which token it held. A
 marker file or an outcome file that can't be read counts at least one dropped
 outcome in the next answer, as the queue of received texts does. A missing one
-counts none. The phone then starts a new, empty file. Seeing a drop, the voice
-says outcomes were lost and adds the `unknown` phrase: "a text may have been
-sent; check the text app". So a damaged file is never silent, and no new field
-is needed.
+counts none. The phone then starts a new, empty file. The hub hands the voice
+only a tool's description and input schema, never the answer schema. So
+`sms_send_outcomes`' description carries this sentence word for word: "When
+dropped is above 0, say that some outcomes were lost and that a text may have
+been sent; check the text app." So a damaged file is never silent, and no new
+field is needed.
 
 **`sms_send_outcomes(cursor)`** tells the laptop how each held message ended,
 so its whats_new can say "sent at 14.02" or "stopped, not sent". It is
