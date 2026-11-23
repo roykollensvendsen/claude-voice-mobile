@@ -4,6 +4,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.provider.MapProperty
+import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
 
@@ -15,8 +16,18 @@ class LayersPlugin : Plugin<Project> {
             description = "Fails when a module depends on one its layer may not reach."
             // Read once every module has been configured, so each one's dependencies are there.
             edges.set(root.provider { edges(root) })
+            pure.set(root.provider { pure(root) })
         }
     }
+
+    // A capability that applies no Android plugin can reach nothing on the phone: it holds only
+    // pure logic, which a plugin's rules may use (ADR-CVM-007).
+    private fun pure(root: Project): Set<String> =
+        root.subprojects
+            .filter { it.path.startsWith(":capabilities:") }
+            .filterNot { module -> ANDROID.any { module.plugins.hasPlugin(it) } }
+            .map { it.path }
+            .toSet()
 
     private fun edges(root: Project): Map<String, List<String>> =
         root.subprojects.associate { module ->
@@ -30,13 +41,18 @@ class LayersPlugin : Plugin<Project> {
         }
 }
 
+private val ANDROID = listOf("com.android.library", "com.android.application")
+
 abstract class CheckLayers : DefaultTask() {
     @get:Input
     abstract val edges: MapProperty<String, List<String>>
 
+    @get:Input
+    abstract val pure: SetProperty<String>
+
     @TaskAction
     fun check() {
-        val broken = LayerRules.violations(edges.get())
+        val broken = LayerRules.violations(edges.get(), pure.get())
         if (broken.isNotEmpty()) {
             throw GradleException("The layer rules of ADR-CVM-003 and ADR-CVM-007 are broken:\n" + broken.joinToString("\n") { "  $it" })
         }

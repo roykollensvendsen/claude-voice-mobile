@@ -94,4 +94,13 @@ class ModulePicksTest {
         assertEquals(listOf("contacts", "smsstore"), ModulePicks.capabilities(build))
         assertEquals(emptyList<String>(), ModulePicks.capabilities("dependencies { }"))
     }
+
+    @Test
+    fun `a plugin uses the capabilities its own build file and its rules' build file depend on, each once`() {
+        val plugin = """implementation(project(":capabilities:contacts"))"""
+        val rules = """implementation(project(":capabilities:cursorqueue"))
+            implementation(project(":capabilities:contacts"))"""
+        assertEquals(listOf("contacts", "cursorqueue"), ModulePicks.uses(plugin, rules))
+        assertEquals(listOf("contacts"), ModulePicks.uses(plugin, null))
+    }
 }

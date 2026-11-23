@@ -183,7 +183,7 @@ class LayerRulesTest {
     fun `a plugin's rules depend on no module of ours`() {
         assertEquals(
             listOf(
-                ":plugins:sms:rules depends on :capabilities:mute; a plugin's rules depend on no module of ours",
+                ":plugins:sms:rules depends on :capabilities:mute; a plugin's rules depend only on a capability that holds pure logic",
                 ":plugins:sms:rules depends on :core; a plugin's rules depend on no module of ours",
                 ":plugins:sms:rules depends on :plugin-api; a plugin's rules depend on no module of ours",
             ),
@@ -192,6 +192,45 @@ class LayerRulesTest {
                 ":plugins:sms:rules" to ":core",
                 ":plugins:sms:rules" to ":capabilities:mute",
             ).filter { it.startsWith(":plugins:sms:rules") },
+        )
+    }
+
+    // ADR-CVM-007: a capability that holds only pure logic, such as the shared cursor queue, may
+    // be used by a plugin's rules too; one that reaches Android may not.
+    private val withPure =
+        withRules + mapOf(
+            ":capabilities" to listOf(),
+            ":capabilities:cursorqueue" to listOf(),
+            ":capabilities:contacts" to listOf(),
+        )
+
+    private fun brokenWithPure(vararg edge: Pair<String, String>): List<String> {
+        val edges = withPure.mapValues { it.value.toMutableList() }.toMutableMap()
+        for ((from, to) in edge) edges.getOrPut(from) { mutableListOf() }.add(to)
+        return LayerRules.violations(edges, pure = setOf(":capabilities:cursorqueue"))
+    }
+
+    @Test
+    fun `a plugin's rules may depend on a capability that holds only pure logic`() {
+        assertEquals(listOf<String>(), brokenWithPure(":plugins:sms:rules" to ":capabilities:cursorqueue"))
+    }
+
+    @Test
+    fun `a plugin's rules never depend on a capability that reaches Android`() {
+        assertEquals(
+            listOf(
+                ":plugins:sms:rules depends on :capabilities:contacts; " +
+                    "a plugin's rules depend only on a capability that holds pure logic",
+            ),
+            brokenWithPure(":plugins:sms:rules" to ":capabilities:contacts"),
+        )
+    }
+
+    @Test
+    fun `a pure capability still depends on no module of ours`() {
+        assertEquals(
+            listOf(":capabilities:cursorqueue depends on :plugin-api; a capability depends on no module of ours"),
+            brokenWithPure(":capabilities:cursorqueue" to ":plugin-api"),
         )
     }
 

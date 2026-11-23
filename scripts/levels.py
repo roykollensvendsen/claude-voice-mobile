@@ -43,6 +43,8 @@ BLOCK = 6  # lines in a row that count as a copied block, as in claude-voice
 # Lines that say nothing on their own, left out of the copied-code measure.
 NOISE = re.compile(r"^(?:import |package )|^[{}()\[\];,.]+$")
 COMPLEXITY_RULE = "detekt.CyclomaticComplexMethod"
+# A capability whose build file applies the plain Kotlin plugin holds only pure logic.
+PURE = re.compile(r"alias\(libs\.plugins\.kotlin\.jvm\)")
 COMPLEXITY = re.compile(r"\(complexity: (\d+)\)")
 
 
@@ -66,7 +68,8 @@ def parts(root: Path) -> Parts:
     A plugin is a folder there with a build file, and an Android library. Its rules module,
     `plugins/<name>/rules`, is plain Kotlin, so Pitest mutates it as it does the core. A
     capability, `capabilities/<name>`, is an Android library too, so it is tested and measured
-    but not mutated.
+    but not mutated, unless it holds only pure logic (ADR-CVM-007): its build file applies the
+    plain Kotlin plugin, so it is tested off the phone and mutated like a rules module.
     """
     folder = root / "plugins"
     plugins = sorted(
@@ -79,16 +82,17 @@ def parts(root: Path) -> Parts:
         for d in (shelf.iterdir() if shelf.is_dir() else ())
         if d.is_dir() and (d / "build.gradle.kts").is_file()
     )
+    pure = [c for c in capabilities if PURE.search((root / c / "build.gradle.kts").read_text())]
     return Parts(
         modules=("core", "plugin-api", "app", *plugins, *rules, *capabilities),
-        mutated=("core", "plugin-api", *rules),  # Pitest cannot run Android unit tests
+        mutated=("core", "plugin-api", *rules, *pure),  # Pitest cannot run Android unit tests
         results=(
             ("core", "test"),
             ("plugin-api", "test"),
             ("app", "testDebugUnitTest"),
             *((p, "testDebugUnitTest") for p in plugins),
             *((r, "test") for r in rules),
-            *((c, "testDebugUnitTest") for c in capabilities),
+            *((c, "test" if c in pure else "testDebugUnitTest") for c in capabilities),
         ),
     )
 

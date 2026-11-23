@@ -6,7 +6,8 @@
  * - a capability depends on no module of ours, and an adapter only on the capability it adapts;
  * - no plugin depends on another;
  * - a plugin's rules, its decisions in plain Kotlin at `:plugins:<name>:rules`, depend on no
- *   module of ours, and only that plugin depends on them; the app wires the plugin, not its rules;
+ *   module of ours but a capability that holds only pure logic, and only that plugin depends on
+ *   them; the app wires the plugin, not its rules;
  * - the app is the only module that sees them all.
  *
  * A module that is in no layer is refused too, so a new module is placed in one on purpose
@@ -32,25 +33,28 @@ object LayerRules {
             else -> null
         }
 
-    /** Every broken rule in `edges`, a map from each module to the modules it depends on. */
-    fun violations(edges: Map<String, Collection<String>>): List<String> =
+    /**
+     * Every broken rule in `edges`, a map from each module to the modules it depends on. [pure]
+     * names the capabilities that hold only pure logic, reaching nothing on the phone.
+     */
+    fun violations(edges: Map<String, Collection<String>>, pure: Set<String> = emptySet()): List<String> =
         edges.keys.sorted().flatMap { from ->
             val layer = layerOf(from)
             if (layer == null) {
                 listOf("$from is in no layer; place it in LayerRules before it is built")
             } else {
-                edges.getValue(from).distinct().sorted().mapNotNull { to -> broken(layer, from, to) }
+                edges.getValue(from).distinct().sorted().mapNotNull { to -> broken(layer, from, to, to in pure) }
             }
         }
 
-    private fun broken(layer: Layer, from: String, to: String): String? {
+    private fun broken(layer: Layer, from: String, to: String, pure: Boolean): String? {
         val target = layerOf(to)
         return when (layer) {
             Layer.APP ->
                 if (target == Layer.RULES) "$from depends on $to; the app wires a plugin's entry, never its rules" else null
             Layer.CORE -> core(from, to, target)
             Layer.PLUGIN -> plugin(from, to, target)
-            Layer.RULES -> "$from depends on $to; a plugin's rules depend on no module of ours"
+            Layer.RULES -> rules(from, to, target, pure)
             Layer.CAPABILITY -> "$from depends on $to; a capability depends on no module of ours"
             Layer.ADAPTER ->
                 if (to == from.substringBeforeLast(':')) {
@@ -62,6 +66,13 @@ object LayerRules {
             Layer.GROUP -> "$from depends on $to; $from only groups modules"
         }
     }
+
+    private fun rules(from: String, to: String, target: Layer?, pure: Boolean): String? =
+        when {
+            target == Layer.CAPABILITY && pure -> null
+            target == Layer.CAPABILITY -> "$from depends on $to; a plugin's rules depend only on a capability that holds pure logic"
+            else -> "$from depends on $to; a plugin's rules depend on no module of ours"
+        }
 
     private fun core(from: String, to: String, target: Layer?): String? =
         when (target) {

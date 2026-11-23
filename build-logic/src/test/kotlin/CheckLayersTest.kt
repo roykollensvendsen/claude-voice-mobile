@@ -51,4 +51,26 @@ class CheckLayersTest {
         val result = build(":core").buildAndFail()
         assertTrue(result.output.contains(":plugins:status depends on :core"), result.output)
     }
+
+    @Test
+    fun `a plugin's rules may use a capability that applies no Android plugin`() {
+        dir.resolve("settings.gradle.kts").writeText(
+            """include(":plugin-api", ":plugins:sms", ":plugins:sms:rules", ":capabilities:cursorqueue")""",
+        )
+        dir.resolve("build.gradle.kts").writeText("""plugins { id("claudevoice.layers") }""")
+        val modules = mapOf(
+            "plugin-api" to "",
+            "capabilities/cursorqueue" to "",
+            "plugins/sms" to """implementation(project(":plugin-api")); implementation(project(":plugins:sms:rules"))""",
+            "plugins/sms/rules" to """implementation(project(":capabilities:cursorqueue"))""",
+        )
+        for ((path, dependency) in modules) {
+            dir.resolve(path).mkdirs()
+            dir.resolve("$path/build.gradle.kts").writeText(
+                "plugins { `java-library` }\ndependencies { $dependency }\n",
+            )
+        }
+        val result = GradleRunner.create().withProjectDir(dir).withPluginClasspath().withArguments("checkLayers").build()
+        assertEquals(TaskOutcome.SUCCESS, result.task(":checkLayers")?.outcome)
+    }
 }

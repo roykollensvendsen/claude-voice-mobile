@@ -1,0 +1,33 @@
+Red runs for the shared cursor queue (#154, part 1, slice A0; ADR-CVM-007 as
+#195 and the rules-use-pure-capability record settle it).
+
+1. The layer check and the module picks, against stubs: `violations` took
+   the new `pure` set but ignored it, and `uses` read only the plugin's own
+   build file.
+
+LayerRulesTest > a plugin's rules may depend on a capability that holds only pure logic() FAILED
+LayerRulesTest > a plugin's rules never depend on a capability that reaches Android() FAILED
+LayerRulesTest > a plugin's rules depend on no module of ours() FAILED
+ModulePicksTest > a plugin uses the capabilities its own build file and its rules' build file depend on, each once() FAILED
+35 tests completed, 4 failed
+
+2. The code-health measure, before it knew a capability of pure logic:
+
+FAILED tests/test_levels.py::test_a_capability_of_pure_logic_is_tested_off_the_phone_and_mutated
+    assert ('core', 'plugin-api') == ('core', 'plugin-api', 'capabilities/cursorqueue')
+
+3. The saved queue's bytes. QueueBytesTest builds one fixed queue (a lost
+   key's drops, an answer, an acknowledgement, a kept message) and compares
+   SmsQueue.toBytes() with a pinned string. The string was taken by running
+   the same test on main before the move, where it failed with the bytes as
+   its actual value. The bytes after the move are the same, byte for byte, so
+   a queue the phone saved before still reads back after it.
+
+The pin that the shared queue reaches nothing on the phone
+(tests/test_cursorqueue_pure.py) shows it can fail by a second test, which
+runs the same check on capabilities/smsstore and finds the Android plugin,
+the missing plain Kotlin plugin and an Android API.
+
+The move itself changes no behaviour, so it has no red run of its own: the
+existing tests of the sms queue (SmsQueueTest, QueueFileTest, InboxTest,
+SmsSinceTest) pass untouched before and after.

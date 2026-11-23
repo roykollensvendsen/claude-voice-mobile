@@ -5,7 +5,8 @@ import org.gradle.api.initialization.Settings
  * Applied to the settings: includes the plugins `cvPlugins` picks (ADR-CVM-007), and keeps the
  * list where the builds can read it, as the extra property `cvPlugins`. A plugin is a folder under
  * `plugins/` with a build file of its own; its rules module, `plugins/<name>/rules`, comes with it,
- * and so does each capability its build file depends on, under `capabilities/<name>`.
+ * and so does each capability its build file or its rules' build file depends on, under
+ * `capabilities/<name>`.
  */
 class ModulesPlugin : Plugin<Settings> {
     override fun apply(settings: Settings) {
@@ -15,7 +16,10 @@ class ModulesPlugin : Plugin<Settings> {
         val picked = runCatching { ModulePicks.picked(given, known) }
             .getOrElse { throw org.gradle.api.GradleException(it.message ?: "", it) }
         val hasRules = { name: String -> folder.resolve("$name/rules/build.gradle.kts").isFile }
-        val uses = { name: String -> ModulePicks.capabilities(folder.resolve("$name/build.gradle.kts").readText()) }
+        val uses = { name: String ->
+            val rules = folder.resolve("$name/rules/build.gradle.kts")
+            ModulePicks.uses(folder.resolve("$name/build.gradle.kts").readText(), rules.takeIf { it.isFile }?.readText())
+        }
         ModulePicks.included(picked, hasRules, uses).forEach { settings.include(it) }
         settings.gradle.extensions.extraProperties.set(ModulePicks.PROPERTY, picked)
     }

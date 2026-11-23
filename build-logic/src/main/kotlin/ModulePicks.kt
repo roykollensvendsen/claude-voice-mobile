@@ -34,6 +34,14 @@ object ModulePicks {
     fun capabilities(buildFile: String): List<String> =
         CAPABILITY.findAll(buildFile).map { it.groupValues[1] }.toList()
 
+    /**
+     * The capabilities a plugin uses: those its own build file, [plugin], depends on, then those
+     * its rules' build file, [rules], depends on, each once. A rules module may use a capability
+     * that holds only pure logic, so picking the plugin brings that along too.
+     */
+    fun uses(plugin: String, rules: String?): List<String> =
+        (capabilities(plugin) + rules?.let(::capabilities).orEmpty()).distinct()
+
     /** The plugins [given] names, in order and once each; refused when a name is not in [known]. */
     fun picked(given: String?, known: Set<String>): List<String> {
         require(ALL !in known) { "a plugin folder is named $ALL, the word for every plugin; rename the folder" }
