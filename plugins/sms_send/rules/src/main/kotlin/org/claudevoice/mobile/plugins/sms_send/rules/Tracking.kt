@@ -3,18 +3,22 @@ package org.claudevoice.mobile.plugins.sms_send.rules
 import java.io.IOException
 
 /**
- * What the outbox keeps of each confirmed text (ADR-CVM-010): the [journal], and whether the phone
- * has a default subscription to send with ([subscribed]). An outcome or a marker the journal could
- * not save is logged on the phone with [failed]; a marker left on disk still becomes an outcome at
- * the next start.
+ * What the outbox keeps of each confirmed text (ADR-CVM-010): the [journal], whether the phone
+ * has a default subscription to send with ([subscribed]), and whether it may still send
+ * ([permitted]). An outcome or a marker the journal could not save is logged on the phone with
+ * [failed]; a marker left on disk still becomes an outcome at the next start.
  */
 class Tracking(
     private val journal: Journal,
     private val subscribed: () -> Boolean,
+    private val permitted: () -> Boolean,
     private val failed: (String) -> Unit,
 ) {
-    /** Whether an armed text goes to Android, or ends unsent or stopped before it. */
-    enum class Go { SEND, UNSENT, STOPPED }
+    /** Whether an armed text goes to Android, or ends before it: failed, or stopped. */
+    enum class Go { SEND, NO_SUBSCRIPTION, REFUSED, STOPPED }
+
+    /** Whether the phone has a default subscription to send with now. */
+    fun subscribed(): Boolean = subscribed.invoke()
 
     /** Mark the confirmed text with [token], to [recipients] people, as held; false when that is not on disk. */
     fun held(token: String, recipients: Int): Boolean =
@@ -28,26 +32,39 @@ class Tracking(
     /** The owner stopped the text with [token] during its undo delay. */
     fun stopped(token: String) = stored { journal.endedAll(token, Reason.BY_OWNER) }
 
-    /** Android refused the text with [token] to the recipient at [position]. */
+    /** Android refused, or would refuse, the text with [token] to the recipient at [position]. */
     fun refused(token: String, position: Int) = stored { journal.ended(token, position, Reason.REFUSED) }
 
     /**
-     * Whether the text with [token] may go now its delay is over: unsent with no default
-     * subscription, stopped when its sending marker is not on disk, else sent.
+     * Whether the text with [token] may go now its delay is over. It fails with no default
+     * subscription, or as refused by Android once sending was taken back, which is checked before
+     * the sending mark so such a text never leaves one. It is stopped when its sending mark is not
+     * on disk. Each way it ends here, every recipient gets that outcome and the marker goes.
      */
     fun going(token: String): Go {
-        if (!subscribed()) {
-            stored { journal.endedAll(token, Reason.NO_SUBSCRIPTION) }
-            return Go.UNSENT
+        val go = when {
+            !subscribed() -> Go.NO_SUBSCRIPTION
+            !permitted() -> Go.REFUSED
+            else -> marked(token)
         }
-        return try {
+        val reason = when (go) {
+            Go.SEND -> null
+            Go.NO_SUBSCRIPTION -> Reason.NO_SUBSCRIPTION
+            Go.REFUSED -> Reason.REFUSED
+            Go.STOPPED -> Reason.UNSAVED
+        }
+        if (reason != null) stored { journal.endedAll(token, reason) }
+        return go
+    }
+
+    private fun marked(token: String): Go =
+        try {
             journal.sending(token)
             Go.SEND
         } catch (_: IOException) {
             failed(NOT_MARKED)
             Go.STOPPED
         }
-    }
 
     private fun stored(write: () -> Unit) {
         try {

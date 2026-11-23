@@ -27,6 +27,7 @@ class OutboxJournalTest {
     // Made-up numbers, in the +47 00 range no one is given.
     private val kari = "+4700000001"
     private val ola = "+4700000002"
+    private val nils = "+4700000003"
 
     private val clock = Clock.fixed(Instant.parse("2026-11-23T19:40:00Z"), ZoneId.of("Europe/Oslo"))
 
@@ -44,6 +45,8 @@ class OutboxJournalTest {
         val failures = mutableListOf<String>()
         var refuse: String? = null
         var subscribed = true
+        var permitted = true
+        var revokedAt: String? = null
         var markersOnDiskAtSend: List<SendOutcome> = listOf()
         val journal = journal()
         val outbox = Outbox(
@@ -52,11 +55,12 @@ class OutboxJournalTest {
             send = {
                 markersOnDiskAtSend = markersOnDisk()
                 if (it.number == refuse) throw IllegalStateException("radio refused")
+                if (it.number == revokedAt) throw SecurityException("SEND_SMS taken back")
                 handed += it
             },
             failed = { failures += it },
             tokens = { "t-1" },
-            tracking = Tracking(journal, { subscribed }, { failures += it }),
+            tracking = Tracking(journal, { subscribed }, { permitted }, { failures += it }),
         )
 
         fun fire() = timers.removeAt(0).run()
@@ -153,6 +157,50 @@ class OutboxJournalTest {
         phone.fire()
         assertEquals(listOf<Handover>(), phone.handed)
         assertEquals(1, phone.failures.size)
+        unblockMarkers()
+        assertEquals("t-1 1 the phone could not save the send, so it did not send it", afterRestart().first())
+    }
+
+    @Test
+    fun `a yes with no default subscription is refused, holds nothing, and the draft stays`() {
+        val phone = Phone()
+        phone.subscribed = false
+        val refused = phone.confirmed(kari)
+        assertTrue(refused is Reply.Refused)
+        assertTrue((refused as Reply.Refused).say.contains("default SIM"), refused.say)
+        assertTrue(phone.timers.isEmpty())
+        assertFalse(markers.exists())
+        phone.subscribed = true
+        assertTrue(phone.outbox.confirm("t-1", 1) is Reply.Answer, "the owner sets one and says yes again")
+    }
+
+    @Test
+    fun `sending taken back during the delay hands nothing over, refuses each recipient, and leaves no sending mark`() {
+        val phone = Phone()
+        phone.confirmed(kari, ola)
+        phone.permitted = false
+        phone.fire()
+        assertEquals(listOf<Handover>(), phone.handed)
+        assertFalse(markers.exists())
+        assertEquals(listOf("t-1 1 refused by Android", "t-1 2 refused by Android"), afterRestart())
+    }
+
+    @Test
+    fun `a revoke that lands mid-send refuses that recipient and every one after, while those handed over wait`() {
+        val phone = Phone()
+        phone.revokedAt = ola
+        phone.confirmed(kari, ola, nils)
+        phone.fire()
+        assertEquals(listOf(kari), phone.handed.map { it.number })
+        assertEquals(listOf(1), markersOnDisk().map { it.recipient })
+        assertEquals(
+            listOf(
+                "t-1 2 refused by Android",
+                "t-1 3 refused by Android",
+                "t-1 1 it may have been sent; check the text app",
+            ),
+            afterRestart(),
+        )
     }
 
     @Test
