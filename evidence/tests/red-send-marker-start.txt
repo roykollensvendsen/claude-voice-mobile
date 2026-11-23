@@ -1,0 +1,36 @@
+Uninstalled 1 package in 1ms
+Installed 1 package in 0.83ms
+....F...FF                                                               [100%]
+=================================== FAILURES ===================================
+__________ test_a_reason_is_a_fixed_phrase_listed_beside_its_outcome ___________
+
+    def test_a_reason_is_a_fixed_phrase_listed_beside_its_outcome() -> None:
+        reason = schema(ANSWER)["$defs"]["outcome"]["properties"]["reason"]
+>       assert sorted(reason["enum"]) == sorted(p for ps in REASONS.values() for p in ps)
+E       AssertionError: assert ['handed to t...Android', ...] == ['handed to t...Android', ...]
+E         
+E         Right contains one more item: 'the phone could not save its state, so it did not send'
+E         Use -v to get more diff
+
+tests/test_sms_outcomes_shape.py:91: AssertionError
+________ test_the_hold_starts_at_confirm_and_only_a_yes_gets_an_outcome ________
+
+    def test_the_hold_starts_at_confirm_and_only_a_yes_gets_an_outcome() -> None:
+        text = " ".join(record().split())
+>       assert "The hold is the undo delay: it starts when confirm matches" in text
+E       AssertionError: assert 'The hold is the undo delay: it starts when confirm matches' in '# ADR-CVM-010: Reading and sending text messages ## Status Proposed 2026-11-18 by the architect session. It writes do...https://github.com/roykollensvendsen/claude-voice/blob/main/docs/agent-protocol/next-version.md): the `messages` name.'
+
+tests/test_sms_outcomes_shape.py:135: AssertionError
+_____________ test_confirm_is_refused_with_no_default_subscription _____________
+
+    def test_confirm_is_refused_with_no_default_subscription() -> None:
+        text = " ".join(record().split())
+>       assert "With none set at confirm, confirm is refused with where to set one" in text
+E       AssertionError: assert 'With none set at confirm, confirm is refused with where to set one' in '# ADR-CVM-010: Reading and sending text messages ## Status Proposed 2026-11-18 by the architect session. It writes do...https://github.com/roykollensvendsen/claude-voice/blob/main/docs/agent-protocol/next-version.md): the `messages` name.'
+
+tests/test_sms_outcomes_shape.py:142: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_sms_outcomes_shape.py::test_a_reason_is_a_fixed_phrase_listed_beside_its_outcome
+FAILED tests/test_sms_outcomes_shape.py::test_the_hold_starts_at_confirm_and_only_a_yes_gets_an_outcome
+FAILED tests/test_sms_outcomes_shape.py::test_confirm_is_refused_with_no_default_subscription
+3 failed, 7 passed in 0.10s

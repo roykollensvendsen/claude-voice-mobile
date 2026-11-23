@@ -66,7 +66,11 @@ def test_the_checker_refuses_an_outcome_carrying_a_number_or_an_unknown_value() 
 REASONS = {
     "sent": ["handed to the network"],
     "delivered": ["the network reported it delivered"],
-    "stopped": ["stopped by the owner", "the app restarted while it was held"],
+    "stopped": [
+        "stopped by the owner",
+        "the app restarted while it was held",
+        "the phone could not save its state, so it did not send",
+    ],
     "failed": [
         "no service",
         "radio off",
@@ -124,3 +128,17 @@ TOOL_WORDS = (
     "When dropped is above 0, say that some outcomes were lost and that a text may have been "
     "sent; check the text app."
 )
+
+
+def test_the_hold_starts_at_confirm_and_only_a_yes_gets_an_outcome() -> None:
+    text = " ".join(record().split())
+    assert "The hold is the undo delay: it starts when confirm matches" in text
+    assert "A draft that was never confirmed gets no outcome" in text
+    assert "If the `sending` mark can't be saved, the phone does not hand the text to Android" in text
+
+
+def test_confirm_is_refused_with_no_default_subscription() -> None:
+    text = " ".join(record().split())
+    assert "With none set at confirm, confirm is refused with where to set one" in text
+    assert "nothing is held, nothing counts against the limits, and the draft stays" in text
+    assert "With none set when the delay ends, each recipient fails with \"no default subscription\"" in text
