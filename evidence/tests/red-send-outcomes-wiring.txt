@@ -65,3 +65,16 @@ both before and after, since it checks that nothing happens:
     OutboxJournalTest > the marker is on disk once the owner's yes starts the undo delay() FAILED
     237 tests completed, 7 failed
     BUILD FAILED in 44s
+
+The cases the record added since (#201, #202): the unsaved-send phrase,
+no default SIM at confirm, sending taken back during the delay, and a
+revoke that lands between two recipients. Their tests were written
+first, against a Tracking that took the new permission check but did
+not use it:
+
+    OutboxJournalTest > a sending marker that cannot be saved never reaches Android() FAILED
+    OutboxJournalTest > a revoke that lands mid-send refuses that recipient and every one after, while those handed over wait() FAILED
+    OutboxJournalTest > a yes with no default subscription is refused, holds nothing, and the draft stays() FAILED
+    OutboxJournalTest > sending taken back during the delay hands nothing over, refuses each recipient, and leaves no sending mark() FAILED
+    240 tests completed, 4 failed
+    BUILD FAILED in 32s

@@ -64,8 +64,8 @@ class Outbox(
         data object Armed : State
         data class Handed(val at: Instant) : State
 
-        /** Not handed to Android, since the phone had no default subscription; it still counts. */
-        data object Unsent : State
+        /** Failed before Android had it, as [say] tells; it still counts, as any failed text does. */
+        data class Unsent(val say: String) : State
         data object Stopped : State
     }
 
@@ -81,6 +81,13 @@ class Outbox(
         /** How many of [to] Android took, and how the read-back named each one it refused. */
         var handed = 0
         val refused = mutableListOf<String>()
+
+        /** Android refused, or would refuse, the recipient at [index]: logged, and its outcome kept. */
+        fun refuse(index: Int, failed: (String) -> Unit, tracking: Tracking?) {
+            refused += named[index]
+            failed(SEND_FAILED)
+            tracking?.refused(token, index + 1)
+        }
     }
 
     private val drafts = mutableMapOf<String, Draft>()
@@ -149,6 +156,7 @@ class Outbox(
         return when {
             draft == null -> Reply.Refused(NO_SUCH, NO_DRAFT)
             version != draft.version -> Reply.Refused(CHANGED, STALE_VERSION)
+            tracking?.subscribed() == false -> Reply.Refused(NO_DEFAULT_SIM)
             blocked != null -> blocked
             else -> armed(draft)
         }
@@ -174,7 +182,7 @@ class Outbox(
                 answer("say" to JsonPrimitive(STOPPED))
             }
             is State.Handed -> answer("say" to JsonPrimitive(tooLate(draft, state.at.atZone(clock.zone))))
-            State.Unsent -> answer("say" to JsonPrimitive(UNSENT))
+            is State.Unsent -> answer("say" to JsonPrimitive(state.say))
             State.Stopped -> Reply.Refused(NO_SUCH, NO_DRAFT)
         }
     }
@@ -192,20 +200,22 @@ class Outbox(
         val go = tracking?.going(draft.token) ?: Tracking.Go.SEND
         draft.state = when (go) {
             Tracking.Go.SEND -> State.Handed(clock.instant())
-            Tracking.Go.UNSENT -> State.Unsent
+            Tracking.Go.NO_SUBSCRIPTION -> State.Unsent(UNSENT)
+            Tracking.Go.REFUSED -> State.Unsent(WITHHELD)
             Tracking.Go.STOPPED -> State.Stopped
         }
         if (go != Tracking.Go.SEND) return
-        for ((index, pair) in draft.to.zip(draft.named).withIndex()) {
-            val (number, named) = pair
+        for ((index, number) in draft.to.withIndex()) {
             @Suppress("TooGenericExceptionCaught") // whatever the radio throws, it is logged, never thrown on
             try {
                 send(Handover(number, draft.text, draft.token, index + 1))
                 draft.handed += 1
+            } catch (_: SecurityException) {
+                // Sending was taken back: Android sends nothing more, so this one and every one after are refused.
+                for (each in index until draft.to.size) draft.refuse(each, failed, tracking)
+                break
             } catch (_: RuntimeException) {
-                draft.refused += named
-                failed(SEND_FAILED)
-                tracking?.refused(draft.token, index + 1)
+                draft.refuse(index, failed, tracking)
             }
         }
     }
@@ -277,6 +287,10 @@ class Outbox(
         private const val STOP_HINT = "Say stop to cancel. $NOT_CONFIRMED"
         private const val STOPPED = "Stopped, not sent."
         private const val UNSENT = "It was not sent: the phone has no default SIM for texts."
+        private const val WITHHELD = "It was not sent: the phone may no longer send texts."
+        private const val NO_DEFAULT_SIM =
+            "The phone has no default SIM for texts, so nothing is waiting to go. Choose one in Settings, " +
+                "SIMs, Preferred SIM for SMS, then say yes again."
         private const val NOT_HELD = "The phone could not save the send, so nothing is waiting to go. Confirm again."
         private const val CHANGED = "It changed; read it back first."
         private const val NO_SUCH = "There is no draft by that token waiting; make a new request."
