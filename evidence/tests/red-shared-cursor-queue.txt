@@ -59,3 +59,11 @@ first and run against the check as it was:
     E       AssertionError: assert [] == ['Run.kt star...ntime().exec']
     FAILED tests/test_cursorqueue_pure.py::test_the_check_notices_a_capability_that_starts_a_process
     1 failed, 6 passed
+
+Reflection and native code (quality-claude-voice's re-stamp of #197).
+The test that a pure capability using java.lang.reflect, Class.forName,
+System.loadLibrary or System.load is refused was written first and run
+against the check as it was:
+
+    E       AssertionError: assert [] == ['Name.kt rea... System.load']
+    E         Right contains 4 more items, first extra item: 'Name.kt reaches by reflection: java.lang.reflect'
