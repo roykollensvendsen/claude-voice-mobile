@@ -277,10 +277,14 @@ never confirmed gets no outcome: dropping, cancelling or replacing it stores
 nothing. A cancel during the undo delay stores "stopped by the owner".
 
 If the `sending` mark can't be saved, the phone does not hand the text to
-Android. Each recipient is stopped with "the phone could not save its state, so
-it did not send", and the marker goes. If even that can't be saved, the marker
+Android. Each recipient is stopped with "the phone could not save the send, so
+it did not send it", and the marker goes. If even that can't be saved, the marker
 still says `held`, and the next start reports the restart, which is just as
-true. So on the next start, a marker still there tells which side of the send
+true. For the limits, a text stopped before Android saw it, by a cancel or
+because the send could not be saved, stops counting, as any stopped one does.
+One that failed still counts, as a refusal by Android does, and that includes
+no default subscription when the delay ends. A restart clears the counts
+anyway. So on the next start, a marker still there tells which side of the send
 the app stopped on:
 
 - `held` becomes a "stopped: the app restarted" outcome. The message was
@@ -551,7 +555,7 @@ crash marker, which waited in the first version, come with it.
   - `sent`: "handed to the network".
   - `delivered`: "the network reported it delivered".
   - `stopped`: "stopped by the owner", "the app restarted while it was held",
-    "the phone could not save its state, so it did not send".
+    "the phone could not save the send, so it did not send it".
   - `failed`: "no service", "radio off", "no default subscription", "refused
     by Android", "the network reported it failed".
   - `unknown`: "it may have been sent; check the text app".

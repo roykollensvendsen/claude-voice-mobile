@@ -69,7 +69,7 @@ REASONS = {
     "stopped": [
         "stopped by the owner",
         "the app restarted while it was held",
-        "the phone could not save its state, so it did not send",
+        "the phone could not save the send, so it did not send it",
     ],
     "failed": [
         "no service",
@@ -135,6 +135,8 @@ def test_the_hold_starts_at_confirm_and_only_a_yes_gets_an_outcome() -> None:
     assert "The hold is the undo delay: it starts when confirm matches" in text
     assert "A draft that was never confirmed gets no outcome" in text
     assert "If the `sending` mark can't be saved, the phone does not hand the text to Android" in text
+    assert "a text stopped before Android saw it, by a cancel or because the send could not be saved, stops counting" in text
+    assert "One that failed still counts, as a refusal by Android does" in text
 
 
 def test_confirm_is_refused_with_no_default_subscription() -> None:
