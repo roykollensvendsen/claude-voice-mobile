@@ -29,6 +29,9 @@ def test_a_plugins_rules_may_use_a_pure_capability_and_nothing_that_reaches_andr
     assert "A plugin's rules may depend on a capability that holds only pure logic" in text
     assert "never on one that reaches Android" in text
     assert "Picking the plugin brings that capability along" in text
+    assert "Pure logic means no Android API, no permission, and no file, network or process access" in text
+    assert "`tests/test_cursorqueue_pure.py` scans every such capability" in text
+    assert "checked in review until that test is merged" in text
 
 
 def test_outcomes_and_the_marker_are_plain_files_kept_out_of_backups():

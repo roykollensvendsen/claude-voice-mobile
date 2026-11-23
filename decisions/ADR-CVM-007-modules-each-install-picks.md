@@ -75,9 +75,19 @@ a capability, never in `core`, which no plugin may depend on.
 A plugin's rules may depend on a capability that holds only pure logic, such
 as `capabilities/cursorqueue`, and never on one that reaches Android. That is
 the one exception to "depends on no module of ours" above. Picking the plugin
-brings that capability along, as it brings the rules. The layer check allows
-rules to depend on a capability, and Gradle already refuses a pure-JVM module
-that depends on an Android one.
+brings that capability along, as it brings the rules.
+
+Pure logic means no Android API, no permission, and no file, network or
+process access: no `java.io` file classes, no `java.nio.file` or
+`java.nio.channels`, no `java.net`, no `ProcessBuilder` or `Runtime.exec`.
+Writing to a stream the caller hands in is fine. Each part has its check:
+
+- The Android half: the layer check lets rules depend only on a capability
+  that applies no Android plugin, and Gradle refuses a pure-JVM module that
+  depends on an Android one.
+- The rest: `tests/test_cursorqueue_pure.py` scans every such capability's
+  build file and sources. It comes with the shared queue, and this part is
+  checked in review until that test is merged.
 
 **Modules are picked when the app is built.** One Gradle property lists the
 plugins, for example `-PcvPlugins=status,micmute,mobiledata`. Gradle includes
