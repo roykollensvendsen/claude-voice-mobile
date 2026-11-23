@@ -293,7 +293,9 @@ class Outbox(
         private const val NO_DEFAULT_SIM =
             "The phone has no default SIM for texts, so nothing is waiting to go. Choose one in Settings, " +
                 "SIMs, Preferred SIM for SMS, then say yes again."
-        private const val NOT_HELD = "The phone could not save the send, so nothing is waiting to go. Confirm again."
+        private const val NOT_HELD =
+            "The phone could not save the send, so nothing was sent. Free some storage or restart the app, " +
+                "then say yes again."
         private const val CHANGED = "It changed; read it back first."
         private const val NO_SUCH = "There is no draft by that token waiting; make a new request."
         private const val NOT_A_NUMBER = "A text goes to one number in full international form, such as +4700000001."

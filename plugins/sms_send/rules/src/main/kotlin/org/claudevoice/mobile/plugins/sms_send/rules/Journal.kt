@@ -89,11 +89,12 @@ class Journal private constructor(
 
     companion object {
         /**
-         * The journal kept in [outcomes] and [markers]. A damaged outcome file is set aside and
-         * the new log counts one dropped; a damaged marker file counts one more. Each marker left
-         * becomes an outcome. The new log, with its drops, is on disk before the marker file is
-         * set aside or removed, so a crash in between counts the loss again, never not at all.
-         * Throws when a damaged outcome file cannot be set aside, so it is never overwritten.
+         * The journal kept in [outcomes] and [markers]. A damaged outcome file is copied aside and
+         * the new log, which counts one dropped, is written over it; a damaged marker file counts
+         * one more. Each marker left becomes an outcome. The new log, with its drops, is on disk
+         * before the marker file is removed, and a damaged file stays where it was until then, so
+         * a crash at any point counts the loss again, never not at all. Throws when a damaged
+         * outcome file cannot be copied aside, so it is never overwritten.
          */
         @Throws(IOException::class)
         fun open(outcomes: PlainFile, markers: PlainFile, chance: Chance, clock: Clock): Journal {
@@ -104,7 +105,8 @@ class Journal private constructor(
             left?.leftAtRestart(OffsetDateTime.now(clock))?.forEach { log.record(it, at) }
             val journal = Journal(log, Markers.none(), outcomes, markers, clock)
             journal.saveLog()
-            if (left == null) markers.setAside(at) else markers.remove()
+            if (left == null) markers.setAside(at)
+            markers.remove()
             return journal
         }
 

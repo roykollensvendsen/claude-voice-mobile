@@ -3,4 +3,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Restricted: after a sideloaded install, Android may first ask for "Allow restricted settings". -->
     <uses-permission android:name="android.permission.SEND_SMS" />
+    <application>
+        <!-- Android's sent and delivered reports. Not exported: only this app and the system reach it. -->
+        <receiver
+            android:name="org.claudevoice.mobile.plugins.sms_send.ReportReceiver"
+            android:exported="false" />
+    </application>
 </manifest>

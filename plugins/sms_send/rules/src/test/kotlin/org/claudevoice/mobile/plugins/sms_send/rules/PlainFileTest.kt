@@ -41,12 +41,12 @@ class PlainFileTest {
     }
 
     @Test
-    fun `a damaged file is moved aside under a timed name, never overwritten, and the folder synced`() {
+    fun `a damaged file is copied aside under a timed name, never overwritten, and the folder synced`() {
         val file = file()
         file.write(byteArrayOf(9, 9))
         synced.clear()
         file.setAside(at)
-        assertNull(file.read())
+        assertArrayEquals(byteArrayOf(9, 9), file.read(), "the file stays until the caller replaces it")
         val aside = File(folder, "send-outcomes.damaged-${at.toEpochMilli()}")
         assertArrayEquals(byteArrayOf(9, 9), aside.readBytes())
         assertEquals(1, synced.size)
@@ -76,7 +76,7 @@ class PlainFileTest {
         file.setAside(at)
         file.write(byteArrayOf(2))
         file.setAside(at)
-        val names = folder.list()!!.sorted()
+        val names = folder.list()!!.filter { it.startsWith("send-outcomes.damaged-") }.sorted()
         assertEquals(listOf(0L, 1L).map { "send-outcomes.damaged-${at.toEpochMilli() + it}" }, names)
         assertArrayEquals(byteArrayOf(2), File(folder, names[1]).readBytes())
     }

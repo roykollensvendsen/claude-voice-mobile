@@ -2,6 +2,7 @@ package org.claudevoice.mobile.plugins.sms_send.rules
 
 import java.io.File
 import java.io.IOException
+import java.nio.channels.FileChannel
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
@@ -16,8 +17,9 @@ fun interface FolderSync {
 /**
  * One plain file of the plugin's, in the app's no-backup folder (ADR-CVM-010): written whole or
  * not at all, and the folder synced, so that after a power cut no older copy comes back. A
- * damaged file is moved aside under a timed name in the same folder, never overwritten, and only
- * the last [KEPT] of those are kept.
+ * damaged file is copied aside under a timed name in the same folder, never overwritten, and only
+ * the last [KEPT] of those are kept. The file itself stays until the caller writes over it or
+ * removes it, so a crash in between finds it damaged again rather than gone.
  */
 class PlainFile(private val file: File, private val folderSync: FolderSync) {
     private val folder: File get() = file.absoluteFile.parentFile
@@ -44,14 +46,17 @@ class PlainFile(private val file: File, private val folderSync: FolderSync) {
         folderSync.sync(folder)
     }
 
-    /** Move a damaged file aside under the time [at], and forget all but the last [KEPT] moved aside. */
+    /** Copy a damaged file aside under the time [at], and forget all but the last [KEPT] set aside. */
     @Throws(IOException::class)
     fun setAside(at: Instant) {
         if (!file.exists()) return
         var millis = at.toEpochMilli()
         // Two set aside in the same millisecond each keep their own name.
         while (File(folder, "$aside$millis").exists()) millis += 1
-        Files.move(file.toPath(), File(folder, "$aside$millis").toPath(), StandardCopyOption.ATOMIC_MOVE)
+        val copy = File(folder, "$aside$millis").toPath()
+        Files.copy(file.toPath(), copy)
+        // The copy is on disk before anything is written over the file it came from.
+        FileChannel.open(copy, StandardOpenOption.WRITE).use { it.force(true) }
         val older = folder.listFiles().orEmpty().filter { it.name.startsWith(aside) }
             .sortedByDescending { it.name.removePrefix(aside).toLongOrNull() ?: Long.MIN_VALUE }
         older.drop(KEPT).forEach { Files.deleteIfExists(it.toPath()) }

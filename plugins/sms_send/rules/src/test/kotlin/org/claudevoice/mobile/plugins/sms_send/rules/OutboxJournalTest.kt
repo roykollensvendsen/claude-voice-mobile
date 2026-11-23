@@ -1,5 +1,6 @@
 package org.claudevoice.mobile.plugins.sms_send.rules
 
+import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -47,6 +48,7 @@ class OutboxJournalTest {
         var subscribed = true
         var permitted = true
         var revokedAt: String? = null
+        private var drafts = 0
         var markersOnDiskAtSend: List<SendOutcome> = listOf()
         val journal = journal()
         val outbox = Outbox(
@@ -59,7 +61,7 @@ class OutboxJournalTest {
                 handed += it
             },
             failed = { failures += it },
-            tokens = { "t-1" },
+            tokens = { "t-${++drafts}" },
             tracking = Tracking(journal, { subscribed }, { permitted }, { failures += it }),
         )
 
@@ -92,6 +94,73 @@ class OutboxJournalTest {
     private fun Phone.confirmed(vararg to: String): Reply {
         outbox.request(to.toList(), "Kommer om ti")
         return outbox.confirm("t-1", 1)
+    }
+
+    @Test
+    fun `with no journal, a yes is refused and nothing is armed, so no text goes without its marker`() {
+        val handed = mutableListOf<Handover>()
+        val timers = mutableListOf<Runnable>()
+        val outbox = Outbox(
+            clock = clock,
+            later = { _, task -> timers += task },
+            send = { handed += it },
+            failed = {},
+            tokens = { "t-1" },
+            tracking = Tracking(null, { true }, { true }, {}),
+        )
+        outbox.request(kari, "Kommer om ti")
+        val refused = outbox.confirm("t-1", 1) as Reply.Refused
+        assertEquals(NOT_HELD, refused.say)
+        assertTrue(timers.isEmpty())
+        assertEquals(listOf<Handover>(), handed)
+    }
+
+    /** One text to Kari: drafted, confirmed, [during] its undo delay, then the delay ends. */
+    private fun Phone.once(during: () -> Unit = {}): Reply {
+        val drafted = outbox.request(kari, "Kommer om ti")
+        val content = ((drafted as? Reply.Answer) ?: return drafted).content
+        outbox.confirm(content.getValue("token").jsonPrimitive.content, content.getValue("version").jsonPrimitive.int)
+        during()
+        fire()
+        return drafted
+    }
+
+    private val NOT_HELD = "The phone could not save the send, so nothing was sent. Free some storage or restart the app, " +
+        "then say yes again."
+
+    private fun limited(reply: Reply) = (reply as? Reply.Refused)?.code == Limits.RATE_LIMITED
+
+    @Test
+    fun `a text that failed with no default subscription at the end of the delay still counts against the limits`() {
+        val phone = Phone()
+        repeat(3) { phone.once { phone.subscribed = false }.also { phone.subscribed = true } }
+        assertTrue(limited(phone.once()), "three to one number in ten minutes is the most")
+    }
+
+    @Test
+    fun `a text refused since sending was taken back still counts against the limits`() {
+        val phone = Phone()
+        repeat(3) { phone.once { phone.permitted = false }.also { phone.permitted = true } }
+        assertTrue(limited(phone.once()))
+    }
+
+    @Test
+    fun `a yes refused since its mark could not be saved leaves the limits untouched`() {
+        val phone = Phone()
+        blockMarkers()
+        repeat(3) {
+            phone.outbox.request(kari, "Kommer om ti")
+            assertEquals(NOT_HELD, (phone.outbox.confirm("t-1", it + 1) as Reply.Refused).say)
+        }
+        unblockMarkers()
+        repeat(3) { assertFalse(limited(phone.once()), "the refused yeses counted for nothing") }
+    }
+
+    @Test
+    fun `a text stopped since its sending mark could not be saved stops counting`() {
+        val phone = Phone()
+        repeat(3) { phone.once { blockMarkers() }.also { unblockMarkers() } }
+        assertFalse(limited(phone.once()), "none of the three reached Android")
     }
 
     @Test

@@ -6,10 +6,12 @@ import java.io.IOException
  * What the outbox keeps of each confirmed text (ADR-CVM-010): the [journal], whether the phone
  * has a default subscription to send with ([subscribed]), and whether it may still send
  * ([permitted]). An outcome or a marker the journal could not save is logged on the phone with
- * [failed]; a marker left on disk still becomes an outcome at the next start.
+ * [failed]; a marker left on disk still becomes an outcome at the next start. With no journal,
+ * since it could not be opened, no text is ever held, so the outbox sends nothing without its
+ * marker.
  */
 class Tracking(
-    private val journal: Journal,
+    private val journal: Journal?,
     private val subscribed: () -> Boolean,
     private val permitted: () -> Boolean,
     private val failed: (String) -> Unit,
@@ -21,19 +23,21 @@ class Tracking(
     fun subscribed(): Boolean = subscribed.invoke()
 
     /** Mark the confirmed text with [token], to [recipients] people, as held; false when that is not on disk. */
-    fun held(token: String, recipients: Int): Boolean =
-        try {
+    fun held(token: String, recipients: Int): Boolean {
+        val journal = journal ?: return false
+        return try {
             journal.held(token, recipients)
             true
         } catch (_: IOException) {
             false
         }
+    }
 
     /** The owner stopped the text with [token] during its undo delay. */
-    fun stopped(token: String) = stored { journal.endedAll(token, Reason.BY_OWNER) }
+    fun stopped(token: String) = stored { journal?.endedAll(token, Reason.BY_OWNER) }
 
     /** Android refused, or would refuse, the text with [token] to the recipient at [position]. */
-    fun refused(token: String, position: Int) = stored { journal.ended(token, position, Reason.REFUSED) }
+    fun refused(token: String, position: Int) = stored { journal?.ended(token, position, Reason.REFUSED) }
 
     /**
      * Whether the text with [token] may go now its delay is over. It fails with no default
@@ -53,13 +57,13 @@ class Tracking(
             Go.REFUSED -> Reason.REFUSED
             Go.STOPPED -> Reason.UNSAVED
         }
-        if (reason != null) stored { journal.endedAll(token, reason) }
+        if (reason != null) stored { journal?.endedAll(token, reason) }
         return go
     }
 
     private fun marked(token: String): Go =
         try {
-            journal.sending(token)
+            journal?.sending(token)
             Go.SEND
         } catch (_: IOException) {
             failed(NOT_MARKED)
