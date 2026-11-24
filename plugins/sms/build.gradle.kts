@@ -20,4 +20,5 @@ kotlin { jvmToolchain(17) }
 dependencies {
     implementation(project(":plugin-api"))
     implementation(project(":plugins:sms:rules"))
+    implementation(project(":capabilities:fsync"))
 }

@@ -21,6 +21,7 @@ kotlin { jvmToolchain(17) }
 dependencies {
     implementation(project(":plugin-api"))
     implementation(project(":plugins:sms_send:rules"))
+    implementation(project(":capabilities:fsync"))
     implementation(project(":capabilities:contacts"))
     implementation(project(":capabilities:smsstore"))
     testImplementation(libs.junit4)

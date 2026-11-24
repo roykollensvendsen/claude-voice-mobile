@@ -1,0 +1,11 @@
+# Red run: one folder sync for the plugins that keep files (#205)
+
+The test for the new fsync capability was written first. Against no code at all it did not
+compile. Against an empty stub, one of its two tests failed, which is the run below: the empty
+stub synced nothing and threw nothing, so a missing folder seemed saved. The other test, that a
+folder is synced and what is in it stays, passes against the stub too, since the stub changes
+nothing. It is kept to show that a real sync leaves the folder's files alone.
+
+    FsyncTest > a folder that is not there fails, so a save is never taken as kept FAILED
+    2 tests completed, 1 failed
+    BUILD FAILED in 25s
