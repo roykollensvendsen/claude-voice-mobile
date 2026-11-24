@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.telephony.TelephonyManager
 import android.util.Log
+import org.claudevoice.mobile.capabilities.fsync.Fsync
 import org.claudevoice.mobile.capabilities.contacts.Contacts
 import org.claudevoice.mobile.capabilities.cursorqueue.SecureChance
 import org.claudevoice.mobile.capabilities.smsstore.SmsStore
@@ -73,8 +74,8 @@ object Entry {
         try {
             val folder = app.noBackupFilesDir
             Journal.open(
-                PlainFile(File(folder, "send-outcomes"), FsyncFolder),
-                PlainFile(File(folder, "send-markers"), FsyncFolder),
+                PlainFile(File(folder, "send-outcomes")) { Fsync.folder(it) },
+                PlainFile(File(folder, "send-markers")) { Fsync.folder(it) },
                 SecureChance(),
                 Clock.systemDefaultZone(),
             )

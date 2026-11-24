@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Making a save last through a power cut (ADR-CVM-007). It declares no permission. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

@@ -1,7 +1,9 @@
 package org.claudevoice.mobile.plugins.sms
 
 import android.content.Context
+import org.claudevoice.mobile.capabilities.fsync.Fsync
 import org.claudevoice.mobile.plugins.sms.rules.AesGcmSealer
+import org.claudevoice.mobile.plugins.sms.rules.FolderSync
 import org.claudevoice.mobile.plugins.sms.rules.Inbox
 import org.claudevoice.mobile.plugins.sms.rules.QueueFile
 import org.claudevoice.mobile.plugins.sms.rules.SecureChance
@@ -21,6 +23,7 @@ object SmsInbox {
     fun get(context: Context): Inbox =
         shared.get {
             val file = File(context.applicationContext.noBackupFilesDir, "sms-queue")
-            Inbox(QueueFile(file, AesGcmSealer(KeystoreKeys), FsyncFolder), SecureChance(), Instant::now)
+            val queue = QueueFile(file, AesGcmSealer(KeystoreKeys), FolderSync { Fsync.folder(it) })
+            Inbox(queue, SecureChance(), Instant::now)
         }
 }
